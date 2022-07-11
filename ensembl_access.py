@@ -12,7 +12,6 @@ import argparse
 import os
 import subprocess
 
-
 #Test command line:
 # python ensembl_access.py -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -c /share/project/zarnack/chrisbl/FAS/utility/ensembl_cache
 
@@ -30,7 +29,9 @@ import subprocess
 #         'ENSG00000167460',
 #         'ENSG00000164093']
 
-def load_ensembl_assembly(cache_dir, release_num):
+ENSEMBL_ASSMBLY = 106
+
+def load_ensembl_assembly(cache_dir, release_num):    
     os.environ['PYENSEMBL_CACHE_DIR'] = cache_dir
 
     ENSEMBL = pyensembl.EnsemblRelease(release=release_num)
@@ -42,16 +43,8 @@ def assemble_ensembl_ids(ensembl):
     
     Returns
     ------
-    2xn matrix of transcripts that are protein coding where n is the number 
-    of transcripts and 2 counts the transcript and the gene id:
-        [
-            [transcript_id_1,gene_id_1],
-            [transcript_id_2,gene_id_1],
-            [transcript_id_3,gene_id_2],
-        .
-        .
-        .
-        ...etc..."""
+
+"""
         
     print("Gathering protein coding genes...")
     # Get all gene_ids of protein coding genes.
@@ -59,64 +52,87 @@ def assemble_ensembl_ids(ensembl):
     
     print("Gathering transcripts...")
     # Get all sets of transcript_ids of protein coding genes.
-    transcript_ids_list = [ensembl.transcript_ids_of_gene_id(gene_id) for gene_id in protein_coding_gene_ids]
+    transcript_ids_list = [ [gene_id, ensembl.transcript_ids_of_gene_id(gene_id)] for gene_id in protein_coding_gene_ids]
 
-    library = list()
-    
-    print("Filtering all transcripts that are not protein coding and attaching them to the gene IDs...")
+    print("Filtering all transcripts that are not protein coding...")
     # Remove all transcript IDs that belong to non-protein coding transcripts 
     # and assemble them in pairs with the gene_id
-    for transcript_ids in transcript_ids_list:
+    transcript_list = list()
+    transcript_dict = dict()
+    for gene_id, transcript_ids in transcript_ids_list:
+        transcript_dict[gene_id] = list()
         transcripts = [ensembl.transcript_by_id(transcript_id) for transcript_id in transcript_ids]
-        protein_coding_id_pairs = [[transcript.transcript_id,
-                                    transcript.gene_id] for transcript in transcripts if transcript.biotype == "protein_coding"]
-        for pair in protein_coding_id_pairs:
-            library.append(pair)
+        for transcript in transcripts:
+            if transcript.biotype == "protein_coding":
+                transcript_dict[gene_id].append([transcript.transcript_id])
+                transcript_list.append(transcript.transcript_id)
     
-    print("Sorting assembled headers...")
+    print("Sorting transcripts...")
     # Sort by 1. gene_id 2. transcript id
-    library = (sorted(library, key=lambda x: (x[1], x[0])))
-    
-    return library
+    transcript_list = sorted(transcript_list)
+    for key in transcript_dict.keys():
+        transcript_dict[key] = sorted(transcript_dict[key])
+
+    return transcript_dict, transcript_list, protein_coding_gene_ids
 
 
-def assemble_protein_seqs(id_library):
+def assemble_protein_seqs(transcript_dict):
     """
 
     Parameters
     ----------
-    id_library : 2xn matrix with transcript id and gene id in each row
+    dictionary with gene IDs as keys and transcript IDs in a list of one in another list.
+        {
+            gene_id_1 : [[transcript_id_1], [transcript_id_2]],
+            gene_id_2 : [[transcript_id_3], [transcript_id_4]],
+            .
+            .
+            .
+            ...etc...
+            
+            }
 
     Returns
     -------
-    library: 3xn matrix with transcript id, gene id and protein sequence in
-    each row
-
+    library_dict with gene IDs as keys and transcript IDs combined with protein sequences in a list of two.
+        {
+            gene_id_1 : [[transcript_id_1, seq1], [transcript_id_2, seq2]],
+            gene_id_2 : [[transcript_id_3, seq3], [transcript_id_4, seq4]],
+            .
+            .
+            .
+            ...etc...
+            
+            }
     """
     url_prefix = "https://rest.ensembl.org/sequence/id/"
     url_suffix = "?object_type=transcript;type=cds;species=human"
     headers = { "Content-Type" : "text/plain"}
     
     print("Retrieving transcript sequences and translating them to protein sequences...")
-    for i, entry in enumerate(id_library):
-        sequence_retrieved = False
-        attempt_count = 0
-        while not sequence_retrieved:
-            attempt_count += 1
-            r = requests.get(url_prefix + entry[0] + url_suffix, headers=headers)
-            if r.text[0] != "<":
-                sequence_retrieved = True
-            if attempt_count > 30:
-                print("Could not retrieve sequence " + i + " after 30 attempts. Aborting...")
-                print("Brace for TranslationError!")
-                sequence_retrieved = True
-        seq = Seq(r.text)
-        seq = seq.translate()
-        if seq[-1] == "*":
-            seq = seq[0:-1]
-        id_library[i].append(str(seq))
-        print(seq)
-    return id_library
+    for key in transcript_dict.keys():
+        for i, entry in enumerate(transcript_dict[key]):
+            transcript_id = entry[0]
+            sequence_retrieved = False
+            attempt_count = 0
+            while not sequence_retrieved:
+                attempt_count += 1
+                r = requests.get(url_prefix + transcript_id + url_suffix, headers=headers)
+                if r.text[0] != "<":
+                    sequence_retrieved = True
+                if attempt_count > 30:
+                    print("Could not retrieve sequence",
+                          transcript_id,
+                          "of gene", key,  "after 30 attempts. Aborting...")
+                    print("Brace for TranslationError!")
+                    sequence_retrieved = True
+            seq = Seq(r.text)
+            seq = seq.translate()
+            if seq[-1] == "*":
+                seq = seq[0:-1]
+            transcript_dict[key][i].append(str(seq))
+    return transcript_dict
+
     
 def parser_setup():
     """
@@ -170,23 +186,54 @@ def main():
         subprocess.run(["export", "PYENSEMBL_CACHE_DIR=" + CACHE_DIR])
         subprocess.run(["pyensembl", "install", "--release 106", "--species human"])
         
-    ENSEMBL = load_ensembl_assembly(CACHE_DIR, 106)
+    ENSEMBL = load_ensembl_assembly(CACHE_DIR, ENSEMBL_ASSMBLY)
     
-    library = assemble_ensembl_ids(ENSEMBL)
+    transcript_dict, transcript_id_list, gene_id_list = assemble_ensembl_ids(ENSEMBL)
     
-    library = assemble_protein_seqs(library)
+    library_dict = assemble_protein_seqs(transcript_dict)
     
-    library = [">" + entry[0] + " " + entry[1] + "\n" + entry[2] for entry in library]
+    #fasta_entries = [">" + entry[0] + " " + entry[1] + "Ensembl Assemlby" + str(ENSEMBL_ASSMBLY)  + "\n" + entry[2] for entry in library]
     
-    print("Saving library as fasta in " + OUTPUT_DIR + 'library.fasta')
-    count = 1
-    with open(OUTPUT_DIR + 'library.fasta', 'w') as fasta:
-        count += 1
-        for entry in library:
-            fasta.write(entry)
-            fasta.write('\n')
+    print("Generating subfolders in /library/[gene_id]...")
+    newpath = OUTPUT_DIR + "/library/"
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    for gene in gene_id_list:
+        gene_path = newpath + gene
+        if not os.path.exists(gene_path):
+            os.makedirs(gene_path)
+
+    print("Saving transcript IDs in ", newpath)
+    count = 0
+    with open(newpath + "transcript_ids.txt", "w") as fasta:
+        for transcript_id in transcript_id_list:
+            fasta.write(transcript_id)
+            fasta.write("\n")
+            count += 1
+
+    print("Saving isoforms as fasta in", newpath + "[gene_id]/isoforms.fasta")
+    for key in library_dict.keys():
+        with open(newpath + key + "/isoform.fasta", "w") as fasta:
+            for entry in library_dict[key]:
+                fasta.write("> " + entry[0] + " " + key + " Ensembl Assembly " + str(ENSEMBL_ASSMBLY) + "\n" + entry[1])
+                fasta.write("\n")
+
     print(count, "protein sequences assembled.")
     print("Library assembly complete.")
 
 if __name__ == "__main__":
     main()
+    
+#     import requests, sys
+ 
+# server = "https://rest.ensembl.org"
+# ext = "/xrefs/symbol/homo_sapiens/BRCA2?external_db=HGNC"
+ 
+# r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
+ 
+# if not r.ok:
+#   r.raise_for_status()
+#   sys.exit()
+ 
+# decoded = r.json()
+# print(repr(decoded))
