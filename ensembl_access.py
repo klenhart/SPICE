@@ -7,63 +7,17 @@ __author__ = "Christian Bluemel"
 from Bio.Seq import Seq
 
 import requests
-import pyensembl
 import argparse
 import os
 import subprocess
+from all_protein_coding_gene_ID import load_ensembl_assembly
 
 #Test command line:
 # python ensembl_access.py -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -c /share/project/zarnack/chrisbl/FAS/utility/ensembl_cache
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
-
-
 ENSEMBL_ASSMBLY = 106
-
-def load_ensembl_assembly(cache_dir, release_num):    
-    os.environ['PYENSEMBL_CACHE_DIR'] = cache_dir
-
-    ENSEMBL = pyensembl.EnsemblRelease(release=release_num)
-    return ENSEMBL
-    
-def assemble_ensembl_ids(ensembl):
-    """
-    
-    
-    Returns
-    ------
-
-"""
-        
-    print("Gathering protein coding genes...")
-    # Get all gene_ids of protein coding genes.
-    protein_coding_gene_ids = [gene.id for gene in ensembl.genes() if gene.biotype == "protein_coding"]
-    
-    print("Gathering transcripts...")
-    # Get all sets of transcript_ids of protein coding genes.
-    transcript_ids_list = [ [gene_id, ensembl.transcript_ids_of_gene_id(gene_id)] for gene_id in protein_coding_gene_ids]
-
-    print("Filtering all transcripts that are not protein coding...")
-    # Remove all transcript IDs that belong to non-protein coding transcripts 
-    # and assemble them in pairs with the gene_id
-    transcript_list = list()
-    transcript_dict = dict()
-    for gene_id, transcript_ids in transcript_ids_list:
-        transcript_dict[gene_id] = list()
-        transcripts = [ensembl.transcript_by_id(transcript_id) for transcript_id in transcript_ids]
-        for transcript in transcripts:
-            if transcript.biotype == "protein_coding":
-                transcript_dict[gene_id].append([transcript.transcript_id])
-                transcript_list.append(transcript.transcript_id)
-    
-    print("Sorting transcripts...")
-    # Sort by 1. gene_id 2. transcript id
-    transcript_list = sorted(transcript_list)
-    for key in transcript_dict.keys():
-        transcript_dict[key] = sorted(transcript_dict[key])
-
-    return transcript_dict, transcript_list, protein_coding_gene_ids
 
 
 def assemble_protein_seqs(transcript_dict):
@@ -176,10 +130,8 @@ def main():
         subprocess.run(["export", "PYENSEMBL_CACHE_DIR=" + CACHE_DIR])
         subprocess.run(["pyensembl", "install", "--release 106", "--species human"])
         
-    ENSEMBL = load_ensembl_assembly(CACHE_DIR, ENSEMBL_ASSMBLY)
-    
-    transcript_dict, transcript_id_list, gene_id_list = assemble_ensembl_ids(ENSEMBL)
-    
+    transcript_dict, transcript_id_list, gene_id_list = load_ensembl_assembly(CACHE_DIR,
+                                                                              ENSEMBL_ASSMBLY)    
     library_dict = assemble_protein_seqs(transcript_dict)
     
     #fasta_entries = [">" + entry[0] + " " + entry[1] + "Ensembl Assemlby" + str(ENSEMBL_ASSMBLY)  + "\n" + entry[2] for entry in library]
