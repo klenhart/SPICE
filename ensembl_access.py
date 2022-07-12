@@ -17,17 +17,7 @@ import subprocess
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
-#some test genes
-# TEST = ['ENSG00000197580',
-#         'ENSG00000133884',
-#         'ENSG00000184313',
-#         'ENSG00000122707',
-#         'ENSG00000183696',
-#         'ENSG00000133794',
-#         'ENSG00000168137',
-#         'ENSG00000198467',
-#         'ENSG00000167460',
-#         'ENSG00000164093']
+
 
 ENSEMBL_ASSMBLY = 106
 
