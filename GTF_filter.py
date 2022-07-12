@@ -90,7 +90,9 @@ def extract_gtf_paths(path):
 
 def filter_gtf_files(gtf_directory_paths, gtf_filenames, transcript_list):
     stable_filter_id_vector = [transcript_id.split(".")[0] for transcript_id in transcript_list]
+    print("Check1")
     print(stable_filter_id_vector[0:10])
+    print("Check2")
     for i, path in enumerate(gtf_directory_paths):
         gtf = pr.read_gtf(path + gtf_filenames[i])
         gtf_df = gtf.df
@@ -102,11 +104,11 @@ def filter_gtf_files(gtf_directory_paths, gtf_filenames, transcript_list):
 
 def main():
     gtf_paths_path, transcripts_path = parser_setup()
-    
+    print
     transcript_list = extract_transcripts(transcripts_path)
-    
+
     gtf_filenames, gtf_directory_paths = extract_gtf_paths(gtf_paths_path)
-    
+
     filter_gtf_files(gtf_directory_paths, gtf_filenames, transcript_list)
     
 

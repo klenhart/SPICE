@@ -4,13 +4,14 @@ __author__ = "Christian Bluemel"
 
 """
 
-from Bio.Seq import Seq
-
 import requests
 import argparse
 import os
 import subprocess
 from all_protein_coding_gene_ID import load_ensembl_assembly
+
+
+
 
 #Test command line:
 # python ensembl_access.py -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -c /share/project/zarnack/chrisbl/FAS/utility/ensembl_cache
@@ -19,6 +20,37 @@ from all_protein_coding_gene_ID import load_ensembl_assembly
 
 ENSEMBL_ASSMBLY = 106
 
+CODON_TABLE = {
+        'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
+        'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
+        'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K',
+        'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R',                 
+        'CTA':'L', 'CTC':'L', 'CTG':'L', 'CTT':'L',
+        'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P',
+        'CAC':'H', 'CAT':'H', 'CAA':'Q', 'CAG':'Q',
+        'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGT':'R',
+        'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V',
+        'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCT':'A',
+        'GAC':'D', 'GAT':'D', 'GAA':'E', 'GAG':'E',
+        'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G',
+        'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S',
+        'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
+        'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_',
+        'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W'}
+
+def make_json_application(id_list):
+    application = '{ "ids" : ['
+    for entry in id_list:
+        application += '"' + entry + '", '
+    application = application[:-2]
+    application += " ] }"
+    return application
+
+
+def translate_dna_seqs(gene, seq):
+    if len(seq) mod 3 != 0:
+        print(gene, "Sequence hs length that is no multiple of 3. Aborting")
+        
 
 def assemble_protein_seqs(transcript_dict):
     """
@@ -50,8 +82,8 @@ def assemble_protein_seqs(transcript_dict):
             }
     """
     url_prefix = "https://rest.ensembl.org/sequence/id/"
-    url_suffix = "?object_type=transcript;type=cds;species=human"
-    headers = { "Content-Type" : "text/plain"}
+    url_suffix = "?object_type=transcript;type=protein;species=human;"
+    headers = { "Content-Type" : "application/json"}
     
     print("Retrieving transcript sequences and translating them to protein sequences...")
     for key in transcript_dict.keys():
@@ -62,19 +94,13 @@ def assemble_protein_seqs(transcript_dict):
             while not sequence_retrieved:
                 attempt_count += 1
                 r = requests.get(url_prefix + transcript_id + url_suffix, headers=headers)
-                if r.text[0] != "<":
+                if r.ok:
                     sequence_retrieved = True
+                    seq = r.json()["seq"]
+                    transcript_dict[key][i].append(seq)
                 if attempt_count > 30:
-                    print("Could not retrieve sequence",
-                          transcript_id,
-                          "of gene", key,  "after 30 attempts. Aborting...")
-                    print("Brace for TranslationError!")
-                    sequence_retrieved = True
-            seq = Seq(r.text)
-            seq = seq.translate()
-            if seq[-1] == "*":
-                seq = seq[0:-1]
-            transcript_dict[key][i].append(str(seq))
+                    r.raise_for_status()
+                    sys.exit()
     return transcript_dict
 
     

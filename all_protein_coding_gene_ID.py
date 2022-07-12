@@ -28,7 +28,7 @@ def load_ensembl_assembly(cache_dir, release_num):
     ENSEMBL = pyensembl.EnsemblRelease(release=release_num)
     
     print("Gathering protein coding genes...")
-    protein_coding_gene_ids = [gene.id for gene in ENSEMBL.genes() if gene.biotype == "protein_coding"]
+    protein_coding_gene_ids = [gene.id for gene in ENSEMBL.genes() if gene.biotype == "protein_coding"][0:3]
     
     print("Gathering transcripts...")
     # Get all sets of transcript_ids of protein coding genes.
