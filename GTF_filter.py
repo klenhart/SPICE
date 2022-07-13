@@ -13,7 +13,7 @@ import pyranges as pr
 
 #/share/project/zarnack/chrisbl/FAS/utility/protein_lib/library/transcript_ids.txt
 
-# python GTF_filter.py -t test_file.txt -g test_file.txt
+# python GTF_filter.py -t /home/chrisbl/project/FAS_Pipe/transcript_ids_test.txt -g /home/chrisbl/project/FAS_Pipe/gtf_paths_test.txt
 def parser_setup():
     """
     
@@ -97,14 +97,14 @@ def filter_gtf_files(gtf_directory_paths, gtf_filenames, transcript_list):
         gtf = pr.read_gtf(path + gtf_filenames[i])
         gtf_df = gtf.df
         id_column = [transcript_id.split(".")[0] for transcript_id in gtf_df["transcript_id"]]
-        inclusion_vector = [transcript_id in stable_filter_id_vector for transcript_id in id_column[:100]]
-        print(inclusion_vector)
+        inclusion_vector = [transcript_id in stable_filter_id_vector for transcript_id in id_column]
+        print(any(inclusion_vector))
         break
         
 
 def main():
     gtf_paths_path, transcripts_path = parser_setup()
-    print
+    
     transcript_list = extract_transcripts(transcripts_path)
 
     gtf_filenames, gtf_directory_paths = extract_gtf_paths(gtf_paths_path)

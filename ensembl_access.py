@@ -8,8 +8,7 @@ import requests
 import argparse
 import os
 import sys
-import subprocess
-from all_protein_coding_gene_ID import load_ensembl_assembly
+from all_protein_coding_gene_ID import extract_protein_coding_ids
 
 
 
@@ -19,7 +18,7 @@ from all_protein_coding_gene_ID import load_ensembl_assembly
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
-ENSEMBL_ASSMBLY = 106
+ENSEMBL_ASSMBLY = 107
 
 def assemble_protein_seqs(transcript_dict):
     """
@@ -68,6 +67,7 @@ def assemble_protein_seqs(transcript_dict):
                     seq = r.json()["seq"]
                     transcript_dict[key][i].append(seq)
                 if attempt_count > 30:
+                    print("Did not find sequence.")
                     r.raise_for_status()
                     sys.exit()
     return transcript_dict
@@ -84,23 +84,19 @@ def parser_setup():
     """
     #Setting up parser:
     parser = argparse.ArgumentParser()
-    
-    parser.add_argument("-s", "--setup", action="store_true",
-                        help="If the ensembl human assembly needs to be downloaded beforehand.")
-    
-    parser.add_argument("-c", "--cache", type=str,
-                        help="specify location ensembl was cached in.")
+        
+    parser.add_argument("-g", "--ensemblgtf", type=str,
+                        help="specify the path of the ensembl human genome gtf.")
     
     parser.add_argument("-o", "--output", type=str,
                         help="specify output folder.")
 
     args = parser.parse_args()
     
-    cache = args.cache
+    path = args.ensemblgtf
     output = args.output
-    install_pyensembl = args.setup
     
-    return output, cache, install_pyensembl
+    return output, path
 
 def main():
     """
@@ -119,14 +115,9 @@ def main():
         .
         ...etc...
     """
-    OUTPUT_DIR, CACHE_DIR, install_pyensembl = parser_setup()
-    
-    if install_pyensembl:
-        subprocess.run(["export", "PYENSEMBL_CACHE_DIR=" + CACHE_DIR])
-        subprocess.run(["pyensembl", "install", "--release 106", "--species human"])
+    OUTPUT_DIR, ensembl_path, install_pyensembl = parser_setup()
         
-    transcript_dict, transcript_id_list, gene_id_list = load_ensembl_assembly(CACHE_DIR,
-                                                                              ENSEMBL_ASSMBLY)    
+    transcript_dict, transcript_id_list, gene_id_list = extract_protein_coding_ids(ensembl_path)    
     library_dict = assemble_protein_seqs(transcript_dict)
     
     print("Generating subfolders in /library/[gene_id]...")
