@@ -14,7 +14,7 @@ from all_protein_coding_gene_ID import extract_protein_coding_ids
 
 
 #Test command line:
-# python ensembl_access.py -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -c /share/project/zarnack/chrisbl/FAS/utility/ensembl_cache
+# python ensembl_access.py -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -g /share/project/zarnack/chrisbl/FAS/utility/protein_lib/Homo_sapiens.GRCh38.107.gtf
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
@@ -115,7 +115,7 @@ def main():
         .
         ...etc...
     """
-    OUTPUT_DIR, ensembl_path, install_pyensembl = parser_setup()
+    OUTPUT_DIR, ensembl_path = parser_setup()
         
     transcript_dict, transcript_id_list, gene_id_list = extract_protein_coding_ids(ensembl_path)    
     library_dict = assemble_protein_seqs(transcript_dict)
