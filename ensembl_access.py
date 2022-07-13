@@ -7,6 +7,7 @@ __author__ = "Christian Bluemel"
 import requests
 import argparse
 import os
+import sys
 import subprocess
 from all_protein_coding_gene_ID import load_ensembl_assembly
 
@@ -19,38 +20,6 @@ from all_protein_coding_gene_ID import load_ensembl_assembly
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
 ENSEMBL_ASSMBLY = 106
-
-CODON_TABLE = {
-        'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
-        'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
-        'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K',
-        'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R',                 
-        'CTA':'L', 'CTC':'L', 'CTG':'L', 'CTT':'L',
-        'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P',
-        'CAC':'H', 'CAT':'H', 'CAA':'Q', 'CAG':'Q',
-        'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGT':'R',
-        'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V',
-        'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCT':'A',
-        'GAC':'D', 'GAT':'D', 'GAA':'E', 'GAG':'E',
-        'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G',
-        'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S',
-        'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
-        'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_',
-        'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W'}
-
-def make_json_application(id_list):
-    application = '{ "ids" : ['
-    for entry in id_list:
-        application += '"' + entry + '", '
-    application = application[:-2]
-    application += " ] }"
-    return application
-
-
-def translate_dna_seqs(gene, seq):
-    if len(seq) mod 3 != 0:
-        print(gene, "Sequence hs length that is no multiple of 3. Aborting")
-        
 
 def assemble_protein_seqs(transcript_dict):
     """
@@ -160,8 +129,6 @@ def main():
                                                                               ENSEMBL_ASSMBLY)    
     library_dict = assemble_protein_seqs(transcript_dict)
     
-    #fasta_entries = [">" + entry[0] + " " + entry[1] + "Ensembl Assemlby" + str(ENSEMBL_ASSMBLY)  + "\n" + entry[2] for entry in library]
-    
     print("Generating subfolders in /library/[gene_id]...")
     newpath = OUTPUT_DIR + "/library/"
     if not os.path.exists(newpath):
@@ -191,17 +158,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
-#     import requests, sys
- 
-# server = "https://rest.ensembl.org"
-# ext = "/xrefs/symbol/homo_sapiens/BRCA2?external_db=HGNC"
- 
-# r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
- 
-# if not r.ok:
-#   r.raise_for_status()
-#   sys.exit()
- 
-# decoded = r.json()
-# print(repr(decoded))
