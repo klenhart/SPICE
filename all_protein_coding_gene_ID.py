@@ -25,7 +25,7 @@ def extract_protein_coding_ids(ensembl_path):
         transcript_dict[key] = []
         protein_coding_gene_ids.add(key)
     for key, transcript_id in protein_coding_ids:
-        transcript_dict[key].append([transcript_id])
+        transcript_dict[key].append(transcript_id)
         transcript_list.add(transcript_id)
     for key in transcript_dict.keys():
         transcript_dict[key] = set(transcript_dict[key])
