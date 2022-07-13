@@ -54,7 +54,7 @@ def assemble_protein_seqs(transcript_dict):
     url_suffix = "?object_type=transcript;type=protein;species=human;"
     headers = { "Content-Type" : "application/json"}
     
-    print("Retrieving transcript sequences and translating them to protein sequences...")
+    print("Retrieving protein sequences...")
     for key in transcript_dict.keys():
         for i, entry in enumerate(transcript_dict[key]):
             transcript_id = entry[0]
