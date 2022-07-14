@@ -12,12 +12,15 @@ import pyranges as pr
 
 def extract_protein_coding_ids(ensembl_path):
     
+    print("Loading local ensembl dataframe...")
     gtf = pr.read_gtf(ensembl_path, as_df=True)
+    print("Extracting IDs of protein coding transcripts...")
     protein_coding_ids = [ (gene_id, transcript_id) for gene_id,
                                      transcript_id,
                                      biotype in zip(gtf['gene_id'],
                                                     gtf['transcript_id'],
                                                     gtf['transcript_biotype']) if biotype == "protein_coding"]
+    print("Assembling IDs...")
     transcript_dict = dict()
     transcript_list = set()
     protein_coding_gene_ids = set()
@@ -27,10 +30,10 @@ def extract_protein_coding_ids(ensembl_path):
     for key, transcript_id in protein_coding_ids:
         transcript_dict[key].append(transcript_id)
         transcript_list.add(transcript_id)
+    print("Sorting IDs...")
     for key in transcript_dict.keys():
         transcript_dict[key] = set(transcript_dict[key])
         transcript_dict[key] = sorted(list(transcript_dict[key]))
-        transcript_dict[key] = [ [entry] for entry in transcript_dict[key]]
     protein_coding_gene_ids = sorted(list(protein_coding_gene_ids))
     transcript_list = list(transcript_list)
     

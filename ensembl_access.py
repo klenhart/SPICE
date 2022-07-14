@@ -9,6 +9,7 @@ import argparse
 import os
 import sys
 from all_protein_coding_gene_ID import extract_protein_coding_ids
+from check_library import check_for_transcript
 
 
 
@@ -20,7 +21,7 @@ from all_protein_coding_gene_ID import extract_protein_coding_ids
 
 ENSEMBL_ASSMBLY = 107
 
-def assemble_protein_seqs(transcript_dict):
+def assemble_protein_seqs(transcript_dict, library_path):
     """
 
     Parameters
@@ -49,30 +50,46 @@ def assemble_protein_seqs(transcript_dict):
             
             }
     """
+    not_found_path = library_path + "not_found.txt"
+    transcript_list_path = library_path + "transcript_list.txt"
+    with open(not_found_path, 'w') as fp:
+        pass
+    if not os.path.isfile(transcript_list_path): 
+        with open(transcript_list_path, 'w') as fp:
+            pass
+    
+    count_not_found = 0
+    count_found = 0
+    count_already = 0
+    
     url_prefix = "https://rest.ensembl.org/sequence/id/"
     url_suffix = "?object_type=transcript;type=protein;species=human;"
     headers = { "Content-Type" : "application/json"}
     
     print("Retrieving protein sequences...")
     for key in transcript_dict.keys():
-        for i, entry in enumerate(transcript_dict[key]):
-            transcript_id = entry[0]
-            sequence_retrieved = False
-            attempt_count = 0
-            while not sequence_retrieved:
-                attempt_count += 1
-                r = requests.get(url_prefix + transcript_id + url_suffix, headers=headers)
-                if r.ok:
-                    sequence_retrieved = True
-                    seq = r.json()["seq"]
-                    transcript_dict[key][i].append(seq)
-                if attempt_count > 30:
-                    print("Did not find sequence.")
-                    r.raise_for_status()
-                    sys.exit()
-    return transcript_dict
+        for i, transcript_id in enumerate(transcript_dict[key]):
+            flag_already_loaded = check_for_transcript(key, transcript_id, library_path)
+            if flag_already_loaded:
+                count_already += 1
+                continue
+            else:
+                for x in range(3):
+                    r = requests.get(url_prefix + transcript_id + url_suffix, headers=headers)
+                    if r.ok:
+                        count_found += 1
+                        seq = r.json()["seq"]
+                        with open(transcript_list_path, "a") as f:
+                            f.write(transcript_id + "\n")
+                        with open(library_path + key + "/isoform.fasta", "a") as fasta:
+                            fasta.write("> " + transcript_id + " " + key + " EnsemblAssembly 107\n" + seq + "\n")
+                        break
+                    elif x == 2:
+                        count_not_found += 1
+                        with open(not_found_path, "a") as f:
+                            f.write(key + " " + transcript_id + "\n")
+    return count_found, count_not_found, count_already
 
-    
 def parser_setup():
     """
     
@@ -118,33 +135,25 @@ def main():
     OUTPUT_DIR, ensembl_path = parser_setup()
         
     transcript_dict, transcript_id_list, gene_id_list = extract_protein_coding_ids(ensembl_path)    
-    library_dict = assemble_protein_seqs(transcript_dict)
     
     print("Generating subfolders in /library/[gene_id]...")
-    newpath = OUTPUT_DIR + "/library/"
-    if not os.path.exists(newpath):
-        os.makedirs(newpath)
+    library_path = OUTPUT_DIR + "/library/"
+    if not os.path.exists(library_path):
+        os.makedirs(library_path)
     for gene in gene_id_list:
-        gene_path = newpath + gene
+        gene_path = library_path + gene
         if not os.path.exists(gene_path):
             os.makedirs(gene_path)
+            file_path = gene_path + "/isoform.fasta"
+            with open(file_path, 'w') as fp:
+                pass
 
-    print("Saving transcript IDs in ", newpath)
-    count = 0
-    with open(newpath + "transcript_ids.txt", "w") as fasta:
-        for transcript_id in transcript_id_list:
-            fasta.write(transcript_id)
-            fasta.write("\n")
-            count += 1
-
-    print("Saving isoforms as fasta in", newpath + "[gene_id]/isoforms.fasta")
-    for key in library_dict.keys():
-        with open(newpath + key + "/isoform.fasta", "w") as fasta:
-            for entry in library_dict[key]:
-                fasta.write("> " + entry[0] + " " + key + " Ensembl Assembly " + str(ENSEMBL_ASSMBLY) + "\n" + entry[1])
-                fasta.write("\n")
-
-    print(count, "protein sequences assembled.")
+    count_found, count_not_found, count_already = assemble_protein_seqs(transcript_dict, library_path)    
+    print("Saved transcript IDs in ", library_path)
+    print("Saved isoforms as fasta in", library_path + "[gene_id]/isoforms.fasta")
+    print(count_found, "protein sequences integrated into library assembled.")
+    print(count_not_found, "protein sequences not found. IDs written into", library_path + "not_found.txt...")
+    print(count_already, "protein sequences already found in library and were not download again.")
     print("Library assembly complete.")
 
 if __name__ == "__main__":
