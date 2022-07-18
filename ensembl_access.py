@@ -61,6 +61,7 @@ def assemble_protein_seqs(transcript_dict, library_path):
     count_not_found = 0
     count_found = 0
     count_already = 0
+    count_genes = 0
     
     url_prefix = "https://rest.ensembl.org/sequence/id/"
     url_suffix = "?object_type=transcript;type=protein;species=human;"
@@ -68,6 +69,7 @@ def assemble_protein_seqs(transcript_dict, library_path):
     
     print("Retrieving protein sequences...")
     for key in transcript_dict.keys():
+        count_genes += 1
         for i, transcript_id in enumerate(transcript_dict[key]):
             flag_already_loaded = check_for_transcript(key, transcript_id, library_path)
             if flag_already_loaded:
@@ -88,7 +90,7 @@ def assemble_protein_seqs(transcript_dict, library_path):
                         count_not_found += 1
                         with open(not_found_path, "a") as f:
                             f.write(key + " " + transcript_id + "\n")
-    return count_found, count_not_found, count_already
+    return count_found, count_not_found, count_already, count_genes
 
 def parser_setup():
     """
@@ -148,9 +150,11 @@ def main():
             with open(file_path, 'w') as fp:
                 pass
 
-    count_found, count_not_found, count_already = assemble_protein_seqs(transcript_dict, library_path)    
+    count_found, count_not_found, count_already, count_genes = assemble_protein_seqs(transcript_dict,
+                                                                                     library_path)    
     print("Saved transcript IDs in ", library_path)
     print("Saved isoforms as fasta in", library_path + "[gene_id]/isoforms.fasta")
+    print(count_genes, "protein coding genes processed...")
     print(count_found, "protein sequences integrated into library assembled.")
     print(count_not_found, "protein sequences not found. IDs written into", library_path + "not_found.txt...")
     print(count_already, "protein sequences already found in library and were not download again.")
