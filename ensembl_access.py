@@ -111,7 +111,7 @@ def parser_setup():
     parser.add_argument("-a", "--assembly", type=int,
                         help="Specifiy the used assembly number.")
     
-    parser.add_argument("-s, --species", type=str,
+    parser.add_argument("-s", "--species", type=str,
                         help="Specify the species.")
     
     parser.add_argument("-l", "--local", action="store_true",
