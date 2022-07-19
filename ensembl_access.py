@@ -6,25 +6,20 @@ __author__ = "Christian Bluemel"
 
 import requests
 import argparse
-import os
-import sys
 from ntree import generate_folder_tree
 from ntree import append_to_leaf
 from ntree import make_rootpath
-from ntree import make_filepath
 from all_protein_coding_gene_ID import extract_protein_coding_ids
 from check_library import check_for_transcript
-
-
-
+from install_local_ensembl import install_local_ensembl
+from install_local_ensembl import get_species_info
 
 
 #Test command line:
-# python ensembl_access.py -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -g /share/project/zarnack/chrisbl/FAS/utility/protein_lib/Homo_sapiens.GRCh38.107.gtf
+# python ensembl_access.py -s human -a 107 -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -g /share/project/zarnack/chrisbl/FAS/utility/protein_lib/Homo_sapiens.GRCh38.107.gtf
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
-ENSEMBL_ASSMBLY = 107
 
 def assemble_protein_seqs(transcript_dict, assembly_num, species, library_path):
     """
@@ -102,26 +97,40 @@ def parser_setup():
     -------
     Output an Cache folders for the run.
 
-    """
-    # STANDINS
-    assembly_num = 107
-    species = "human"    
+    """  
     
     #Setting up parser:
     parser = argparse.ArgumentParser()
         
     parser.add_argument("-g", "--ensemblgtf", type=str,
-                        help="specify the path of the ensembl human genome gtf.")
+                        help="Specify the path of the local ensembl gtf.")
     
     parser.add_argument("-o", "--output", type=str,
-                        help="specify output folder.")
+                        help="Specify location of the library. FAS_library folder can already exist in this folder.")
+    
+    parser.add_argument("-a", "--assembly", type=int,
+                        help="Specifiy the used assembly number.")
+    
+    parser.add_argument("-s, --species", type=str,
+                        help="Specify the species.")
+    
+    parser.add_argument("-l", "--local", action="store_true",
+                        help="Download and unpack a local ensembl assembly into the folder defined in --output.")
+    
+    parser.add_argument("-h", "--healthcheck", action='store_true', #todo
+                        help="""Checks several parameters of the general state of the library
+                        but also the library specified in via the species and assembly arguments.""")
 
     args = parser.parse_args()
     
     path = args.ensemblgtf
     output = args.output
-    
-    return output, path, species, assembly_num
+    assembly_num = args.assembly
+    species = args.species
+    flag_install_local = args.local
+    flag_healthcheck = args.healthcheck
+
+    return output, path, species, assembly_num, flag_install_local, flag_healthcheck
 
 def main():
     """
@@ -140,23 +149,31 @@ def main():
         .
         ...etc...
     """
-    OUTPUT_DIR, ensembl_path, species, assembly_num = parser_setup()
+    OUTPUT_DIR, ensembl_path, species, assembly_num, flag_install_local, flag_healthcheck = parser_setup()  
+    
+    if flag_install_local:
+         install_local_ensembl(species, assembly_num, OUTPUT_DIR)
+    
+    elif flag_healthcheck:
+        pass
+    else:
+        species = get_species_info(species)
+        transcript_dict, transcript_id_list, gene_id_list = extract_protein_coding_ids(ensembl_path)
         
-    transcript_dict, transcript_id_list, gene_id_list = extract_protein_coding_ids(ensembl_path)
-    
-    library_path = OUTPUT_DIR + "/FAS_library/"
-    
-    print("Generating folder tree in", library_path + "...")
-    generate_folder_tree(library_path, species, assembly_num, gene_id_list)
-    count_found, count_not_found, count_already, count_genes = assemble_protein_seqs(transcript_dict,
-                                                                                     library_path)    
-    print("Saved transcript IDs in ", library_path)
-    print("Saved isoforms as fasta in", library_path + "[gene_id]/isoforms.fasta")
-    print(count_genes, "protein coding genes processed...")
-    print(count_found, "protein sequences integrated into library assembled.")
-    print(count_not_found, "protein sequences not found. IDs written into", library_path + "not_found.txt...")
-    print(count_already, "protein sequences already found in library and were not download again.")
-    print("Library assembly complete.")
+        library_path = OUTPUT_DIR + "/FAS_library/"
+        
+        root_path = make_rootpath(library_path, species, assembly_num) 
+        
+        print("Generating folder tree in", root_path + "...")
+        generate_folder_tree(library_path, species, assembly_num, gene_id_list)
+        count_found, count_not_found, count_already, count_genes = assemble_protein_seqs(transcript_dict,
+                                                                                         library_path)    
+        print("Saved isoforms as fasta in", root_path + "[gene_id[-8:-6]]/[gene_id[-6:-4]]/[gene_id[-4:-2]]/[gene_id[-2:]]/isoforms.fasta")
+        print(count_genes, "protein coding genes processed...")
+        print(count_found, "protein sequences integrated into library assembled.")
+        print(count_not_found, "protein sequences not found. IDs written into", root_path + "not_found.txt...")
+        print(count_already, "protein sequences already found in library and were not download again.")
+        print("Library assembly complete.")
 
 if __name__ == "__main__":
     main()

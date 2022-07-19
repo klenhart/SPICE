@@ -8,8 +8,8 @@ Created on Mon Jul 18 14:37:31 2022
 
 import os
 
-def make_rootpath(library_path, species, assembly_num):
-    return library_path + species + "/assembly" + str(assembly_num) + "_ENSG000/"
+def make_rootpath(library_path, species, assembly_num, gene_id):
+    return library_path + species + "/assembly" + str(assembly_num) + "_GeneId000/"
 
 def make_filepath(library_path, species, assembly_num, gene_id):
     rootpath = make_rootpath(library_path, species, assembly_num)
@@ -47,7 +47,7 @@ def generate_folder_tree(library_path, species, assembly_num, gene_id_list):
     if not os.path.exists(species_path):
         os.makedirs(species_path)
         
-    assembly_path = species_path + "assembly" + str(assembly_num) + "_ENSG000/"
+    assembly_path = species_path + "assembly" + str(assembly_num) + "_GeneId000/"
     if not os.path.exists(assembly_path):
         os.makedirs(assembly_path)
     
