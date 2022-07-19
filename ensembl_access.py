@@ -169,8 +169,7 @@ def main():
         
         print("Generating folder tree in", root_path + "...")
         generate_folder_tree(library_path, species, assembly_num, gene_id_list)
-        count_found, count_not_found, count_already, count_genes = assemble_protein_seqs(transcript_dict,
-                                                                                         library_path)    
+        count_found, count_not_found, count_already, count_genes = assemble_protein_seqs(transcript_dict, assembly_num, species, library_path)
         print("Saved isoforms as fasta in", root_path + "[gene_id[-8:-6]]/[gene_id[-6:-4]]/[gene_id[-4:-2]]/[gene_id[-2:]]/isoforms.fasta")
         print(count_genes, "protein coding genes processed...")
         print(count_found, "protein sequences integrated into library assembled.")
