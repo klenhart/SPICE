@@ -152,11 +152,14 @@ def main():
     OUTPUT_DIR, ensembl_path, species, assembly_num, flag_install_local, flag_healthcheck = parser_setup()  
     
     if flag_install_local:
-         install_local_ensembl(species, assembly_num, OUTPUT_DIR)
+        print("Local ensembl installation commencing...")
+        install_local_ensembl(species, assembly_num, OUTPUT_DIR)
     
     elif flag_healthcheck:
+        print("Library healthcheck commencing...")
         pass
     else:
+        print("Library generation commencing...")
         species = get_species_info(species)
         transcript_dict, transcript_id_list, gene_id_list = extract_protein_coding_ids(ensembl_path)
         
