@@ -8,8 +8,13 @@ import requests
 import argparse
 import os
 import sys
+from ntree import generate_folder_tree
+from ntree import append_to_leaf
+from ntree import make_rootpath
+from ntree import make_filepath
 from all_protein_coding_gene_ID import extract_protein_coding_ids
 from check_library import check_for_transcript
+
 
 
 
@@ -21,7 +26,7 @@ from check_library import check_for_transcript
 
 ENSEMBL_ASSMBLY = 107
 
-def assemble_protein_seqs(transcript_dict, library_path):
+def assemble_protein_seqs(transcript_dict, assembly_num, species, library_path):
     """
 
     Parameters
@@ -50,13 +55,12 @@ def assemble_protein_seqs(transcript_dict, library_path):
             
             }
     """
-    not_found_path = library_path + "not_found.txt"
-    transcript_list_path = library_path + "transcript_list.txt"
+    
+    root_path = make_rootpath(library_path, species, assembly_num) 
+    
+    not_found_path = root_path + "not_found.txt"
     with open(not_found_path, 'w') as fp:
         pass
-    if not os.path.isfile(transcript_list_path): 
-        with open(transcript_list_path, 'w') as fp:
-            pass
     
     count_not_found = 0
     count_found = 0
@@ -64,14 +68,14 @@ def assemble_protein_seqs(transcript_dict, library_path):
     count_genes = 0
     
     url_prefix = "https://rest.ensembl.org/sequence/id/"
-    url_suffix = "?object_type=transcript;type=protein;species=human;"
+    url_suffix = "?object_type=transcript;type=protein;species=" + species + ";"
     headers = { "Content-Type" : "application/json"}
     
     print("Retrieving protein sequences...")
     for key in transcript_dict.keys():
         count_genes += 1
         for i, transcript_id in enumerate(transcript_dict[key]):
-            flag_already_loaded = check_for_transcript(key, transcript_id, library_path)
+            flag_already_loaded = check_for_transcript(key, transcript_id, root_path)
             if flag_already_loaded:
                 count_already += 1
                 continue
@@ -81,15 +85,13 @@ def assemble_protein_seqs(transcript_dict, library_path):
                     if r.ok:
                         count_found += 1
                         seq = r.json()["seq"]
-                        with open(transcript_list_path, "a") as f:
-                            f.write(transcript_id + "\n")
-                        with open(library_path + key + "/isoform.fasta", "a") as fasta:
-                            fasta.write("> " + transcript_id + " " + key + " EnsemblAssembly 107\n" + seq + "\n")
+                        data = ">" + key + "|" + transcript_id + "|species:" + species + "|assembly:" + str(assembly_num) + "\n" + seq + "\n"
+                        append_to_leaf(library_path, assembly_num, key, species, data)
                         break
                     elif x == 2:
                         count_not_found += 1
                         with open(not_found_path, "a") as f:
-                            f.write(key + " " + transcript_id + "\n")
+                            f.write(key + "|" + transcript_id + "\n")
     return count_found, count_not_found, count_already, count_genes
 
 def parser_setup():
@@ -101,6 +103,10 @@ def parser_setup():
     Output an Cache folders for the run.
 
     """
+    # STANDINS
+    assembly_num = 107
+    species = "human"    
+    
     #Setting up parser:
     parser = argparse.ArgumentParser()
         
@@ -115,7 +121,7 @@ def parser_setup():
     path = args.ensemblgtf
     output = args.output
     
-    return output, path
+    return output, path, species, assembly_num
 
 def main():
     """
@@ -134,22 +140,14 @@ def main():
         .
         ...etc...
     """
-    OUTPUT_DIR, ensembl_path = parser_setup()
+    OUTPUT_DIR, ensembl_path, species, assembly_num = parser_setup()
         
-    transcript_dict, transcript_id_list, gene_id_list = extract_protein_coding_ids(ensembl_path)    
+    transcript_dict, transcript_id_list, gene_id_list = extract_protein_coding_ids(ensembl_path)
     
-    print("Generating subfolders in /library/[gene_id]...")
-    library_path = OUTPUT_DIR + "/library/"
-    if not os.path.exists(library_path):
-        os.makedirs(library_path)
-    for gene in gene_id_list:
-        gene_path = library_path + gene
-        if not os.path.exists(gene_path):
-            os.makedirs(gene_path)
-            file_path = gene_path + "/isoform.fasta"
-            with open(file_path, 'w') as fp:
-                pass
-
+    library_path = OUTPUT_DIR + "/FAS_library/"
+    
+    print("Generating folder tree in", library_path + "...")
+    generate_folder_tree(library_path, species, assembly_num, gene_id_list)
     count_found, count_not_found, count_already, count_genes = assemble_protein_seqs(transcript_dict,
                                                                                      library_path)    
     print("Saved transcript IDs in ", library_path)

@@ -9,11 +9,11 @@ Created on Thu Jul 14 13:23:30 2022
 def extract_transcripts_from_fasta_header(path):
     with open(path, "r") as fasta:
         lines = fasta.readlines()[::2]
-    lines = [line.split(" ")[1] for line in lines]
+    lines = [line.split("|")[1] for line in lines]
     return lines
 
-def check_for_transcript(gene_id, transcript_id, library_path):
-    path = library_path + "/" + gene_id + "/isoform.fasta"
+def check_for_transcript(gene_id, transcript_id, root_path):
+    path = root_path  + gene_id[-8:-6] + "/" + gene_id[-6:-4] + "/" + gene_id[-4:-2] + "/" + gene_id[-2:] + "/isoform.fasta"
     flag = transcript_id in extract_transcripts_from_fasta_header(path)
     return flag
 
