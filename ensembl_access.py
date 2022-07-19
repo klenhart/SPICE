@@ -117,7 +117,7 @@ def parser_setup():
     parser.add_argument("-l", "--local", action="store_true",
                         help="Download and unpack a local ensembl assembly into the folder defined in --output.")
     
-    parser.add_argument("-h", "--healthcheck", action='store_true', #todo
+    parser.add_argument("-k", "--healthcheck", action='store_true', #todo
                         help="""Checks several parameters of the general state of the library
                         but also the library specified in via the species and assembly arguments.""")
 
