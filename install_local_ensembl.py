@@ -91,12 +91,28 @@ def get_species_info(species):
                 name = decoded["name"]
         return name
 
+def get_release():
+        print("Checking release number...")
+        server = "https://rest.ensembl.org"
+        ext = "/info/data/?"
+ 
+        for x in range(3):
+            r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
 
-def install_local_ensembl(species, assembly_num, library_path):
+            if not r.ok and x < 2:
+                continue
+            elif x > 2:
+                print("Could not current release number...")
+                r.raise_for_status()
+                sys.exit()
+            else:
+                release_num = max(r.json()["releases"])
+        return release_num
+
+def install_local_ensembl(species, library_path):
         if not os.path.exists(library_path):
             os.makedirs(library_path)
     
-        assembly_num = str(assembly_num)
         ftp_prefix = "http://ftp.ensembl.org/pub/release-"
         ftp_suffix = ".gtf.gz"
 
@@ -141,32 +157,12 @@ def install_local_ensembl(species, assembly_num, library_path):
         ftp_infix = "/gtf/" + url_infix_species+ "/"
         ###########
         ### Getting current release NUM
-
-        print("Checking release number...")
-        ext = "/info/data/?"
- 
-        for x in range(3):
-            r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
-
-            if not r.ok and x < 2:
-                continue
-            elif x > 2:
-                print("Could not current release number of " + species + "...")
-                r.raise_for_status()
-                sys.exit()
-            else:
-                release_num = max(r.json()["releases"])
-                if release_num > int(assembly_num):
-                    print("You have requested to install release number ", 
-                          str(assembly_num),
-                          "but the most current release number is ",
-                          release_num + ".")
-                    print("The outdated release will be downloaded anyway.")
+        release_num = get_release()    
+        print("The current release is", release_num + "...")
         
-
         ### Assemble FTP address according to standard /release-{release_num}/{species}.{assembly_name}.{assembly_num}.gtf.gz
-        file_name = url_species + "." + assembly_name + "." + assembly_num + ftp_suffix 
-        ftp_address = ftp_prefix + assembly_num + ftp_infix + file_name 
+        file_name = url_species + "." + assembly_name + "." + release_num + ftp_suffix 
+        ftp_address = ftp_prefix + release_num + ftp_infix + file_name 
         file_output_path = library_path + "/" + file_name
         print("Downloading", ftp_address, "to", file_output_path + "...")
         with closing(request.urlopen(ftp_address)) as r:

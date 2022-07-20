@@ -9,13 +9,11 @@ import requests
 import argparse
 import sys
 
-from ntree import append_to_leaf
 from ntree import make_rootpath
 
 from all_protein_coding_gene_ID import extract_protein_coding_ids
 
-from check_library import check_for_transcript
-
+from install_local_ensembl import get_release
 from install_local_ensembl import install_local_ensembl
 from install_local_ensembl import get_species_info
 from install_local_ensembl import make_local_ensembl_name
@@ -113,10 +111,7 @@ def parser_setup():
                         If creating the library, this folder should contain the local ensembl assembly. If it does not,
                         you can download the local ensembl assembly using the -l (--local) argument. It will then be automatically
                         download into the FAS_library folder within the folder given in this argument.""")
-    
-    parser.add_argument("-a", "--assembly", type=int,
-                        help="Specifiy the used assembly number.")
-    
+
     parser.add_argument("-s", "--species", type=str,
                         help="Specify the species.")
     
@@ -130,12 +125,11 @@ def parser_setup():
     args = parser.parse_args()
 
     output = args.output
-    assembly_num = args.assembly
     species = args.species
     flag_install_local = args.local
     flag_healthcheck = args.healthcheck
 
-    return output, species, assembly_num, flag_install_local, flag_healthcheck
+    return output, species, flag_install_local, flag_healthcheck
 
 def main():
     """
@@ -156,26 +150,27 @@ def main():
     """
     OUTPUT_DIR, species, assembly_num, flag_install_local, flag_healthcheck = parser_setup()  
     library_path = OUTPUT_DIR + "/FAS_library/"
-    ensembl_path = make_local_ensembl_name(library_path, assembly_num, species, ".gtf")
+    release_num = get_release()
+    ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf")
     species = get_species_info(species)
-    
+  
     if flag_install_local:
         print("Local ensembl installation commencing...")
-        install_local_ensembl(species, assembly_num, library_path)
+        install_local_ensembl(species, release_num, library_path)
     
     elif flag_healthcheck:
         print("Library healthcheck commencing...")
-        healthcheck(library_path, ensembl_path, species, assembly_num)
+        healthcheck(library_path, ensembl_path, species, release_num)
     else:
         print("Library generation commencing...")
         if not os.path.isfile(ensembl_path):
-            print(ensembl_path, "does not exist. You can download it by using the -l argument additional to your currently used arguments.")
+            print(ensembl_path, "does not exist. Maybe you have an old release of the local ensembl GTF. You can download a current one for your species by using the -l argument additional to your currently used arguments.")
             sys.exit()
         transcript_dict, transcript_id_list, gene_id_list = extract_protein_coding_ids(ensembl_path)
         if not os.path.exists(library_path):
             os.makedirs(library_path)
-        root_path = make_rootpath(library_path, species, assembly_num) 
-        count_found, count_not_found, count_genes = assemble_protein_seqs(transcript_dict, assembly_num, species, library_path, root_path)
+        root_path = make_rootpath(library_path, species, release_num) 
+        count_found, count_not_found, count_genes = assemble_protein_seqs(transcript_dict, release_num, species, library_path, root_path)
         print("Saved isoforms as fasta in", root_path + "/isoforms.fasta")
         print(count_genes, "protein coding genes processed...")
         print(count_found, "protein sequences integrated into library assembled.")
