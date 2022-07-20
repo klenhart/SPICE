@@ -9,7 +9,7 @@ Created on Mon Jul 18 14:37:31 2022
 import os
 
 def make_rootpath(library_path, species, assembly_num):
-    return library_path + species + "/assembly" + str(assembly_num) + "_GeneId000/"
+    return library_path + species + "/release-" + str(assembly_num) + "/"
 
 def make_filepath(library_path, species, assembly_num, gene_id):
     rootpath = make_rootpath(library_path, species, assembly_num)
