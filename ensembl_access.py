@@ -112,7 +112,7 @@ def parser_setup():
                         you can download the local ensembl assembly using the -l (--local) argument. It will then be automatically
                         download into the FAS_library folder within the folder given in this argument.""")
 
-    parser.add_argument("-s", "--species", type=str,
+    parser.add_argument("-s", "--species", type=str, default=None,
                         help="Specify the species.")
     
     parser.add_argument("-l", "--local", action="store_true",
@@ -152,7 +152,8 @@ def main():
     library_path = OUTPUT_DIR + "/FAS_library/"
     release_num = get_release()
     ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf")
-    species = get_species_info(species)
+    if not flag_healthcheck:
+        species = get_species_info(species)
   
     if flag_install_local:
         print("Local ensembl installation commencing...")
@@ -160,7 +161,7 @@ def main():
     
     elif flag_healthcheck:
         print("Library healthcheck commencing...")
-        healthcheck(library_path, ensembl_path, species, release_num)
+        healthcheck(library_path, species, release_num)
     else:
         print("Library generation commencing...")
         if not os.path.isfile(ensembl_path):
