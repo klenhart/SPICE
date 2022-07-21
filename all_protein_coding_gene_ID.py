@@ -40,7 +40,7 @@ def extract_protein_coding_ids(ensembl_path):
     return transcript_dict, transcript_list, protein_coding_gene_ids
     
 def main():
-    transcript_dict, transcript_list, protein_coding_gene_ids = extract_protein_coding_ids("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/Homo_sapiens.GRCh38.107.gtf")
+    transcript_dict, transcript_list, protein_coding_gene_ids = extract_protein_coding_ids("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/Homo_sapiens.GRCh38.107.gtf")
     print(transcript_list[0:20])
     count = 0
     flag = False

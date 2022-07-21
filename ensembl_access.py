@@ -74,8 +74,8 @@ def assemble_protein_seqs(transcript_dict, assembly_num, species, library_path, 
     url_suffix = "?object_type=transcript;type=protein;species=" + species + ";"
     headers = { "Content-Type" : "application/json"}
     
-    print(transcript_dict.keys(), " protein coding genes prepared for ensembl sequence requests...")
-    
+    print(len(transcript_dict.keys()), " protein coding genes prepared for ensembl sequence requests...")
+        
     for key in transcript_dict.keys():
         count_genes += 1
         for i, transcript_id in enumerate(transcript_dict[key]):
