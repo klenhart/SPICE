@@ -14,82 +14,28 @@ import gzip
 import urllib.request as request
 from contextlib import closing
 
-def make_local_ensembl_name(path, release_num, species, suffix):
-        release_num = str(release_num)    
-    
-        server = "https://rest.ensembl.org"
-        ext = "/info/assembly/" + species + "?"
-        ####
-        ## Getting current assembly accession
-        for x in range(3):
-            r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
-
-            if not r.ok and x < 2:
-                continue
-            elif x > 2:
-                print("Could not get assembly info for " + species + "...")
-                r.raise_for_status()
-                sys.exit()
-            else:
-                assembly_accession = r.json()["assembly_accession"]
-
-        ###########
-        ### Getting current release NUM
-        print("Getting url_name of species and default assembly name...")
-        ext = "/info/genomes/assembly/" + assembly_accession + "?"
-
-        for x in range(3):
-            r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
-
-            if not r.ok and x < 2:
-                continue
-            elif x > 2:
-                print("Could not get genome info for assembly" + assembly_accession + " of " + species + "...")
-                r.raise_for_status()
-                sys.exit()
-            else:
-                decoded = r.json()
-                url_species = decoded["url_name"]
-                assembly_name = decoded["assembly_default"]
-        
+def make_local_ensembl_name(path, release_num, species, suffix, assembly_name, url_species):
+        release_num = str(release_num)        
         ensembl_path = path + url_species + "." + assembly_name + "." + release_num + suffix
         return ensembl_path
 
 def get_species_info(species):
-        server = "https://rest.ensembl.org"
-        ext = "/info/assembly/" + species + "?"
-        
-        ####
-        ## Getting current assembly accession
-        for x in range(3):
-            r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
+    server = "https://rest.ensembl.org"
+    ext = "/info/genomes/" + species + "?"
+     
+    r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
+     
+    if not r.ok:
+      print("Could not find species!")
+      r.raise_for_status()
+      sys.exit()
+     
+    decoded = r.json()
+    url_name = decoded["url_name"]
+    name = decoded["name"]
+    assembly_default = decoded["assembly_default"]
+    return name, url_name, assembly_default
 
-            if not r.ok and x < 2:
-                continue
-            elif x > 2:
-                print("Could not get assembly info for " + species + "...")
-                r.raise_for_status()
-                sys.exit()
-            else:
-                assembly_accession = r.json()["assembly_accession"]
-
-        ###########
-        ### Getting current release NUM
-        ext = "/info/genomes/assembly/" + assembly_accession + "?"
-
-        for x in range(3):
-            r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
-
-            if not r.ok and x < 2:
-                continue
-            elif x > 2:
-                print("Could not get genome info for assembly" + assembly_accession + " of " + species + "...")
-                r.raise_for_status()
-                sys.exit()
-            else:
-                decoded = r.json()
-                name = decoded["name"]
-        return name
 
 def get_release():
         print("Checking release number...")
@@ -109,55 +55,15 @@ def get_release():
                 release_num = max(r.json()["releases"])
         return release_num
 
-def install_local_ensembl(species, library_path):
+def install_local_ensembl(url_infix_species, release_num, library_path, url_species, assembly_name):
+        release_num = str(release_num)
         if not os.path.exists(library_path):
             os.makedirs(library_path)
     
         ftp_prefix = "http://ftp.ensembl.org/pub/release-"
-        ftp_suffix = ".gtf.gz"
-
-        print("Getting assembly accession id...")
-        server = "https://rest.ensembl.org"
-        ext = "/info/assembly/" + species + "?"
-        
-        ####
-        ## Getting current assembly accession
-        for x in range(3):
-            r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
-
-            if not r.ok and x < 2:
-                continue
-            elif x > 2:
-                print("Could not get assembly info for " + species + "...")
-                r.raise_for_status()
-                sys.exit()
-            else:
-                assembly_accession = r.json()["assembly_accession"]
-
-        ###########
-        ### Getting current release NUM
-        print("Getting url_name of species and default assembly name...")
-        ext = "/info/genomes/assembly/" + assembly_accession + "?"
-
-        for x in range(3):
-            r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
-
-            if not r.ok and x < 2:
-                continue
-            elif x > 2:
-                print("Could not get genome info for assembly" + assembly_accession + " of " + species + "...")
-                r.raise_for_status()
-                sys.exit()
-            else:
-                decoded = r.json()
-                url_species = decoded["url_name"]
-                url_infix_species = decoded["name"]
-                assembly_name = decoded["assembly_default"]
-        
+        ftp_suffix = ".gtf.gz"        
         ftp_infix = "/gtf/" + url_infix_species+ "/"
-        ###########
-        ### Getting current release NUM
-        release_num = get_release()    
+        
         print("The current release is", release_num + "...")
         
         ### Assemble FTP address according to standard /release-{release_num}/{species}.{assembly_name}.{assembly_num}.gtf.gz
@@ -179,8 +85,8 @@ def install_local_ensembl(species, library_path):
         print("Download complete. Local Ensembl Assembly can now be used.")
 
 def main():
-    #install_local_ensembl("mouse", 107, "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_Pipe/")
-    print(make_local_ensembl_name("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/", 107, "homo_sapiens", ".gtf"))
+    install_local_ensembl("mouse", "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_Pipe/")
+    #print(make_local_ensembl_name("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/", 107, "homo_sapiens", ".gtf"))
 if __name__ == "__main__":
     main()
         

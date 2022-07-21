@@ -22,7 +22,7 @@ from healthcheck import healthcheck
 
 
 #Test command line:
-# python ensembl_access.py -s human -a 107 -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -g /share/project/zarnack/chrisbl/FAS/utility/protein_lib/Homo_sapiens.GRCh38.107.gtf
+# python ensembl_access.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
@@ -151,13 +151,12 @@ def main():
     OUTPUT_DIR, species, flag_install_local, flag_healthcheck = parser_setup()  
     library_path = OUTPUT_DIR + "/FAS_library/"
     release_num = get_release()
-    ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf")
-    if not flag_healthcheck:
-        species = get_species_info(species)
+    species, url_name, assembly_default = get_species_info(species)
+    ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
   
     if flag_install_local:
         print("Local ensembl installation commencing...")
-        install_local_ensembl(species, release_num, library_path)
+        install_local_ensembl(species, release_num, library_path, url_name, assembly_default)
     
     elif flag_healthcheck:
         print("Library healthcheck commencing...")
