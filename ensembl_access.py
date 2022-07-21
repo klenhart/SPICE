@@ -56,7 +56,8 @@ def assemble_protein_seqs(transcript_dict, assembly_num, species, library_path, 
             
             }
     """
-    
+    if not os.path.exists(root_path):
+        os.makedirs(root_path)
     not_found_path = root_path + "not_found.txt"
     with open(not_found_path, 'w') as fp:
         pass
