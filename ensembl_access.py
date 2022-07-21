@@ -148,7 +148,7 @@ def main():
         .
         ...etc...
     """
-    OUTPUT_DIR, species, assembly_num, flag_install_local, flag_healthcheck = parser_setup()  
+    OUTPUT_DIR, species, flag_install_local, flag_healthcheck = parser_setup()  
     library_path = OUTPUT_DIR + "/FAS_library/"
     release_num = get_release()
     ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf")
