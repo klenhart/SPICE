@@ -26,6 +26,11 @@ from healthcheck import healthcheck
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+        
 def ping_ensembl():
     import requests, sys
  
@@ -79,46 +84,59 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
     if not os.path.isfile(isoforms_path):
         with open(isoforms_path, "w") as fp:
             pass
-    
-    count_not_found = 0
-    count_found = 0
+
     gene_ids = [gene_id for gene_id, transcript_id, protein_id in protein_coding_ids]
     count_genes = len(list(set(gene_ids)))
     
+    protein_ids = [protein_id for gene_id, transcript_id, protein_id in protein_coding_ids]
+    total_length = len(protein_ids)
+    request_chunks = chunks(range(total_length), 50)
+    ensembl_requests = []
+    
+    step = 0
+    
+    for i, chunk in enumerate(request_chunks):
+        start = chunk[0]
+        end = chunk[-1] + 1
+        if end == total_length:
+             ensembl_requests.append((step ,make_request_data(protein_ids[start:])))
+        ensembl_requests.append((step, make_request_data(protein_ids[start:end])))
+        step += 50
+
+    server = "https://rest.ensembl.org/sequence/id"
+    headers={ "Content-Type" : "application/json", "Accept" : "application/json"}    
+    
+    for step, request in ensembl_requests:
+        for x in range(3):
+            r = requests.post(server, headers=headers, data=request)
+            if r.ok:
+                break
+            elif x > 1:
+                print("Failed to request sequenes 3 times. Checking if ensembl service is up. Step:", step)
+                if not ping_ensembl():
+                    print("Ensembl is currently down. Can't download sequences.")
+                else:
+                    print("Ensembl is up. Weird...")
+                r.raise_for_status()
+                sys.exit()
+        decoded = r.json()
+        id_seq_tuple_list = [(entry["query"], entry["seq"]) for entry in decoded]
+        for i, id_seq_tuple in enumerate(id_seq_tuple_list):
+            id_complement = i + step
+            query_id, seq = id_seq_tuple
+            gene_id, transcript_id, protein_id = protein_coding_ids[id_complement]
+            if query_id != protein_id:
+                print(protein_id,  "does not match", query_id, "Step was", step, "and index was", i)
+                sys.exit()
+            else:
+                data = ">" + gene_id + "|" + transcript_id + "|" + protein_id + "|species:" + species + "|assembly:" + str(assembly_num) + "\n" + seq + "\n"
+                with open(isoforms_path, "a") as fasta:
+                    fasta.write(data)
+
     server = "https://rest.ensembl.org/sequence/id"
     headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
-    
-    protein_ids = [protein_id for gene_id, transcript_id, protein_id in protein_coding_ids]
-    request_data = make_request_data(protein_ids)
-    
-    for x in range(3):
-        r = requests.post(server, headers=headers, data=request_data)
-        if r.ok:
-            break
-        elif x > 1:
-            print("Failed to request sequenes 3 times. Checking if ensembl service is up.")
-            if not ping_ensembl():
-                print("Ensembl is currently down. Can't download sequences.")
-            else:
-                print("Ensembl is up. Can't identify error source.")
-            r.raise_for_status()
-            sys.exit()
-        
-    decoded = r.json()
-    for i, entry in protein_coding_ids:
-        count_found += 1
-        seq = decoded[i]["seq"]
-        gene_id, transcript_id, protein_id = entry
-        if seq == "":
-            count_not_found += 1
-            with open(not_found_path, "a") as fasta:
-                fasta.write(gene_id + " " + transcript_id + " " + protein_id + "\n")
-        else:
-            data = ">" + gene_id + "|" + transcript_id + "|" + protein_id + "|species:" + species + "|assembly:" + str(assembly_num) + "\n" + seq + "\n"
-            with open(isoforms_path, "a") as fasta:
-                fasta.write(data)
-
-    return count_found, count_not_found, count_genes
+    request_data = '{ "ids" : ["ENSTNIP00000003408", "ENSTNIP00000003894", "ENSTNIP00000002623", "ENSTNIP00000000936", "ENSTNIP00000000289", "ENSTNIP00000001327", "ENSTNIP00000002520", "ENSTNIP00000000812" ] }'
+    r = requests.post(server, headers=headers, data=request_data)
 
 def parser_setup():
     """
@@ -197,7 +215,7 @@ def main():
         if not os.path.exists(library_path):
             os.makedirs(library_path)
         root_path = make_rootpath(library_path, species, release_num) 
-        count_found, count_not_found, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path)
+        assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path)
         print("Saved isoforms as fasta in", root_path + "/isoforms.fasta")
         print(count_genes, "protein coding genes processed.")
         print(count_found, "protein sequences integrated into library assembled.")
