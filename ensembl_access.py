@@ -9,8 +9,6 @@ import requests
 import argparse
 import sys
 
-from ntree import make_rootpath
-
 from all_protein_coding_gene_ID import extract_protein_coding_ids
 
 from install_local_ensembl import get_release
@@ -18,13 +16,13 @@ from install_local_ensembl import install_local_ensembl
 from install_local_ensembl import get_species_info
 from install_local_ensembl import make_local_ensembl_name
 
-from healthcheck import healthcheck
-
-
 #Test command line:
 # python ensembl_access.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
+
+def make_rootpath(library_path, species, assembly_num):
+    return library_path + species + "/release-" + str(assembly_num) + "/"
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
@@ -162,19 +160,14 @@ def parser_setup():
     
     parser.add_argument("-l", "--local", action="store_true",
                         help="Download and unpack a local ensembl assembly into the folder defined in --output.")
-    
-    parser.add_argument("-k", "--healthcheck", action='store_true', #todo
-                        help="""Checks several parameters of the general state of the library
-                        but also the library specified in via the species and assembly arguments.""")
 
     args = parser.parse_args()
 
     output = args.output
     species = args.species
     flag_install_local = args.local
-    flag_healthcheck = args.healthcheck
 
-    return output, species, flag_install_local, flag_healthcheck
+    return output, species, flag_install_local
 
 def main():
     """
@@ -193,7 +186,7 @@ def main():
         .
         ...etc...
     """
-    OUTPUT_DIR, species, flag_install_local, flag_healthcheck = parser_setup()  
+    OUTPUT_DIR, species, flag_install_local = parser_setup()  
     library_path = OUTPUT_DIR + "/FAS_library/"
     release_num = get_release()
     species, url_name, assembly_default = get_species_info(species)
@@ -202,10 +195,7 @@ def main():
     if flag_install_local:
         print("Local ensembl installation commencing...")
         install_local_ensembl(species, release_num, library_path, url_name, assembly_default)
-    
-    elif flag_healthcheck:
-        print("Library healthcheck commencing...")
-        healthcheck(library_path, species, release_num)
+
     else:
         print("Library generation commencing...")
         if not os.path.isfile(ensembl_path):
