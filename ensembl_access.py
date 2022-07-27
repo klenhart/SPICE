@@ -145,7 +145,7 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
                 print(protein_id,  "does not match", query_id, "Step was", step, "and index was", i)
                 sys.exit()
             else:
-                header = gene_id + "|" + protein_id + "|" + taxon_id
+                header = gene_id + "|" + protein_id + "|" + str(taxon_id)
                 header_dict[gene_id].append(header)
                 with open(isoforms_path, "a") as fasta:
                     fasta.write(">" + header + "\n" + seq + "\n")
