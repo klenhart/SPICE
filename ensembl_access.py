@@ -15,11 +15,25 @@ from install_local_ensembl import get_release
 from install_local_ensembl import install_local_ensembl
 from install_local_ensembl import get_species_info
 from install_local_ensembl import make_local_ensembl_name
+from FAS_handler import tsv_maker
 
 #Test command line:
 # python ensembl_access.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
+
+def get_taxon_id(species): 
+    server = "https://rest.ensembl.org"
+    ext = "/info/genomes/taxonomy/" + species +"?"
+ 
+    r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
+ 
+    if not r.ok:
+        r.raise_for_status()
+        sys.exit()
+ 
+    decoded = r.json()
+    return decoded[0]["species_taxonomy_id"]
 
 def make_rootpath(library_path, species, assembly_num):
     return library_path + species + "/release-" + str(assembly_num) + "/"
@@ -52,16 +66,16 @@ def make_request_data(id_list):
     request_data += ' ] }'
     return request_data
 
-def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_path, root_path):
+def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_path, root_path, taxon_id):
     """
 
     Parameters
     ----------
-    list with gene, transcript and protein IDs as tuples
+    list with gene and protein IDs as tuples
         [
-            (gene_id_1, transcript_id_1, protein_id_1),
-            (gene_id_1, transcript_id_2, protein_id_2),
-            (gene_id_2, transcript_id_3, protein_id_3),
+            (gene_id_1, protein_id_1),
+            (gene_id_1, protein_id_2),
+            (gene_id_2, protein_id_3),
             .
             .
             .
@@ -83,10 +97,10 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
         with open(isoforms_path, "w") as fp:
             pass
 
-    gene_ids = [gene_id for gene_id, transcript_id, protein_id in protein_coding_ids]
+    gene_ids = [gene_id for gene_id, protein_id in protein_coding_ids]
     count_genes = len(list(set(gene_ids)))
     
-    protein_ids = [protein_id for gene_id, transcript_id, protein_id in protein_coding_ids]
+    protein_ids = [protein_id for gene_id, protein_id in protein_coding_ids]
     total_length = len(protein_ids)
     request_chunks = chunks(range(total_length), 50)
     ensembl_requests = []
@@ -103,6 +117,10 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
 
     server = "https://rest.ensembl.org/sequence/id"
     headers={ "Content-Type" : "application/json", "Accept" : "application/json"}    
+    
+    header_dict = dict()
+    for gene_id in gene_ids:
+        header_dict[gene_id] = []
     
     for step, request in ensembl_requests:
         for x in range(3):
@@ -122,19 +140,16 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
         for i, id_seq_tuple in enumerate(id_seq_tuple_list):
             id_complement = i + step
             query_id, seq = id_seq_tuple
-            gene_id, transcript_id, protein_id = protein_coding_ids[id_complement]
+            gene_id, protein_id = protein_coding_ids[id_complement]
             if query_id != protein_id:
                 print(protein_id,  "does not match", query_id, "Step was", step, "and index was", i)
                 sys.exit()
             else:
-                data = ">" + gene_id + "|" + transcript_id + "|" + protein_id + "|species:" + species + "|assembly:" + str(assembly_num) + "\n" + seq + "\n"
+                header = gene_id + "|" + protein_id + "|" + taxon_id
+                header_dict[gene_id].append(header)
                 with open(isoforms_path, "a") as fasta:
-                    fasta.write(data)
-
-    server = "https://rest.ensembl.org/sequence/id"
-    headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
-    request_data = '{ "ids" : ["ENSTNIP00000003408", "ENSTNIP00000003894", "ENSTNIP00000002623", "ENSTNIP00000000936", "ENSTNIP00000000289", "ENSTNIP00000001327", "ENSTNIP00000002520", "ENSTNIP00000000812" ] }'
-    r = requests.post(server, headers=headers, data=request_data)
+                    fasta.write(">" + header + "\n" + seq + "\n")
+    return header_dict, count_genes
 
 def parser_setup():
     """
@@ -190,6 +205,7 @@ def main():
     library_path = OUTPUT_DIR + "/FAS_library/"
     release_num = get_release()
     species, url_name, assembly_default = get_species_info(species)
+    taxon_id = get_taxon_id(species)
     ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
   
     if flag_install_local:
@@ -205,7 +221,9 @@ def main():
         if not os.path.exists(library_path):
             os.makedirs(library_path)
         root_path = make_rootpath(library_path, species, release_num) 
-        assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path)
+        header_dict, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path, taxon_id)
+        tsv_maker(header_dict)
+        print(count_genes, "genes assembled.")
         print("Saved isoforms as fasta in", root_path + "/isoforms.fasta")
         print("Library assembly complete.")
 

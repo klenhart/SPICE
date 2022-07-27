@@ -21,11 +21,9 @@ def extract_protein_coding_ids(ensembl_path):
     print("Loading local ensembl dataframe...")
     gtf = pr.read_gtf(ensembl_path, as_df=True)
     print("Extracting IDs of protein coding transcripts...")
-    protein_coding_ids = [ (gene_id, transcript_id, protein_id) for gene_id,
-                                      transcript_id,
+    protein_coding_ids = [ (gene_id, protein_id) for gene_id,
                                       protein_id,
                                       biotype in zip(gtf['gene_id'],
-                                                    gtf['transcript_id'],
                                                     gtf['protein_id'],
                                                     gtf['transcript_biotype']
                                                     ) if biotype == "protein_coding" and str(type(protein_id)) != "<class 'float'>"]
@@ -37,16 +35,11 @@ def extract_protein_coding_ids(ensembl_path):
     return protein_coding_ids
     
 def main():
-    # prefix = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
-    # ensembl_path1 = "Homo_sapiens.GRCh38.107.gtf"
-    # ensembl_path2 = "Tetraodon_nigroviridis.TETRAODON8.107.gtf"
-    
-    # protein_coding_ids = extract_protein_coding_ids(prefix + ensembl_path2)
-    pass
-    
-protein_coding_ids = extract_protein_coding_ids(prefix + ensembl_path2)
+    prefix = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
+    ensembl_path1 = "Homo_sapiens.GRCh38.107.gtf"
+    ensembl_path2 = "Tetraodon_nigroviridis.TETRAODON8.107.gtf"
+    protein_coding_ids = extract_protein_coding_ids(prefix + ensembl_path2)
 
-protein_ids = [p for g, t, p in protein_coding_ids]
                 
 
 if __name__ == "__main__":
