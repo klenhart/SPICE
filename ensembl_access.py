@@ -77,9 +77,9 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
     """
     if not os.path.exists(root_path):
         os.makedirs(root_path)
-    not_found_path = root_path + "not_found.txt"
-    with open(not_found_path, 'w') as fp:
-        pass
+    # not_found_path = root_path + "not_found.txt"
+    # with open(not_found_path, 'w') as fp:
+    #     pass
     isoforms_path = root_path + "isoforms.fasta"
     if not os.path.isfile(isoforms_path):
         with open(isoforms_path, "w") as fp:
@@ -217,9 +217,6 @@ def main():
         root_path = make_rootpath(library_path, species, release_num) 
         assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path)
         print("Saved isoforms as fasta in", root_path + "/isoforms.fasta")
-        print(count_genes, "protein coding genes processed.")
-        print(count_found, "protein sequences integrated into library assembled.")
-        print(count_not_found, "protein sequences not found. IDs written into", root_path + "not_found.txt.")
         print("Library assembly complete.")
 
 if __name__ == "__main__":
