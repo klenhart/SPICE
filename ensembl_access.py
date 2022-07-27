@@ -15,7 +15,7 @@ from install_local_ensembl import get_release
 from install_local_ensembl import install_local_ensembl
 from install_local_ensembl import get_species_info
 from install_local_ensembl import make_local_ensembl_name
-from FAS_handler import tsv_maker
+from FAS_handler import tsv_collection_maker
 
 #Test command line:
 # python ensembl_access.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/
@@ -222,7 +222,7 @@ def main():
             os.makedirs(library_path)
         root_path = make_rootpath(library_path, species, release_num) 
         header_dict, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path, taxon_id)
-        tsv_maker(header_dict)
+        tsv_collection_maker(header_dict, root_path)
         print(count_genes, "genes assembled.")
         print("Saved isoforms as fasta in", root_path + "/isoforms.fasta")
         print("Library assembly complete.")
