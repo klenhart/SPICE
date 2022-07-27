@@ -8,6 +8,12 @@ Created on Wed Jul 13 10:35:43 2022
 
 import pyranges as pr
 
+prefix = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
+ensembl_path1 = "Homo_sapiens.GRCh38.107.gtf"
+ensembl_path2 = "Tetraodon_nigroviridis.TETRAODON8.107.gtf"
+    
+
+
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib/Homo_sapiens.GRCh38.107.gtf
 
 def extract_protein_coding_ids(ensembl_path):
@@ -31,13 +37,16 @@ def extract_protein_coding_ids(ensembl_path):
     return protein_coding_ids
     
 def main():
-    prefix = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
-    ensembl_path1 = "Homo_sapiens.GRCh38.107.gtf"
-    ensembl_path2 = "Tetraodon_nigroviridis.TETRAODON8.107.gtf"
+    # prefix = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
+    # ensembl_path1 = "Homo_sapiens.GRCh38.107.gtf"
+    # ensembl_path2 = "Tetraodon_nigroviridis.TETRAODON8.107.gtf"
     
-    protein_coding_ids = extract_protein_coding_ids(prefix + ensembl_path2)
-    #print(protein_coding_ids[0:20])
+    # protein_coding_ids = extract_protein_coding_ids(prefix + ensembl_path2)
+    pass
+    
+protein_coding_ids = extract_protein_coding_ids(prefix + ensembl_path2)
 
+protein_ids = [p for g, t, p in protein_coding_ids]
                 
 
 if __name__ == "__main__":
