@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jul 28 09:57:16 2022
+
+@author: chrisbl
+"""
+
 # -*- coding: utf-8 -*-
 """
 __author__ = "Christian Bluemel"
@@ -9,13 +17,9 @@ import requests
 import argparse
 import sys
 
-from all_protein_coding_gene_ID import extract_protein_coding_ids
-
-from install_local_ensembl import get_release
-from install_local_ensembl import install_local_ensembl
-from install_local_ensembl import get_species_info
-from install_local_ensembl import make_local_ensembl_name
-from FAS_handler import tsv_collection_maker
+from ensembl_access import get_species_info
+from ensembl_access import make_local_ensembl_name
+from ensembl_access import get_release
 
 #Test command line:
 # python ensembl_access.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/
@@ -66,6 +70,23 @@ def make_request_data(id_list):
     request_data += ' ] }'
     return request_data
 
+def extract_protein_coding_ids(ensembl_path):
+    print("Loading local ensembl dataframe...")
+    gtf = pr.read_gtf(ensembl_path, as_df=True)
+    print("Extracting IDs of protein coding transcripts...")
+    protein_coding_ids = [ (gene_id, transcript_id, protein_id) for gene_id,
+                                      protein_id,
+                                      transcript_id,
+                                      biotype in zip(gtf['gene_id'],
+                                                    gtf['protein_id'],
+                                                    gtf['transcript_id'],
+                                                    gtf['transcript_biotype']
+                                                    ) if biotype == "protein_coding" and str(type(protein_id)) != "<class 'float'>"]
+    protein_coding_ids = list(set([i for i in protein_coding_ids]))
+    print("Assembling IDs...")
+    protein_coding_ids.sort()
+    return protein_coding_ids
+
 def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_path, root_path, taxon_id):
     """
 
@@ -89,27 +110,16 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
     """
     if not os.path.exists(root_path):
         os.makedirs(root_path)
-    if not os.path.exists(root_path):
-        os.makedirs(root_path + "tsv_buffer")
+    # not_found_path = root_path + "not_found.txt"
+    # with open(not_found_path, 'w') as fp:
+    #     pass
     isoforms_path = root_path + "isoforms.fasta"
     if not os.path.isfile(isoforms_path):
         with open(isoforms_path, "w") as fp:
             pass
-    phyloprofile_ids_path = root_path + "phyloprofile_ids.tsv"
-    if not os.path.isfile(phyloprofile_ids_path):
-        with open(phyloprofile_ids_path, "w") as fp:
-            pass
-    gene_ids_path = root_path + "gene_ids.txt"
-    if not os.path.isfile(gene_ids_path):
-        with open(gene_ids_path, "w") as fp:
-            pass
 
     gene_ids = [gene_id for gene_id, protein_id in protein_coding_ids]
     count_genes = len(list(set(gene_ids)))
-    
-    gene_id_str = "\n".join(gene_ids)
-    with open(gene_ids_path, "w") as file:
-        file.write(gene_id_str)
     
     protein_ids = [protein_id for gene_id, protein_id in protein_coding_ids]
     total_length = len(protein_ids)
@@ -158,88 +168,86 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
             else:
                 header = gene_id + "|" + protein_id + "|" + str(taxon_id)
                 header_dict[gene_id].append(header)
-                with open(phyloprofile_ids_path, "a") as file:
-                    file.write(header + "\t" + str(taxon_id) + "\n")
                 with open(isoforms_path, "a") as fasta:
                     fasta.write(">" + header + "\n" + seq + "\n")
     return header_dict, count_genes
 
+def collect_data_paths(data_path):
+    with open(data_path, "r") as f:
+        data = f.read()
+        data_paths = data.split("\n")
+    return data_paths
+
 def parser_setup():
     """
-    
-
     Returns
     -------
-    Get species, output direcotry and installation settings for run.
+    parent directory of library,
+    output directory,
+    species of expression data,
+    path to textfile containing path to all expression files.    
 
     """  
     
     #Setting up parser:
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("-o", "--output", type=str,
-                        help="""Specify location of the library. FAS_library folder can already exist in this folder.
-                        If creating the library, this folder should contain the local ensembl assembly. If it does not,
-                        you can download the local ensembl assembly using the -l (--local) argument. It will then be automatically
-                        download into the FAS_library folder within the folder given in this argument.""")
+    parser.add_argument("-l", "--library", type=str,
+                        help="""Specify path of the parent folder of the library.""")
 
-    parser.add_argument("-s", "--species", type=str, default=None,
-                        help="Specify the species.")
+    parser.add_argument("-s", "--species", type=str,
+                        help="Specify the species of the expression data.")
     
-    parser.add_argument("-l", "--local", action="store_true",
-                        help="Download and unpack a local ensembl assembly into the folder defined in --output.")
+    parser.add_argument("-o", "--output", type=str,
+                        help="Specify the path for the output.")
+    
+    parser.add_argument("-d", "--data", type=str,
+                        help="Specify the path to a text file containing all paths to the expression data. One path per row.")
 
     args = parser.parse_args()
-
-    output = args.output
+    
+    library_path = args.library
+    output_path = args.output
     species = args.species
-    flag_install_local = args.local
+    data_path = args.data
 
-    return output, species, flag_install_local
+    return library_path, output_path, species, data_path
 
 def main():
     """
     Returns
     -------
-    fasta called isoform.fasta that contains the the gene_id, protein_id, taxon_id as a header and the
-    consensus sequence like this:
-        >gene_id1|protein_id1|taxon_id
-        consensus_sequence1
-        >gene_id1|protein_id2|taxon_id
-        consensus_sequence2
-        >gene_id2|protein_id3|taxon_id
-        consensus_sequence3
-        .
-        .
-        .
-        ...etc...
+    Matches expression data with pre-calculated FAS Scores in library.
     """
-    OUTPUT_DIR, species, flag_install_local = parser_setup()  
-    library_path = OUTPUT_DIR + "/FAS_library/"
-    release_num = get_release()
+    #Collect input
+    library_path, output_path, species, data_path = parser_setup()
+    
+    #Collect input paths.
+    data_paths = collect_data_paths(data_path)
+    
+    #Get ensembl stats for naming conventions
     species, url_name, assembly_default = get_species_info(species)
-    taxon_id = get_taxon_id(species)
-    ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
-  
-    if flag_install_local:
-        print("Local ensembl installation commencing...")
-        install_local_ensembl(species, release_num, library_path, url_name, assembly_default)
-
-    else:
-        print("Library generation commencing...")
-        if not os.path.isfile(ensembl_path):
-            print(ensembl_path, "does not exist. Maybe you have an old release of the local ensembl GTF. You can download a current one for your species by using the -l argument additional to your currently used arguments.")
-            sys.exit()
-        protein_coding_ids = extract_protein_coding_ids(ensembl_path)
-        if not os.path.exists(library_path):
-            os.makedirs(library_path)
-        root_path = make_rootpath(library_path, species, release_num) 
-        header_dict, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path, taxon_id)
-        tsv_collection_maker(header_dict, root_path)
-        print(count_genes, "genes assembled.")
-        print("Saved isoforms as fasta in", root_path + "/isoforms.fasta")
-        print("Library assembly complete.")
-
+    release_num = get_release()
+    
+    #Make paths
+    ensembl_path = make_local_ensembl_name(library_path,
+                                           release_num,
+                                           species,
+                                           ".gtf",
+                                           assembly_default,
+                                           url_name)
+    root_path = make_rootpath(library_path,
+                              species,
+                              release_num)
+    
+    #Collect IDs of protein coding transcripts.
+    protein_coding_ids = extract_protein_coding_ids(ensembl_path)
+    for path in data_paths:
+        extract_ids_from_expression_data(path, protein_coding_ids)
+        
+    
+    
+    
 if __name__ == "__main__":
     main()
 
