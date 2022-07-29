@@ -89,8 +89,10 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
     """
     if not os.path.exists(root_path):
         os.makedirs(root_path)
-    if not os.path.exists(root_path):
+    if not os.path.exists(root_path + "tsv_buffer"):
         os.makedirs(root_path + "tsv_buffer")
+    if not os.path.exists(root_path + "tsv_buffer"):
+        os.makedirs(root_path + "FAS_buffer")
     isoforms_path = root_path + "isoforms.fasta"
     if not os.path.isfile(isoforms_path):
         with open(isoforms_path, "w") as fp:
@@ -140,10 +142,6 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
                 break
             elif x > 1:
                 print("Failed to request sequenes 3 times. Checking if ensembl service is up. Step:", step)
-                if not ping_ensembl():
-                    print("Ensembl is currently down. Can't download sequences.")
-                else:
-                    print("Ensembl is up. Weird...")
                 r.raise_for_status()
                 sys.exit()
         decoded = r.json()
@@ -214,7 +212,10 @@ def main():
         .
         ...etc...
     """
-    OUTPUT_DIR, species, flag_install_local = parser_setup()  
+    OUTPUT_DIR, species, flag_install_local = parser_setup()
+    if not ping_ensembl():
+        print("Ensembl is currently down. Can't download sequences. Aborting...")
+        sys.exit()
     library_path = OUTPUT_DIR + "/FAS_library/"
     release_num = get_release()
     species, url_name, assembly_default = get_species_info(species)
