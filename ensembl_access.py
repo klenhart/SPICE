@@ -106,7 +106,7 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
         with open(gene_ids_path, "w") as fp:
             pass
 
-    gene_ids = [gene_id for gene_id, protein_id in protein_coding_ids]
+    gene_ids = sorted(list(set([gene_id for gene_id, protein_id in protein_coding_ids])))
     count_genes = len(list(set(gene_ids)))
     
     gene_id_str = "\n".join(gene_ids)

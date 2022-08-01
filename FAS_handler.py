@@ -11,6 +11,7 @@ import itertools
 import argparse
 import os
 
+# python /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -b -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107 -p /home/chrisbl/miniconda3/envs/FAS/bin/python -s /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -f /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
 
 # fas.run -s /share/project/zarnack/chrisbl/FAS_library/homo_sapiens/release-107/buffer.fa -q query.fa -a /share/project/zarnack/chrisbl/FAS_library -o /share/project/zarnack/chrisbl/FAS_library/homo_sapiens/release-107/
 
@@ -20,6 +21,8 @@ import os
 TEST = {"A" : ["A", "B", "C", "D"], "B" : ["1", "2", "3", "4"]}
 
 def bash_command_maker(root_path, python_path, FAS_handler_path, fas_path):
+    if root_path[-1] != "/":
+        root_path += "/"
     gene_ids_path = root_path + "gene_ids.txt"
     isoforms_path = root_path + "isoforms.fasta"
     phyloprofile_path = root_path + "phyloprofile_ids.tsv"
@@ -44,7 +47,7 @@ def bash_command_maker(root_path, python_path, FAS_handler_path, fas_path):
                                         root_path)
         full_command = access_command + " && " + FAS_command + " ; " + remove_command
         command_list.append(full_command)
-    command_str = command_list.join("\n")
+    command_str = "\n".join(command_list)
     with open(root_path + "commands.txt", "w") as commands:
         commands.write(command_str)
         
@@ -62,8 +65,8 @@ def pairings_command_maker(gene_id, python_path, FAS_handler_path, root_path):
     options_remove.append("-g " + gene_id)
     options_access.append("-o " + root_path)
     options_remove.append("-o " + root_path)
-    access_command = options_access.join(" ")
-    remove_command = options_remove.join(" ")
+    access_command = " ". join(options_access)
+    remove_command = " ".join(options_remove)
     return access_command, remove_command
 
 
@@ -81,7 +84,7 @@ def FAS_command_maker(gene_id, isoforms_path, phyloprofile_path, pairings_tsv_pa
     options.append("--phyloprofile " + phyloprofile_path)
     options.append("--domain")
     options.append("--empty_as_1")
-    fas_command = options.join(" ")
+    fas_command = " ".join(options)
     return fas_command
 
     
@@ -126,13 +129,13 @@ def parser_setup():
     parser.add_argument("-p", "--python", type=str, default=None,
                         help="""Specify the location of the pythonversion to use. This is only necessary when using the --bash option.""")
 
-    parser.add_argument("-h", "--handler", type=str, default=None,
+    parser.add_argument("-s", "--handler", type=str, default=None,
                         help="""Specify the location FAS_handler.py. This is only necessary when using the --bash option.""")
     
     parser.add_argument("-f", "--fas", type=str, default=None,
                         help="""Specify the location of fas.run. This is only necessary when using the --bash option.""")
     
-    parser.add_argument("-g", "--gene", type=str, default=None
+    parser.add_argument("-g", "--gene", type=str, default=None,
                         help="""Ensembl gene ID of the gene that the tsv file should be created or deleted for.""")
     
     parser.add_argument("-r", "--remove", action="store_true",
@@ -152,8 +155,8 @@ def parser_setup():
     python_path = args.python
     FAS_handler_path = args.handler
     fas_path = args.fas
-    flag_remove = args.local
-    flag_maketsv = args.output
+    flag_remove = args.remove
+    flag_maketsv = args.maketsv
     flag_bash = args.bash
 
     return root_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash
