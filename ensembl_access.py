@@ -91,7 +91,7 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
         os.makedirs(root_path)
     if not os.path.exists(root_path + "tsv_buffer"):
         os.makedirs(root_path + "tsv_buffer")
-    if not os.path.exists(root_path + "tsv_buffer"):
+    if not os.path.exists(root_path + "FAS_buffer"):
         os.makedirs(root_path + "FAS_buffer")
     isoforms_path = root_path + "isoforms.fasta"
     if not os.path.isfile(isoforms_path):
@@ -109,7 +109,7 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
     gene_ids = sorted(list(set([gene_id for gene_id, protein_id in protein_coding_ids])))
     count_genes = len(list(set(gene_ids)))
     
-    gene_id_str = "\n".join(gene_ids)
+    gene_id_str = "\n".join(["gene"] + gene_ids)
     with open(gene_ids_path, "w") as file:
         file.write(gene_id_str)
     

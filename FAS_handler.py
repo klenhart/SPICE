@@ -13,44 +13,71 @@ import os
 
 # python /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -b -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107 -p /home/chrisbl/miniconda3/envs/FAS/bin/python -s /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -f /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
 
-# fas.run -s /share/project/zarnack/chrisbl/FAS_library/homo_sapiens/release-107/buffer.fa -q query.fa -a /share/project/zarnack/chrisbl/FAS_library -o /share/project/zarnack/chrisbl/FAS_library/homo_sapiens/release-107/
-
-# /home/chrisbl/miniconda3/envs/FAS/bin/fas.doAnno
-# /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
-
 TEST = {"A" : ["A", "B", "C", "D"], "B" : ["1", "2", "3", "4"]}
 
+RAW_SLURM = """!/bin/bash
+
+SBATCH --partition=all,special,inteli7
+SBATCH --cpus-per-task=1
+SBATCH --mem-per-cpu=2G
+SBATCH --job-name="fas_{4}"
+SBATCH --output=/dev/null 
+SBATCH --error=/dev/null
+SBATCH --array={5}-{6}
+
+gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{2}/gene_ids.txt")
+{0} {1} \
+-m \
+-g $gene \
+-o {2} \
+&& \
+{3} \
+--seed {2}/isoforms.fasta \
+--query {2}/isoforms.fasta \
+--annotation_dir {2} \
+--out_dir {2}/FAS_buffer/ \
+--bidirectional \
+--pairwise {2}/tsv_buffer/$gene.tsv \
+--out_name $gene \
+--tsv \
+--phyloprofile {2}/phyloprofile_ids.tsv \
+--domain \
+--empty_as_1 \
+; \
+{0} {1} \
+-r \
+-g $gene \
+-o {2}"""
+
+# {0} {1} -b -o {2} -p {0} -s {1} -f {3}
+
+def start_stop_range(length, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(1, length, n):
+        yield (i, min(i+n-1, length))
+
 def bash_command_maker(root_path, python_path, FAS_handler_path, fas_path):
-    if root_path[-1] != "/":
-        root_path += "/"
-    gene_ids_path = root_path + "gene_ids.txt"
-    isoforms_path = root_path + "isoforms.fasta"
-    phyloprofile_path = root_path + "phyloprofile_ids.tsv"
-    buffer_path = root_path + "tsv_buffer/"
-    
-    with open(gene_ids_path, "r") as txt:
-        gene_ids = txt.read()
-    gene_ids = gene_ids.split("\n")
-    
-    command_list = []
-    for gene_id in gene_ids:
-        access_command, remove_command = pairings_command_maker(gene_id,
-                                                                python_path,
-                                                                FAS_handler_path,
-                                                                root_path)
-        pairings_tsv_path = buffer_path + gene_id + ".tsv"
-        FAS_command = FAS_command_maker(gene_id,
-                                        isoforms_path,
-                                        phyloprofile_path,
-                                        pairings_tsv_path,
-                                        fas_path,
-                                        root_path)
-        full_command = access_command + " && " + FAS_command + " ; " + remove_command
-        command_list.append(full_command)
-    command_str = "\n".join(command_list)
-    with open(root_path + "commands.txt", "w") as commands:
-        commands.write(command_str)
-        
+    slurm_path = root_path + "/SLURM/"
+    if not os.path.exists(slurm_path):
+        os.makedirs(slurm_path)
+    with open(root_path + "/gene_ids.txt", "r") as f:
+        gene_count = len(f.read().split("\n")) - 1
+    jobs_ranges = start_stop_range(gene_count, 1000)
+    species = root_path.split("/")
+    index = species.index("FAS_library") + 1
+    species = species[index]
+    for i, entry in enumerate(jobs_ranges):
+        start = entry[0]
+        stop = entry[1]
+        output = RAW_SLURM.format(python_path, 
+                                  FAS_handler_path, 
+                                  root_path, 
+                                  fas_path, 
+                                  species, 
+                                  str(start), 
+                                  str(stop))
+        with open(slurm_path + "FAS_job" + str(i) + ".job", "w") as f:
+            f.write(output)
 
 def pairings_command_maker(gene_id, python_path, FAS_handler_path, root_path):
     options_access = []
