@@ -125,10 +125,10 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
     
     save_gene_ids_txt(gene_ids, gene_ids_path)
 
-    request_chunks = chunks(protein_coding_ids, 50)
+    request_chunks = list(chunks(protein_coding_ids, 50))
     ensembl_requests = []
     
-    step = 0
+    print(len(request_chunks))
     
     for i, chunk in enumerate(request_chunks):
         ensembl_requests.append(make_request_data(chunk))
@@ -147,7 +147,6 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
             if r.ok:
                 break
             elif x > 1:
-                print("Failed to request sequenes 3 times. Checking if ensembl service is up. Step:", step)
                 r.raise_for_status()
                 sys.exit()
         decoded = r.json()
@@ -163,40 +162,52 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
                 fasta.write(">" + header + "\n" + seq + "\n")
     return header_dict, count_genes
 
-def parser_setup():
-    """
+def check_isoforms(isoforms_path):
+    with open(isoforms_path, "r") as f:
+        fasta = f.read()
+    fasta_lines = fasta.split("\n")
+    fasta_lines = fasta_lines[:-1]
+    header = fasta_lines[::2]
+    gene_ids = [ entry.split("|")[0][1:] for entry in header ]
+    protein_ids = [ entry.split("|")[1] for entry in header ]
     
+    server = "https://rest.ensembl.org"
+    ext = "/lookup/id"
+    ext2 = "/lookup/id/"
 
-    Returns
-    -------
-    Get species, output direcotry and installation settings for run.
+    headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
+    prefix_request = '{ "ids" : ["' 
+    infix_request = '", "'
+    suffix_request ='" ] }'
+    for i, protein_id in enumerate(protein_ids): 
+        
+        gene_id = gene_ids[i]
+        request = prefix_request + protein_id + infix_request + gene_id + suffix_request
+        r = requests.post(server+ext, headers=headers, data=request)
+        if not r.ok:
+            r.raise_for_status()
+            sys.exit()
+        decoded = r.json()
+        gene_r= decoded[gene_id]
+        flag_biotype = gene_r["biotype"].startswith("protein_coding")
+        
+        protein_r = decoded[protein_id]
 
-    """  
-    
-    #Setting up parser:
-    parser = argparse.ArgumentParser()
-    
-    parser.add_argument("-o", "--output", type=str,
-                        help="""Specify location of the library. FAS_library folder can already exist in this folder.
-                        If creating the library, this folder should contain the local ensembl assembly. If it does not,
-                        you can download the local ensembl assembly using the -l (--local) argument. It will then be automatically
-                        download into the FAS_library folder within the folder given in this argument.""")
+        transcript_id = protein_r["Parent"]
+        r = requests.get(server+ext2+transcript_id+"?", headers={ "Content-Type" : "application/json"})
+        
+        transcript_r = r.json()
+        flag_same_id = transcript_r["Parent"] == gene_id
+        flag_biotype2 = transcript_r["biotype"].startswith("protein_coding")
+        if not all([flag_same_id, flag_biotype2, flag_biotype]):
+            print("Problem found!")
+            print(gene_id, transcript_id, protein_id)
+       
+        
+        
 
-    parser.add_argument("-s", "--species", type=str, default=None,
-                        help="Specify the species.")
-    
-    parser.add_argument("-l", "--local", action="store_true",
-                        help="Download and unpack a local ensembl assembly into the folder defined in --output.")
 
-    args = parser.parse_args()
-
-    output = args.output
-    species = args.species
-    flag_install_local = args.local
-
-    return output, species, flag_install_local
-
-def main():
+def ensembl_access(OUTPUT_DIR, species, flag_install_local):
     """
     Returns
     -------
@@ -213,7 +224,6 @@ def main():
         .
         ...etc...
     """
-    OUTPUT_DIR, species, flag_install_local = parser_setup()
     if not ping_ensembl():
         print("Ensembl is currently down. Can't download sequences. Aborting...")
         sys.exit()
@@ -241,6 +251,32 @@ def main():
         print(count_genes, "genes assembled.")
         print("Saved isoforms as fasta in", root_path + "/isoforms.fasta")
         print("Library assembly complete.")
+
+def main():
+    #Prepare test
+    # species = "human"
+    # print(1)
+    # release_num = get_release()
+    # print(2)
+    # species, url_name, assembly_default = get_species_info(species)
+    # print(3)
+    # taxon_id = get_taxon_id(species)
+    # library_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
+    # print(4)
+    # ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
+    # root_path = make_rootpath(library_path, species, release_num) 
+    
+    # #Extract IDs
+    # print(5)
+    # protein_coding_ids = extract_protein_coding_ids(ensembl_path)
+    # protein_coding_ids = protein_coding_ids[:130]
+    # header_dict, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path, taxon_id)
+    check_isoforms("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/isoforms.fasta")
+    
+    
+    
+    
+    
 
 if __name__ == "__main__":
     main()
