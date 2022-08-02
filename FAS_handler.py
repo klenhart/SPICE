@@ -25,7 +25,7 @@ SBATCH --output=/dev/null
 SBATCH --error=/dev/null
 SBATCH --array={5}-{6}
 
-gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{2}/gene_ids.txt")
+gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{2}/gene_ids{7}.txt")
 {0} {1} \
 -m \
 -g $gene \
@@ -61,22 +61,30 @@ def bash_command_maker(root_path, python_path, FAS_handler_path, fas_path):
     if not os.path.exists(slurm_path):
         os.makedirs(slurm_path)
     with open(root_path + "/gene_ids.txt", "r") as f:
-        gene_count = len(f.read().split("\n")) - 1
+        gene_ids = f.read().split("\n")
+        gene_count = len(gene_ids) - 1
     jobs_ranges = start_stop_range(gene_count, 1000)
     species = root_path.split("/")
     index = species.index("FAS_library") + 1
     species = species[index]
     for i, entry in enumerate(jobs_ranges):
-        start = entry[0]
-        stop = entry[1]
+        start = 1
+        if entry[1] % 1000 == 0:
+            stop = 1000
+        else:
+            stop = (entry[1] % 1000) - 1
+        output_ids = ["gene"] + gene_ids[entry[0]:entry[1]+1]
+        with open(slurm_path + "gene_ids{0}.txt".format(str(i)), "w") as gene_chunk:
+            gene_chunk.write("\n".join(output_ids))
         output = RAW_SLURM.format(python_path, 
                                   FAS_handler_path, 
                                   root_path, 
                                   fas_path, 
                                   species, 
                                   str(start), 
-                                  str(stop))
-        with open(slurm_path + "FAS_job" + str(i) + ".job", "w") as f:
+                                  str(stop),
+                                  str(i))
+        with open(slurm_path + "FAS_job{0}.job".format(str(i)), "w") as f:
             f.write(output)
 
 def pairings_command_maker(gene_id, python_path, FAS_handler_path, root_path):

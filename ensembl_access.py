@@ -59,6 +59,7 @@ def ping_ensembl():
     return bool(decoded["ping"])
 
 def make_request_data(id_list):
+    id_list = [protein_id for gene_id, protein_id, transcript_id in id_list]
     request_data = '{ "ids" : ['
     for entry in id_list:
         request_data += '"' + entry + '", '
@@ -66,27 +67,7 @@ def make_request_data(id_list):
     request_data += ' ] }'
     return request_data
 
-def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_path, root_path, taxon_id):
-    """
-
-    Parameters
-    ----------
-    list with gene and protein IDs as tuples
-        [
-            (gene_id_1, protein_id_1),
-            (gene_id_1, protein_id_2),
-            (gene_id_2, protein_id_3),
-            .
-            .
-            .
-            ...etc...
-            
-            ]
-
-    Returns
-    -------
-    counts on how many request were found, not found and how many genes were assembled.
-    """
+def make_folders_and_files(root_path):
     if not os.path.exists(root_path):
         os.makedirs(root_path)
     if not os.path.exists(root_path + "tsv_buffer"):
@@ -105,28 +86,52 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
     if not os.path.isfile(gene_ids_path):
         with open(gene_ids_path, "w") as fp:
             pass
+    return gene_ids_path, isoforms_path, phyloprofile_ids_path
 
-    gene_ids = sorted(list(set([gene_id for gene_id, protein_id in protein_coding_ids])))
-    count_genes = len(list(set(gene_ids)))
-    
+def extract_gene_ids(protein_coding_ids):
+    gene_ids = sorted(list(set([gene_id for gene_id, protein_id, transcript_id in protein_coding_ids])))
+    count = len(gene_ids)
+    return count, gene_ids
+
+def save_gene_ids_txt(gene_ids, gene_ids_path):
     gene_id_str = "\n".join(["gene"] + gene_ids)
     with open(gene_ids_path, "w") as file:
         file.write(gene_id_str)
+
+def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_path, root_path, taxon_id):
+    """
+
+    Parameters
+    ----------
+    list with gene and protein IDs as tuples
+        [
+            (gene_id_1, protein_id_1, transcript_id_1),
+            (gene_id_1, protein_id_2, transcript_id_2),
+            (gene_id_2, protein_id_3, transcript_id_3),
+            .
+            .
+            .
+            ...etc...
+            
+            ]
+
+    Returns
+    -------
+    counts on how many request were found, not found and how many genes were assembled.
+    """
+    gene_ids_path, isoforms_path, phyloprofile_ids_path = make_folders_and_files(root_path)
+
+    count_genes, gene_ids = extract_gene_ids(protein_coding_ids)
     
-    protein_ids = [protein_id for gene_id, protein_id in protein_coding_ids]
-    total_length = len(protein_ids)
-    request_chunks = chunks(range(total_length), 50)
+    save_gene_ids_txt(gene_ids, gene_ids_path)
+
+    request_chunks = chunks(protein_coding_ids, 50)
     ensembl_requests = []
     
     step = 0
     
     for i, chunk in enumerate(request_chunks):
-        start = chunk[0]
-        end = chunk[-1] + 1
-        if end == total_length:
-             ensembl_requests.append((step ,make_request_data(protein_ids[start:])))
-        ensembl_requests.append((step, make_request_data(protein_ids[start:end])))
-        step += 50
+        ensembl_requests.append(make_request_data(chunk))
 
     server = "https://rest.ensembl.org/sequence/id"
     headers={ "Content-Type" : "application/json", "Accept" : "application/json"}    
@@ -135,7 +140,8 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
     for gene_id in gene_ids:
         header_dict[gene_id] = []
     
-    for step, request in ensembl_requests:
+    for i, request in enumerate(ensembl_requests):
+        ids_list = list(request_chunks)[i]
         for x in range(3):
             r = requests.post(server, headers=headers, data=request)
             if r.ok:
@@ -146,20 +152,15 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
                 sys.exit()
         decoded = r.json()
         id_seq_tuple_list = [(entry["query"], entry["seq"]) for entry in decoded]
-        for i, id_seq_tuple in enumerate(id_seq_tuple_list):
-            id_complement = i + step
+        for j, id_seq_tuple in enumerate(id_seq_tuple_list):
+            gene_id, protein_id, transcript_id = ids_list[j]
             query_id, seq = id_seq_tuple
-            gene_id, protein_id = protein_coding_ids[id_complement]
-            if query_id != protein_id:
-                print(protein_id,  "does not match", query_id, "Step was", step, "and index was", i)
-                sys.exit()
-            else:
-                header = gene_id + "|" + protein_id + "|" + str(taxon_id)
-                header_dict[gene_id].append(header)
-                with open(phyloprofile_ids_path, "a") as file:
-                    file.write(header + "\t" + str(taxon_id) + "\n")
-                with open(isoforms_path, "a") as fasta:
-                    fasta.write(">" + header + "\n" + seq + "\n")
+            header = gene_id + "|" + protein_id + "|" + str(taxon_id)
+            header_dict[gene_id].append(header)
+            with open(phyloprofile_ids_path, "a") as file:
+                file.write(header + "\t" + str(taxon_id) + "\n")
+            with open(isoforms_path, "a") as fasta:
+                fasta.write(">" + header + "\n" + seq + "\n")
     return header_dict, count_genes
 
 def parser_setup():
