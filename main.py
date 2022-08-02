@@ -46,3 +46,6 @@ def parser_setup():
 def main():
     OUTPUT_DIR, species, flag_install_local = parser_setup()
     ensembl_access(OUTPUT_DIR, species, flag_install_local)
+    
+if __name__ == "__main__":
+    main()
