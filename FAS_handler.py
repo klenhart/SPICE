@@ -50,11 +50,44 @@ gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{2}/gene_ids{7}.txt")
 -o {2}"""
 
 def start_stop_range(length, n):
-    """Yield successive n-sized chunks from lst."""
+    """
+    Splits length into equal chunks of size n.
+    
+    Parameters
+    ----------
+    length : int
+        length to be split apart.
+    n : int
+        size of chunks.
+
+    Yields
+    ------
+    generator of (int, int)
+        Splits length into equal chunks of size n.
+    """
     for i in range(1, length, n):
         yield (i, min(i+n-1, length))
 
 def bash_command_maker(root_path, python_path, FAS_handler_path, fas_path):
+    """
+    Generates SLURM job files for every 1000 genes in the library instance.
+
+    Parameters
+    ----------
+    root_path : str
+        path to the root of specific species library (e.g. /home/FAS_library/homo_sapiens/release_107/)
+    python_path : str
+        path to the python binary.
+    FAS_handler_path : str
+        path to FAS_handler.py
+    fas_path : str
+        path to fas.run binary.
+
+    Returns
+    -------
+    None.
+
+    """
     slurm_path = root_path + "/SLURM/"
     if not os.path.exists(slurm_path):
         os.makedirs(slurm_path)
@@ -85,24 +118,22 @@ def bash_command_maker(root_path, python_path, FAS_handler_path, fas_path):
         with open(slurm_path + "FAS_job{0}.job".format(str(i)), "w") as f:
             f.write(output)
 
-def pairings_command_maker(gene_id, python_path, FAS_handler_path, root_path):
-    options_access = []
-    options_remove = []
-    options_access.append(python_path)
-    options_remove.append(python_path)
-    options_access.append(FAS_handler_path)
-    options_remove.append(FAS_handler_path)
-    options_access.append("-m")
-    options_remove.append("-r")
-    options_access.append("-g " + gene_id)
-    options_remove.append("-g " + gene_id)
-    options_access.append("-o " + root_path)
-    options_remove.append("-o " + root_path)
-    access_command = " ". join(options_access)
-    remove_command = " ".join(options_remove)
-    return access_command, remove_command 
-
 def tsv_collection_maker(header_dict, root_path):
+    """
+    Generates a pairings_tsv.json file in the root_path that contains all pairings.tsv files.
+
+    Parameters
+    ----------
+    header_dict : dict.keys() == [str], dict.values() == [str]
+        dictionary containing all headers indexed by their ENS gene ID
+    root_path : TYPE
+        path to the root of specific species library (e.g. /home/FAS_library/homo_sapiens/release_107/)
+
+    Returns
+    -------
+    None.
+
+    """
     tsv_dict = dict()
     for gene_id in header_dict.keys():
         tsv_dict[gene_id] = ""
@@ -114,6 +145,21 @@ def tsv_collection_maker(header_dict, root_path):
         json.dump(tsv_dict, fp,  indent=4)
 
 def tsv_access(gene_id, root_path):
+    """
+    Extracts pairing tsv from pairings_tsv.json into root_path/tsv_buffer/gene_id.tsv
+
+    Parameters
+    ----------
+    gene_id : str
+        ENS gene ID
+    root_path : TYPE
+        path to the root of specific species library (e.g. /home/FAS_library/homo_sapiens/release_107/)
+
+    Returns
+    -------
+    None.
+
+    """
     buffer_path = root_path + "tsv_buffer/"
     with open(root_path + "pairings_tsv.json", "r") as fp: 
         tsv_data = json.load(fp)[gene_id]
@@ -121,12 +167,27 @@ def tsv_access(gene_id, root_path):
         fp.write(tsv_data)
 
 def tsv_remove(gene_id, root_path):
+    """
+    Removes pairing tsv from pairings_tsv.json into root_path/tsv_buffer/gene_id.tsv
+
+    Parameters
+    ----------
+    gene_id : TYPE
+        ENS gene ID
+    root_path : TYPE
+        path to the root of specific species library (e.g. /home/FAS_library/homo_sapiens/release_107/)
+
+    Returns
+    -------
+    None.
+
+    """
     buffer_path = root_path + "tsv_buffer/"
     os.remove(buffer_path + gene_id + ".tsv")
 
 def parser_setup():
     """
-    
+    Reads the parser input.
 
     Returns
     -------
@@ -186,10 +247,6 @@ def main():
     elif flag_bash:
         bash_command_maker(root_path, python_path, FAS_handler_path, fas_path)
         
-    
-    
-    
-    
 
 if __name__ == "__main__":
     main()
