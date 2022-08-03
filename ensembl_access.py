@@ -202,10 +202,6 @@ def check_isoforms(isoforms_path):
         if not all([flag_same_id, flag_biotype2, flag_biotype]):
             print("Problem found!")
             print(gene_id, transcript_id, protein_id)
-       
-        
-        
-
 
 def ensembl_access(OUTPUT_DIR, species, flag_install_local):
     """
@@ -252,32 +248,21 @@ def ensembl_access(OUTPUT_DIR, species, flag_install_local):
         print("Saved isoforms as fasta in", root_path + "/isoforms.fasta")
         print("Library assembly complete.")
 
+def test():
+    species = "human"
+    release_num = 107
+    species, url_name, assembly_default = ('homo_sapiens', 'Homo_sapiens', 'GRCh38')
+    library_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
+    ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
+    return extract_protein_coding_ids(ensembl_path)
+    
 def main():
-    #Prepare test
-    # species = "human"
-    # print(1)
-    # release_num = get_release()
-    # print(2)
-    # species, url_name, assembly_default = get_species_info(species)
-    # print(3)
-    # taxon_id = get_taxon_id(species)
-    # library_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
-    # print(4)
-    # ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
-    # root_path = make_rootpath(library_path, species, release_num) 
+    species = "human"
+    release_num = 107
+    species, url_name, assembly_default = ('homo_sapiens', 'Homo_sapiens', 'GRCh38')
+    library_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
+    ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
     
-    # #Extract IDs
-    # print(5)
-    # protein_coding_ids = extract_protein_coding_ids(ensembl_path)
-    # protein_coding_ids = protein_coding_ids[:130]
-    # header_dict, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path, taxon_id)
-    check_isoforms("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/isoforms.fasta")
-    
-    
-    
-    
-    
-
 if __name__ == "__main__":
     main()
 

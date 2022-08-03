@@ -22,27 +22,33 @@ def load_gtf(ensembl_path):
                                                     gtf['transcript_biotype'])]
     return reduced
 
+def id_checker(gene_id, protein_id, transcript_id, biotype):
+    flag_biotype = biotype in ("protein_coding", "protein_coding_LoF")
+    flag_protein_id = str(protein_id).startswith("ENS") and (protein_id[3] == "P" or protein_id[6] == "P")
+    return flag_biotype and flag_protein_id
+
 def extract_protein_coding_ids(ensembl_path):
     gtf = load_gtf(ensembl_path)
     print("Extracting IDs of protein coding transcripts...")
     protein_coding_ids = [ (gene_id, protein_id, transcript_id) for gene_id,
                           protein_id,
                           transcript_id,
-                          biotype in gtf if biotype in ("protein_coding", "protein_coding_LoF") and str(protein_id).startswith("ENS")]
+                          biotype in gtf if id_checker(gene_id, protein_id, transcript_id, biotype) ]
     protein_coding_ids_no_dups = list(set([i for i in protein_coding_ids]))
     protein_coding_ids_no_dups.sort()
     return protein_coding_ids_no_dups
     
 def main():
-    prefix = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
-    ensembl_path1 = "Homo_sapiens.GRCh38.107.gtf"
-    ensembl_path2 = "Tetraodon_nigroviridis.TETRAODON8.107.gtf"
-    protein_coding_ids = extract_protein_coding_ids(prefix + ensembl_path1)
-    print(len(protein_coding_ids))
-    print(protein_coding_ids[0])
-    print(protein_coding_ids[-1])
-    gene_ids = [ gene_id for gene_id, protein_id, transcript_id in protein_coding_ids]
-    print(len(list(set(gene_ids))))
+    pass
+    # prefix = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
+    # ensembl_path1 = "Homo_sapiens.GRCh38.107.gtf"
+    # ensembl_path2 = "Tetraodon_nigroviridis.TETRAODON8.107.gtf"
+    # protein_coding_ids = extract_protein_coding_ids(prefix + ensembl_path1)
+    # print(len(protein_coding_ids))
+    # print(protein_coding_ids[0])
+    # print(protein_coding_ids[-1])
+    # gene_ids = [ gene_id for gene_id, protein_id, transcript_id in protein_coding_ids]
+    # print(len(list(set(gene_ids))))
 
 if __name__ == "__main__":
     main()
