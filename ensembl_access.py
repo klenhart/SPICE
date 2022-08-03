@@ -45,16 +45,20 @@ def chunks(lst, n):
         
 def ping_ensembl():
     import requests, sys
- 
+    
+    
     server = "https://rest.ensembl.org"
     ext = "/info/ping?"
+    
+    for i in range(3):
+        r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
  
-    r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
- 
-    if not r.ok:
-        r.raise_for_status()
-        sys.exit()
- 
+        if r.ok:
+            break
+        elif i >= 2:
+            print("Ensembl is currently down. Can't download sequences. Aborting...")
+            r.raise_for_status()
+            sys.exit() 
     decoded = r.json()
     return bool(decoded["ping"])
 
@@ -220,9 +224,7 @@ def ensembl_access(OUTPUT_DIR, species, flag_install_local):
         .
         ...etc...
     """
-    if not ping_ensembl():
-        print("Ensembl is currently down. Can't download sequences. Aborting...")
-        sys.exit()
+    ping_ensembl()
     library_path = OUTPUT_DIR + "/FAS_library/"
     release_num = get_release()
     species, url_name, assembly_default = get_species_info(species)
@@ -258,10 +260,10 @@ def test():
     
 def main():
     species = "human"
-    release_num = 107
-    species, url_name, assembly_default = ('homo_sapiens', 'Homo_sapiens', 'GRCh38')
-    library_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
-    ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
+    # release_num = 107
+    # species, url_name, assembly_default = ('homo_sapiens', 'Homo_sapiens', 'GRCh38')
+    # library_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
+    # ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
     
 if __name__ == "__main__":
     main()

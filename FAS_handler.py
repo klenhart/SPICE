@@ -34,7 +34,7 @@ gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{2}/gene_ids{7}.txt")
 {3} \
 --seed {2}/isoforms.fasta \
 --query {2}/isoforms.fasta \
---annotation_dir {2} \
+--annotation_dir {2}/annotation/ \
 --out_dir {2}/FAS_buffer/ \
 --bidirectional \
 --pairwise {2}/tsv_buffer/$gene.tsv \
@@ -48,8 +48,6 @@ gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{2}/gene_ids{7}.txt")
 -r \
 -g $gene \
 -o {2}"""
-
-# {0} {1} -b -o {2} -p {0} -s {1} -f {3}
 
 def start_stop_range(length, n):
     """Yield successive n-sized chunks from lst."""
@@ -102,27 +100,7 @@ def pairings_command_maker(gene_id, python_path, FAS_handler_path, root_path):
     options_remove.append("-o " + root_path)
     access_command = " ". join(options_access)
     remove_command = " ".join(options_remove)
-    return access_command, remove_command
-
-
-def FAS_command_maker(gene_id, isoforms_path, phyloprofile_path, pairings_tsv_path, fas_path, root_path):
-    options = []
-    options.append(fas_path)
-    options.append("--seed " + isoforms_path)
-    options.append("--query " + isoforms_path)
-    options.append("--annotation_dir "+ root_path)
-    options.append("--out_dir " + root_path + "FAS_buffer/")
-    options.append("--bidirectional")
-    options.append("--pairwise " + pairings_tsv_path)
-    options.append("--out_name " + gene_id)
-    options.append("--tsv")
-    options.append("--phyloprofile " + phyloprofile_path)
-    options.append("--domain")
-    options.append("--empty_as_1")
-    fas_command = " ".join(options)
-    return fas_command
-
-    
+    return access_command, remove_command 
 
 def tsv_collection_maker(header_dict, root_path):
     tsv_dict = dict()
