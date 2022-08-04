@@ -146,10 +146,10 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
         
         #Figure out what the highest count of isoforms is.
         for key in header_dict.keys():
-            old_val = fas_lib.get_config("max_isoform_num")
+            old_val = int(fas_lib.get_config("max_isoform_num"))
             new_val = len(header_dict[key])
             if new_val > old_val:
-                fas_lib.set_config("max_isoform_num", new_val)
+                fas_lib.set_config("max_isoform_num", str(new_val))
                 fas_lib.save_config()
         return header_dict, fas_lib
 
