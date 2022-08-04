@@ -210,7 +210,7 @@ def tsv_to_tuple_list(path):
     triple_list = []
     with open(path, "r") as f:
         tsv = f.read()
-        tsv = f.split("\n")
+        tsv = tsv.split("\n")
         tsv = [ entry for entry in tsv if len(entry) > 0 ]
     triple_list = [ tuple(entry.split("\t")) for entry in tsv ]
     return triple_list
