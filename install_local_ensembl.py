@@ -185,7 +185,7 @@ def install_local_ensembl(species, output_dir):
         fas_lib.set_config("isoforms_path", isoforms_path)
         fas_lib.set_config("protein_coding_ids_path", protein_coding_ids_path)
         fas_lib.set_config("phyloprofile_ids_path", phyloprofile_ids_path)
-        fas_lib.set_config("local_assembly_path", local_assembly_path)
+        fas_lib.set_config("local_assembly_path", local_assembly_path[:-3])
         fas_lib.set_config("slurm_path", slurm_path)
         fas_lib.set_config("tsv_buffer_path", tsv_buffer_path)
         fas_lib.set_config("fas_buffer_path", fas_buffer_path)
