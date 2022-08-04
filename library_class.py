@@ -36,10 +36,10 @@ class Library:
         self.config["annotation_path"] = None
         
         #counts
-        self.config["acquired_seq_count"] = 0
-        self.config["total_seq_count"] = 0
-        self.config["max_isoform_num"] = 0
-        self.config["gene_count"] = 0
+        self.config["acquired_seq_count"] = "0"
+        self.config["total_seq_count"] = "0"
+        self.config["max_isoform_num"] = "0"
+        self.config["gene_count"] = "0"
         
         #flags
         self.config["flag_protein_coding_genes"] = "False"
@@ -56,12 +56,10 @@ class Library:
                 self.extract_config(config)            
 
     def increment_acquired_seq_count(self):
-        self.config["acquired_seq_count"] += 1
+        self.config["acquired_seq_count"] = str(int(self.config["acquired_seq_count"]) + 1)
 
     def extract_config(self, config):
         for category, entry in config:
-            if category in ["acquired_seq_count", "total_seq_count", "max_isoform_num", "gene_count"]:
-                self.config[category] = int(entry)
             self.config[category] = entry
     
     def __str__(self):
