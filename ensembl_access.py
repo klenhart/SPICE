@@ -4,63 +4,27 @@ __author__ = "Christian Bluemel"
 
 """
 
-import os
 import requests
-import argparse
 import sys
 
 from all_protein_coding_gene_ID import extract_protein_coding_ids
 
-from install_local_ensembl import get_release
 from install_local_ensembl import install_local_ensembl
-from install_local_ensembl import get_species_info
-from install_local_ensembl import make_local_ensembl_name
+
 from FAS_handler import tsv_collection_maker
+
+from library_class import Library
 
 #Test command line:
 # python ensembl_access.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
-def get_taxon_id(species): 
-    server = "https://rest.ensembl.org"
-    ext = "/info/genomes/taxonomy/" + species +"?"
- 
-    r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
- 
-    if not r.ok:
-        r.raise_for_status()
-        sys.exit()
- 
-    decoded = r.json()
-    return decoded[0]["species_taxonomy_id"]
-
-def make_rootpath(library_path, species, assembly_num):
-    return library_path + species + "/release-" + str(assembly_num) + "/"
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
-        
-def ping_ensembl():
-    import requests, sys
-    
-    
-    server = "https://rest.ensembl.org"
-    ext = "/info/ping?"
-    
-    for i in range(3):
-        r = requests.get(server+ext, headers={ "Content-Type" : "application/json"})
- 
-        if r.ok:
-            break
-        elif i >= 2:
-            print("Ensembl is currently down. Can't download sequences. Aborting...")
-            r.raise_for_status()
-            sys.exit() 
-    decoded = r.json()
-    return bool(decoded["ping"])
 
 def make_request_data(id_list):
     id_list = [protein_id for gene_id, protein_id, transcript_id in id_list]
@@ -71,27 +35,6 @@ def make_request_data(id_list):
     request_data += ' ] }'
     return request_data
 
-def make_folders_and_files(root_path):
-    if not os.path.exists(root_path):
-        os.makedirs(root_path)
-    if not os.path.exists(root_path + "tsv_buffer"):
-        os.makedirs(root_path + "tsv_buffer")
-    if not os.path.exists(root_path + "FAS_buffer"):
-        os.makedirs(root_path + "FAS_buffer")
-    isoforms_path = root_path + "isoforms.fasta"
-    if not os.path.isfile(isoforms_path):
-        with open(isoforms_path, "w") as fp:
-            pass
-    phyloprofile_ids_path = root_path + "phyloprofile_ids.tsv"
-    if not os.path.isfile(phyloprofile_ids_path):
-        with open(phyloprofile_ids_path, "w") as fp:
-            pass
-    gene_ids_path = root_path + "gene_ids.txt"
-    if not os.path.isfile(gene_ids_path):
-        with open(gene_ids_path, "w") as fp:
-            pass
-    return gene_ids_path, isoforms_path, phyloprofile_ids_path
-
 def extract_gene_ids(protein_coding_ids):
     gene_ids = sorted(list(set([gene_id for gene_id, protein_id, transcript_id in protein_coding_ids])))
     count = len(gene_ids)
@@ -99,10 +42,21 @@ def extract_gene_ids(protein_coding_ids):
 
 def save_gene_ids_txt(gene_ids, gene_ids_path):
     gene_id_str = "\n".join(["gene"] + gene_ids)
-    with open(gene_ids_path, "w") as file:
-        file.write(gene_id_str)
+    with open(gene_ids_path, "w") as f:
+        f.write(gene_id_str)
 
-def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_path, root_path, taxon_id):
+def load_gene_ids_txt(gene_ids_path):
+    with open(gene_ids_path, "r") as f:
+        gene_ids = f.read()
+        gene_ids = gene_ids.split("\n")
+        gene_ids = [gene_id for gene_id in gene_ids if len(gene_id) > 0]
+    return gene_ids
+
+
+def load_progress(path):
+    return tsv_to_tuple_list(path)    
+
+def assemble_protein_seqs(protein_coding_ids, fas_lib):
     """
 
     Parameters
@@ -118,53 +72,86 @@ def assemble_protein_seqs(protein_coding_ids, assembly_num, species, library_pat
             ...etc...
             
             ]
+    The Library config class.
 
     Returns
     -------
     counts on how many request were found, not found and how many genes were assembled.
     """
-    gene_ids_path, isoforms_path, phyloprofile_ids_path = make_folders_and_files(root_path)
-
-    count_genes, gene_ids = extract_gene_ids(protein_coding_ids)
     
-    save_gene_ids_txt(gene_ids, gene_ids_path)
-
-    request_chunks = list(chunks(protein_coding_ids, 50))
-    ensembl_requests = []
+    if not fas_lib.get_config("flag_gene_ids_collection"):
+        print("Gene IDs not assembled on their own yet.")
+        gene_count, gene_ids = extract_gene_ids(protein_coding_ids)
+        save_gene_ids_txt(gene_ids, fas_lib.get_config("gene_ids_path"))
+        fas_lib.set_config("gene_count", gene_count)
+        fas_lib.set_config("flag_gene_ids_collection", True)
+        fas_lib.save_config()
+    else:
+        gene_count = fas_lib.get_config("gene_count")
+        gene_ids = load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
     
-    print(len(request_chunks))
-    
-    for i, chunk in enumerate(request_chunks):
-        ensembl_requests.append(make_request_data(chunk))
-
-    server = "https://rest.ensembl.org/sequence/id"
-    headers={ "Content-Type" : "application/json", "Accept" : "application/json"}    
-    
-    header_dict = dict()
-    for gene_id in gene_ids:
-        header_dict[gene_id] = []
-    
-    for i, request in enumerate(ensembl_requests):
-        ids_list = list(request_chunks)[i]
-        for x in range(3):
-            r = requests.post(server, headers=headers, data=request)
-            if r.ok:
-                break
-            elif x > 1:
-                r.raise_for_status()
+    print("Checking progress of the library.")
+    if not fas_lib.get_config("flag_sequence_collection"):
+        progress_list = load_progress(fas_lib.get_config("phyloprofile_ids_path"))
+        request_chunks = list(chunks(protein_coding_ids, 50))
+        
+        ensembl_requests = []
+        real_chunks = []
+        for chunk in request_chunks:
+            progress_checklist = [ triple in progress_list for triple in chunk ]
+            if all(progress_checklist):
+                continue
+            elif any(progress_checklist):
+                print("""Some sequences in a request have been requested already, 
+                      but some not. This makes not sense. 
+                      Did you touch the output files?""")
+                print("These IDs were not not downloaded yet", 
+                      str((triple[0], triple[1]) for triple in chunk if not (triple in progress_list)))
                 sys.exit()
-        decoded = r.json()
-        id_seq_tuple_list = [(entry["query"], entry["seq"]) for entry in decoded]
-        for j, id_seq_tuple in enumerate(id_seq_tuple_list):
-            gene_id, protein_id, transcript_id = ids_list[j]
-            query_id, seq = id_seq_tuple
-            header = gene_id + "|" + protein_id + "|" + str(taxon_id)
-            header_dict[gene_id].append(header)
-            with open(phyloprofile_ids_path, "a") as file:
-                file.write(header + "\t" + str(taxon_id) + "\n")
-            with open(isoforms_path, "a") as fasta:
-                fasta.write(">" + header + "\n" + seq + "\n")
-    return header_dict, count_genes
+            ensembl_requests.append(make_request_data(chunk))
+            real_chunks.append(chunk)
+        server = "https://rest.ensembl.org/sequence/id"
+        headers={ "Content-Type" : "application/json", "Accept" : "application/json"}    
+        
+        header_dict = dict()
+        for gene_id in gene_ids:
+            header_dict[gene_id] = []
+        
+        for i, request in enumerate(ensembl_requests):
+            ids_list = list(real_chunks)[i]
+            for x in range(3):
+                r = requests.post(server, headers=headers, data=request)
+                if r.ok:
+                    break
+                elif x > 1:
+                    r.raise_for_status()
+                    sys.exit()
+            decoded = r.json()
+            id_seq_tuple_list = [(entry["query"], entry["seq"]) for entry in decoded]
+            for j, id_seq_tuple in enumerate(id_seq_tuple_list):
+                gene_id, protein_id, transcript_id = ids_list[j]
+                query_id, seq = id_seq_tuple
+                header = gene_id + "|" + protein_id + "|" + fas_lib.get_config("taxon_id")
+                header_dict[gene_id].append(header)
+                with open(fas_lib.get_config("phyloprofile_ids_path"), "a") as file:
+                    file.write(header + "\t" + fas_lib.get_config("taxon_id") + "\n")
+                with open(fas_lib.get_config("isoforms_path"), "a") as fasta:
+                    fasta.write(">" + header + "\n" + seq + "\n")
+                fas_lib.increment_acquired_seq_count()
+                fas_lib.save_config()
+                
+        #Sequence collection should be done.
+        fas_lib.set_config("flag_sequence_collection", True)
+        fas_lib.save_config()
+        
+        #Figure out what the highest count of isoforms is.
+        for key in header_dict.keys():
+            old_val = fas_lib.get_config("max_isoform_num")
+            new_val = len(header_dict[key])
+            if new_val > old_val:
+                fas_lib.set_config("max_isoform_num", new_val)
+                fas_lib.save_config()
+        return header_dict, fas_lib
 
 def check_isoforms(isoforms_path):
     with open(isoforms_path, "r") as f:
@@ -207,7 +194,28 @@ def check_isoforms(isoforms_path):
             print("Problem found!")
             print(gene_id, transcript_id, protein_id)
 
-def ensembl_access(OUTPUT_DIR, species, flag_install_local):
+def triple_list_to_tsv(triple_list):
+    tsv = ""
+    for str_x, str_y, str_z in triple_list:
+        tsv += str_x + "\t" + str_y + "\t" + str_z + "\n"
+    return tsv
+
+def tuple_list_to_tsv(tuple_list):
+    tsv = ""
+    for str_x, str_y in tuple_list:
+        tsv += str_x + "\t" + str_y + "\n"
+    return tsv
+
+def tsv_to_tuple_list(path):
+    triple_list = []
+    with open(path, "r") as f:
+        tsv = f.read()
+        tsv = f.split("\n")
+        tsv = [ entry for entry in tsv if len(entry) > 0 ]
+    triple_list = [ tuple(entry.split("\t")) for entry in tsv ]
+    return triple_list
+
+def ensembl_access(output_dir, species, flag_install_local, config_path):
     """
     Returns
     -------
@@ -224,39 +232,36 @@ def ensembl_access(OUTPUT_DIR, species, flag_install_local):
         .
         ...etc...
     """
-    ping_ensembl()
-    library_path = OUTPUT_DIR + "/FAS_library/"
-    release_num = get_release()
-    species, url_name, assembly_default = get_species_info(species)
-    taxon_id = get_taxon_id(species)
-    ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
+
   
     if flag_install_local:
         print("Local ensembl installation commencing...")
-        install_local_ensembl(species, release_num, library_path, url_name, assembly_default)
-
+        #install_local_ensembl(species, release_num, library_path, url_name, assembly_default)
+        install_local_ensembl(species, output_dir)
     else:
-        print("Library generation commencing...")
-        if not os.path.isfile(ensembl_path):
-            print(ensembl_path, "does not exist. Maybe you have an old release of the local ensembl GTF. You can download a current one for your species by using the -l argument additional to your currently used arguments.")
-            sys.exit()
-        protein_coding_ids = extract_protein_coding_ids(ensembl_path)
-        if not os.path.exists(library_path):
-            os.makedirs(library_path)
-        root_path = make_rootpath(library_path, species, release_num) 
-        header_dict, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path, taxon_id)
-        tsv_collection_maker(header_dict, root_path)
-        print(count_genes, "genes assembled.")
-        print("Saved isoforms as fasta in", root_path + "/isoforms.fasta")
-        print("Library assembly complete.")
+        fas_lib = Library(config_path, False)
+        print("Library generation commencing.")
+        print("Checking config for protein coding ID status.")
+        # Collect the protein coding IDs
+        if fas_lib.get_config("flag_protein_coding_genes"):
+            print("Protein coding genes already collected. Loading list.")
+            protein_coding_ids = tsv_to_tuple_list(fas_lib.get_config("protein_coding_ids_path"))
+        else:
+            print("Protein coding genes not collected yet. Assembling list.")
+            protein_coding_ids = extract_protein_coding_ids(fas_lib.get_config("local_assembly_path"))
+            fas_lib.set_config("total_seq_count", len(protein_coding_ids))
+            with open(fas_lib.get_config("protein_coding_ids_path"), "w") as f:
+                f.write(triple_list_to_tsv(protein_coding_ids))
+            fas_lib.set_config("flag_protein_coding_genes", True)
+            fas_lib.save_config()
 
-def test():
-    species = "human"
-    release_num = 107
-    species, url_name, assembly_default = ('homo_sapiens', 'Homo_sapiens', 'GRCh38')
-    library_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
-    ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
-    return extract_protein_coding_ids(ensembl_path)
+        # header_dict, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path, taxon_id)
+        header_dict, fas_lib = assemble_protein_seqs(protein_coding_ids, fas_lib)
+
+        tsv_collection_maker(header_dict, fas_lib)
+        print(fas_lib.get_config("gene_count"), "genes assembled.")
+        print("Saved isoforms as fasta in", fas_lib.get_config("isoforms_path"))
+        print("Library assembly complete.")
     
 def main():
     species = "human"

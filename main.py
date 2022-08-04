@@ -24,28 +24,31 @@ def parser_setup():
     parser = argparse.ArgumentParser()
     
     parser.add_argument("-o", "--output", type=str,
-                        help="""Specify location of the library. FAS_library folder can already exist in this folder.
-                        If creating the library, this folder should contain the local ensembl assembly. If it does not,
-                        you can download the local ensembl assembly using the -l (--local) argument. It will then be automatically
-                        download into the FAS_library folder within the folder given in this argument.""")
+                        help="""Specify parent directory of the library. FAS_library folder can already exist in this folder.""")
 
     parser.add_argument("-s", "--species", type=str, default=None,
                         help="Specify the species.")
     
     parser.add_argument("-l", "--local", action="store_true",
-                        help="Download and unpack a local ensembl assembly into the folder defined in --output.")
+                        help="""Generate the directory and file structure to create a library.
+                        Also creates a config tsv file that will be used by the run to quickly access
+                        information about the library without having to ping ensembl.
+                        This will also download a local version of ensembl.""")
+
+    parser.add_argument("-c", "--config", type=str, default=None,
+                        help="Path to a config file of a library. Is required for library creation.")
 
     args = parser.parse_args()
-
+    config_path = args.config
     output = args.output
     species = args.species
     flag_install_local = args.local
 
-    return output, species, flag_install_local
+    return output, species, flag_install_local, config_path
 
 def main():
-    OUTPUT_DIR, species, flag_install_local = parser_setup()
-    ensembl_access(OUTPUT_DIR, species, flag_install_local)
+    output_dir, species, flag_install_local, config_path = parser_setup()
+    ensembl_access(output_dir, species, flag_install_local, config_path)
     
 if __name__ == "__main__":
     main()
