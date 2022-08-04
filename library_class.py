@@ -31,6 +31,9 @@ class Library:
         self.config["protein_coding_ids_path"] = None
         self.config["local_assembly_path"] = None
         self.config["slurm_path"] = None
+        self.config["tsv_buffer_path"] = None
+        self.config["fas_buffer_path"] = None
+        self.config["annotation_path"] = None
         
         #counts
         self.config["acquired_seq_count"] = 0

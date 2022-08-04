@@ -183,6 +183,9 @@ def install_local_ensembl(species, output_dir):
         fas_lib.set_config("phyloprofile_ids_path", phyloprofile_ids_path)
         fas_lib.set_config("local_assembly_path", local_assembly_path)
         fas_lib.set_config("slurm_path", slurm_path)
+        fas_lib.set_config("tsv_buffer_path", tsv_buffer_path)
+        fas_lib.set_config("fas_buffer_path", fas_buffer_path)
+        fas_lib.set_config("annotation_path", annotation_path)
         
         fas_lib.save_config()
         

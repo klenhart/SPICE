@@ -11,6 +11,8 @@ import itertools
 import argparse
 import os
 
+from library_class import Library
+
 # python /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -b -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107 -p /home/chrisbl/miniconda3/envs/FAS/bin/python -s /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -f /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
 
 TEST = {"A" : ["A", "B", "C", "D"], "B" : ["1", "2", "3", "4"]}
@@ -68,7 +70,7 @@ def start_stop_range(length, n):
     for i in range(1, length, n):
         yield (i, min(i+n-1, length))
 
-def bash_command_maker(config, python_path, FAS_handler_path, fas_path):
+def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path):
     """
     Generates SLURM job files for every 1000 genes in the library instance.
 
@@ -88,16 +90,10 @@ def bash_command_maker(config, python_path, FAS_handler_path, fas_path):
     None.
 
     """
-    slurm_path = root_path + "/SLURM/"
-    if not os.path.exists(slurm_path):
-        os.makedirs(slurm_path)
-    with open(root_path + "/gene_ids.txt", "r") as f:
+    with open(fas_lib.get_config("gene_ids_path"), "r") as f:
         gene_ids = f.read().split("\n")
         gene_count = len(gene_ids) - 1
     jobs_ranges = start_stop_range(gene_count, 1000)
-    species = root_path.split("/")
-    index = species.index("FAS_library") + 1
-    species = species[index]
     for i, entry in enumerate(jobs_ranges):
         start = 1
         if entry[1] % 1000 == 0:
@@ -105,17 +101,17 @@ def bash_command_maker(config, python_path, FAS_handler_path, fas_path):
         else:
             stop = (entry[1] % 1000) - 1
         output_ids = ["gene"] + gene_ids[entry[0]:entry[1]+1]
-        with open(slurm_path + "gene_ids{0}.txt".format(str(i)), "w") as gene_chunk:
+        with open(fas_lib.get_config("slurm_path") + "gene_ids{0}.txt".format(str(i)), "w") as gene_chunk:
             gene_chunk.write("\n".join(output_ids))
         output = RAW_SLURM.format(python_path, 
                                   FAS_handler_path, 
-                                  root_path, 
+                                  fas_lib.get_config("root_path"), 
                                   fas_path, 
-                                  species, 
+                                  fas_lib.get_config("species"), 
                                   str(start), 
                                   str(stop),
                                   str(i))
-        with open(slurm_path + "FAS_job{0}.job".format(str(i)), "w") as f:
+        with open(fas_lib.get_config("slurm_path") + "FAS_job{0}.job".format(str(i)), "w") as f:
             f.write(output)
 
 def tsv_collection_maker(header_dict, fas_lib):
@@ -144,7 +140,7 @@ def tsv_collection_maker(header_dict, fas_lib):
     with open(fas_lib.get_config("pairings_tsv_json_path"), 'w') as fp:
         json.dump(tsv_dict, fp,  indent=4)
 
-def tsv_access(gene_id, root_path):
+def tsv_access(gene_id, fas_lib):
     """
     Extracts pairing tsv from pairings_tsv.json into root_path/tsv_buffer/gene_id.tsv
 
@@ -160,13 +156,12 @@ def tsv_access(gene_id, root_path):
     None.
 
     """
-    buffer_path = root_path + "tsv_buffer/"
-    with open(root_path + "pairings_tsv.json", "r") as fp: 
+    with open(fas_lib.get_config("pairings_tsv_json_path"), "r") as fp: 
         tsv_data = json.load(fp)[gene_id]
-    with open(buffer_path + gene_id + ".tsv", "w") as fp:
+    with open(fas_lib.get_config("tsv_buffer_path") + gene_id + ".tsv", "w") as fp:
         fp.write(tsv_data)
 
-def tsv_remove(gene_id, root_path):
+def tsv_remove(gene_id, fas_lib):
     """
     Removes pairing tsv from pairings_tsv.json into root_path/tsv_buffer/gene_id.tsv
 
@@ -182,8 +177,7 @@ def tsv_remove(gene_id, root_path):
     None.
 
     """
-    buffer_path = root_path + "tsv_buffer/"
-    os.remove(buffer_path + gene_id + ".tsv")
+    os.remove(fas_lib.get_config("tsv_buffer_path") + gene_id + ".tsv")
 
 def parser_setup():
     """
@@ -239,13 +233,14 @@ def main():
     """
     Create tsv output for FAS or delete a tsv that was used by FAS already.
     """
-    root_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash = parser_setup()
+    config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash = parser_setup()
+    fas_lib = Library(config_path, False)
     if flag_maketsv:
-        tsv_access(gene_id, root_path)
+        tsv_access(gene_id, fas_lib)
     elif flag_remove:
-        tsv_remove(gene_id, root_path)
+        tsv_remove(gene_id, fas_lib)
     elif flag_bash:
-        bash_command_maker(root_path, python_path, FAS_handler_path, fas_path)
+        bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path)
         
 
 if __name__ == "__main__":
