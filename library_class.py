@@ -22,7 +22,6 @@ class Library:
         
         #paths
         self.config["library_path"] = None
-        self.config["ensembl_path"] = None
         self.config["root_path"] = None
         self.config["self_path"] = None
         self.config["pairings_tsv_json_path"] = None
@@ -44,13 +43,14 @@ class Library:
         self.config["flag_sequence_collection"] = False
         self.config["flag_gene_ids_collection"] = False
         if not flag_init:
+            print("Reached it!")
             if os.path.isfile(config_path):
                 with open(config_path, "r") as f:
                     config = f.read()
                     config = config.split("\n")
                     config = [ entry.split("\t") for entry in config if len(entry) > 0 ]
                     config = [ (category, entry if entry != "." else None) for category, entry in config ]
-                self.extract_config(config)
+                self.extract_config(config)            
 
     def increment_acquired_seq_count(self):
         self.config["acquired_seq_count"] += 1
@@ -66,7 +66,7 @@ class Library:
     def __str__(self):
         config_tsv = ""
         for key in self.config.keys():
-            config_tsv.append(key + "\t" + "." if self.config[key] is None else str(self.config[key]) + "\n")
+            config_tsv += key + "\t" + str(self.config[key]) + "\n"
         return config_tsv
             
     

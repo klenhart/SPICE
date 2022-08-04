@@ -152,7 +152,7 @@ def install_local_ensembl(species, output_dir):
         ### Assemble FTP address according to standard /release-{release_num}/{species}.{assembly_dafault}.{assembly_num}.gtf.gz
         file_name = url_name + "." + assembly_default + "." + release_num + ftp_suffix 
         ftp_address = ftp_prefix + release_num + ftp_infix + file_name 
-        local_assembly_path = root_path + "/" + file_name
+        local_assembly_path = root_path + file_name
         print("Downloading", ftp_address, "to", local_assembly_path + "...")
         with closing(request.urlopen(ftp_address)) as r:
             with open(local_assembly_path, 'wb') as f:
@@ -164,7 +164,7 @@ def install_local_ensembl(species, output_dir):
                 shutil.copyfileobj(f_in, f_out)
         os.remove(local_assembly_path)
         
-        config_path = root_path + "/config.tsv"
+        config_path = root_path + "config.tsv"
         
         fas_lib = Library(None, True)
         fas_lib.set_config("species", species)
@@ -183,6 +183,8 @@ def install_local_ensembl(species, output_dir):
         fas_lib.set_config("phyloprofile_ids_path", phyloprofile_ids_path)
         fas_lib.set_config("local_assembly_path", local_assembly_path)
         fas_lib.set_config("slurm_path", slurm_path)
+        
+        fas_lib.save_config()
         
         print("Library scaffold constructed. Now run main.py using the option -c", config_path)
 
