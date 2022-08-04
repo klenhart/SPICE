@@ -125,8 +125,13 @@ def make_folders_and_files(root_path):
     if not os.path.isfile(gene_ids_path):
         with open(gene_ids_path, "w") as fp:
             pass
+        
+    protein_coding_ids_path = root_path + "protein_coding_genes.tsv"
+    if not os.path.isfile(protein_coding_ids_path):
+        with open(protein_coding_ids_path, "w") as fp:
+            pass
 
-    return tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path
+    return tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path
 
 #def install_local_ensembl(url_infix_species, release_num, library_path, url_species, assembly_name):
 def install_local_ensembl(species, output_dir):
@@ -139,9 +144,8 @@ def install_local_ensembl(species, output_dir):
         taxon_id = get_taxon_id(species)
         root_path = make_rootpath(library_path, species, release_num)
         
-        tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path = make_folders_and_files(root_path)
+        tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path = make_folders_and_files(root_path)
         pairings_tsv_json_path = root_path + "pairings_tsv.json"
-        protein_coding_ids_path = root_path + "pairings_tsv.json"
 
         ftp_prefix = "http://ftp.ensembl.org/pub/release-"
         ftp_suffix = ".gtf.gz"        

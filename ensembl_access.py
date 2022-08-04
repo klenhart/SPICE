@@ -79,19 +79,19 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
     counts on how many request were found, not found and how many genes were assembled.
     """
     
-    if not fas_lib.get_config("flag_gene_ids_collection"):
+    if fas_lib.get_config("flag_gene_ids_collection") == "False":
         print("Gene IDs not assembled on their own yet.")
         gene_count, gene_ids = extract_gene_ids(protein_coding_ids)
         save_gene_ids_txt(gene_ids, fas_lib.get_config("gene_ids_path"))
         fas_lib.set_config("gene_count", gene_count)
-        fas_lib.set_config("flag_gene_ids_collection", True)
+        fas_lib.set_config("flag_gene_ids_collection", "True")
         fas_lib.save_config()
     else:
         gene_count = fas_lib.get_config("gene_count")
         gene_ids = load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
     
     print("Checking progress of the library.")
-    if not fas_lib.get_config("flag_sequence_collection"):
+    if fas_lib.get_config("flag_sequence_collection") == "False":
         progress_list = load_progress(fas_lib.get_config("phyloprofile_ids_path"))
         request_chunks = list(chunks(protein_coding_ids, 50))
         
@@ -141,7 +141,7 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
                 fas_lib.save_config()
                 
         #Sequence collection should be done.
-        fas_lib.set_config("flag_sequence_collection", True)
+        fas_lib.set_config("flag_sequence_collection", "True")
         fas_lib.save_config()
         
         #Figure out what the highest count of isoforms is.
@@ -243,7 +243,8 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
         print("Library generation commencing.")
         print("Checking config for protein coding ID status.")
         # Collect the protein coding IDs
-        if fas_lib.get_config("flag_protein_coding_genes"):
+        print(fas_lib.get_config("flag_protein_coding_genes"), type(fas_lib.get_config("flag_protein_coding_genes")))
+        if fas_lib.get_config("flag_protein_coding_genes") == "True":
             print("Protein coding genes already collected. Loading list.")
             protein_coding_ids = tsv_to_tuple_list(fas_lib.get_config("protein_coding_ids_path"))
         else:
@@ -252,7 +253,7 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
             fas_lib.set_config("total_seq_count", len(protein_coding_ids))
             with open(fas_lib.get_config("protein_coding_ids_path"), "w") as f:
                 f.write(triple_list_to_tsv(protein_coding_ids))
-            fas_lib.set_config("flag_protein_coding_genes", True)
+            fas_lib.set_config("flag_protein_coding_genes", "True")
             fas_lib.save_config()
 
         # header_dict, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path, taxon_id)

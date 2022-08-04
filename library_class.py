@@ -42,9 +42,9 @@ class Library:
         self.config["gene_count"] = 0
         
         #flags
-        self.config["flag_protein_coding_genes"] = False
-        self.config["flag_sequence_collection"] = False
-        self.config["flag_gene_ids_collection"] = False
+        self.config["flag_protein_coding_genes"] = "False"
+        self.config["flag_sequence_collection"] = "False"
+        self.config["flag_gene_ids_collection"] = "False"
         if not flag_init:
             print("Reached it!")
             if os.path.isfile(config_path):
@@ -60,9 +60,7 @@ class Library:
 
     def extract_config(self, config):
         for category, entry in config:
-            if category in ["flag_protein_coding_genes", "flag_sequence_collection", "flag_gene_ids_collection"]:
-                self.config[category] = entry == "True" 
-            elif category in ["acquired_seq_count", "total_seq_count", "max_isoform_num", "gene_count"]:
+            if category in ["acquired_seq_count", "total_seq_count", "max_isoform_num", "gene_count"]:
                 self.config[category] = int(entry)
             self.config[category] = entry
     
