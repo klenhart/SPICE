@@ -68,7 +68,7 @@ def start_stop_range(length, n):
     for i in range(1, length, n):
         yield (i, min(i+n-1, length))
 
-def bash_command_maker(root_path, python_path, FAS_handler_path, fas_path):
+def bash_command_maker(config, python_path, FAS_handler_path, fas_path):
     """
     Generates SLURM job files for every 1000 genes in the library instance.
 
@@ -118,7 +118,7 @@ def bash_command_maker(root_path, python_path, FAS_handler_path, fas_path):
         with open(slurm_path + "FAS_job{0}.job".format(str(i)), "w") as f:
             f.write(output)
 
-def tsv_collection_maker(header_dict, root_path):
+def tsv_collection_maker(header_dict, fas_lib):
     """
     Generates a pairings_tsv.json file in the root_path that contains all pairings.tsv files.
 
@@ -126,7 +126,7 @@ def tsv_collection_maker(header_dict, root_path):
     ----------
     header_dict : dict.keys() == [str], dict.values() == [str]
         dictionary containing all headers indexed by their ENS gene ID
-    root_path : TYPE
+    fas_lib : FAS Library class object
         path to the root of specific species library (e.g. /home/FAS_library/homo_sapiens/release_107/)
 
     Returns
@@ -141,7 +141,7 @@ def tsv_collection_maker(header_dict, root_path):
         pairs = [pair for pair in pairs if pair[0] < pair[1]]
         for header_1, header_2 in pairs:
             tsv_dict[gene_id] += header_1 + "\t" + header_2 + "\n"
-    with open(root_path + "pairings_tsv.json", 'w') as fp:
+    with open(fas_lib.get_config("pairings_tsv_json_path"), 'w') as fp:
         json.dump(tsv_dict, fp,  indent=4)
 
 def tsv_access(gene_id, root_path):
@@ -197,8 +197,8 @@ def parser_setup():
     #Setting up parser:
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("-o", "--output", type=str,
-                        help="""Specify the directory that contains the pairings_tsv.json and should contain the output.""")
+    parser.add_argument("-c", "--config", type=str,
+                        help="Path to a config file of a library. Is required for library creation.")
     
     parser.add_argument("-p", "--python", type=str, default=None,
                         help="""Specify the location of the pythonversion to use. This is only necessary when using the --bash option.""")
@@ -224,7 +224,7 @@ def parser_setup():
 
     args = parser.parse_args()
 
-    root_path = args.output
+    config_path = args.config
     gene_id = args.gene
     python_path = args.python
     FAS_handler_path = args.handler
@@ -233,7 +233,7 @@ def parser_setup():
     flag_maketsv = args.maketsv
     flag_bash = args.bash
 
-    return root_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash
+    return config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash
 
 def main():
     """

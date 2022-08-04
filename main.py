@@ -23,7 +23,7 @@ def parser_setup():
     #Setting up parser:
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("-o", "--output", type=str,
+    parser.add_argument("-o", "--output", type=str, default=None,
                         help="""Specify parent directory of the library. FAS_library folder can already exist in this folder.""")
 
     parser.add_argument("-s", "--species", type=str, default=None,
