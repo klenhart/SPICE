@@ -48,7 +48,6 @@ class Library:
         self.config["flag_made_pairings"] = "False"
 
         if not flag_init:
-            print("Reached it!")
             if os.path.isfile(config_path):
                 with open(config_path, "r") as f:
                     config = f.read()
