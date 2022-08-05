@@ -16,7 +16,7 @@ from FAS_handler import tsv_collection_maker
 from library_class import Library
 
 #Test command line:
-# python ensembl_access.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/
+# python main.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -l
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
@@ -264,6 +264,8 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
         if fas_lib.get_config("flag_made_pairings") == "False":
             header_dict = make_header_dict(fas_lib)
             tsv_collection_maker(header_dict, fas_lib)
+            fas_lib.set_config("flag_made_pairings", True)
+            fas_lib.save_config()
         print(fas_lib.get_config("gene_count"), "genes assembled.")
         print("Saved isoforms as fasta in", fas_lib.get_config("isoforms_path"))
         print("Library assembly complete.")

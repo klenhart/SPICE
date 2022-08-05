@@ -13,7 +13,7 @@ import os
 
 from library_class import Library
 
-# python /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -b -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107 -p /home/chrisbl/miniconda3/envs/FAS/bin/python -s /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -f /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
+# python /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -b -c /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv -p /home/chrisbl/miniconda3/envs/FAS/bin/python -s /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -f /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
 
 TEST = {"A" : ["A", "B", "C", "D"], "B" : ["1", "2", "3", "4"]}
 
@@ -25,31 +25,31 @@ SBATCH --mem-per-cpu=2G
 SBATCH --job-name="fas_{4}"
 SBATCH --output=/dev/null 
 SBATCH --error=/dev/null
-SBATCH --array={5}-{6}
+SBATCH --array={10}-{11}
 
-gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{2}/gene_ids{7}.txt")
+gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{13}gene_ids{12}.txt")
 {0} {1} \
 -m \
 -g $gene \
--o {2} \
+-c {2} \
 && \
 {3} \
---seed {2}/isoforms.fasta \
---query {2}/isoforms.fasta \
---annotation_dir {2}/annotation/ \
---out_dir {2}/FAS_buffer/ \
+--seed {5} \
+--query {5} \
+--annotation_dir {6} \
+--out_dir {7} \
 --bidirectional \
---pairwise {2}/tsv_buffer/$gene.tsv \
+--pairwise {8}$gene.tsv \
 --out_name $gene \
 --tsv \
---phyloprofile {2}/phyloprofile_ids.tsv \
+--phyloprofile {9} \
 --domain \
 --empty_as_1 \
 ; \
 {0} {1} \
 -r \
 -g $gene \
--o {2}"""
+-c {2}"""
 
 def start_stop_range(length, n):
     """
@@ -99,18 +99,24 @@ def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path):
         if entry[1] % 1000 == 0:
             stop = 1000
         else:
-            stop = (entry[1] % 1000) - 1
+            stop = (entry[1] % 1000)
         output_ids = ["gene"] + gene_ids[entry[0]:entry[1]+1]
         with open(fas_lib.get_config("slurm_path") + "gene_ids{0}.txt".format(str(i)), "w") as gene_chunk:
             gene_chunk.write("\n".join(output_ids))
-        output = RAW_SLURM.format(python_path, 
-                                  FAS_handler_path, 
-                                  fas_lib.get_config("root_path"), 
-                                  fas_path, 
-                                  fas_lib.get_config("species"), 
-                                  str(start), 
-                                  str(stop),
-                                  str(i))
+        output = RAW_SLURM.format(python_path,                      #0
+                                  FAS_handler_path,                 #1
+                                  fas_lib.get_config("self_path"),  #2
+                                  fas_path,                         #3
+                                  fas_lib.get_config("species"),    #4
+                                  fas_lib.get_config("isoforms_path"), #5
+                                  fas_lib.get_config("annotation_path"), #6
+                                  fas_lib.get_config("fas_buffer_path"), #7
+                                  fas_lib.get_config("tsv_buffer_path"), #8
+                                  fas_lib.get_config("phyloprofile_ids_path"), #9
+                                  str(start), #10
+                                  str(stop), #11
+                                  str(i),   #12
+                                  fas_lib.get_config("slurm_path")) #13
         with open(fas_lib.get_config("slurm_path") + "FAS_job{0}.job".format(str(i)), "w") as f:
             f.write(output)
 
