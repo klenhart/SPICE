@@ -54,7 +54,10 @@ def load_gene_ids_txt(gene_ids_path):
 
 
 def load_progress(path):
-    return tsv_to_tuple_list(path)    
+    tuple_list = tsv_to_tuple_list(path)
+    header_list = [ header for header, taxon_id in tuple_list ]
+    gene_protein_id_tuple_list = [ tuple(header.split("|")[0:2]) for header in header_list ]
+    return gene_protein_id_tuple_list
 
 def assemble_protein_seqs(protein_coding_ids, fas_lib):
     """
@@ -92,33 +95,17 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
     
     print("Checking progress of the library.")
     if fas_lib.get_config("flag_sequence_collection") == "False":
-        progress_list = load_progress(fas_lib.get_config("phyloprofile_ids_path"))
         request_chunks = list(chunks(protein_coding_ids, 50))
         
         ensembl_requests = []
-        real_chunks = []
         for chunk in request_chunks:
-            progress_checklist = [ triple in progress_list for triple in chunk ]
-            if all(progress_checklist):
-                continue
-            elif any(progress_checklist):
-                print("""Some sequences in a request have been requested already, 
-                      but some not. This makes not sense. 
-                      Did you touch the output files?""")
-                print("These IDs were not not downloaded yet", 
-                      str((triple[0], triple[1]) for triple in chunk if not (triple in progress_list)))
-                sys.exit()
             ensembl_requests.append(make_request_data(chunk))
-            real_chunks.append(chunk)
+
         server = "https://rest.ensembl.org/sequence/id"
         headers={ "Content-Type" : "application/json", "Accept" : "application/json"}    
-        
-        header_dict = dict()
-        for gene_id in gene_ids:
-            header_dict[gene_id] = []
-        
+                
         for i, request in enumerate(ensembl_requests):
-            ids_list = list(real_chunks)[i]
+            ids_list = request_chunks[i]
             for x in range(3):
                 r = requests.post(server, headers=headers, data=request)
                 if r.ok:
@@ -131,8 +118,9 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
             for j, id_seq_tuple in enumerate(id_seq_tuple_list):
                 gene_id, protein_id, transcript_id = ids_list[j]
                 query_id, seq = id_seq_tuple
+                if query_id != protein_id:
+                    print("Incorrect pairing. Aborting!", query_id, protein_id)
                 header = gene_id + "|" + protein_id + "|" + fas_lib.get_config("taxon_id")
-                header_dict[gene_id].append(header)
                 with open(fas_lib.get_config("phyloprofile_ids_path"), "a") as file:
                     file.write(header + "\t" + fas_lib.get_config("taxon_id") + "\n")
                 with open(fas_lib.get_config("isoforms_path"), "a") as fasta:
@@ -143,15 +131,7 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
         #Sequence collection should be done.
         fas_lib.set_config("flag_sequence_collection", "True")
         fas_lib.save_config()
-        
-        #Figure out what the highest count of isoforms is.
-        for key in header_dict.keys():
-            old_val = int(fas_lib.get_config("max_isoform_num"))
-            new_val = len(header_dict[key])
-            if new_val > old_val:
-                fas_lib.set_config("max_isoform_num", str(new_val))
-                fas_lib.save_config()
-        return header_dict, fas_lib
+    return fas_lib
 
 def check_isoforms(isoforms_path):
     with open(isoforms_path, "r") as f:
@@ -207,13 +187,29 @@ def tuple_list_to_tsv(tuple_list):
     return tsv
 
 def tsv_to_tuple_list(path):
-    triple_list = []
+    tuple_list = []
     with open(path, "r") as f:
         tsv = f.read()
         tsv = tsv.split("\n")
         tsv = [ entry for entry in tsv if len(entry) > 0 ]
-    triple_list = [ tuple(entry.split("\t")) for entry in tsv ]
-    return triple_list
+    tuple_list = [ tuple(entry.split("\t")) for entry in tsv ]
+    return tuple_list
+
+def make_header_dict(fas_lib):
+    header_taxon_tuple_list = tsv_to_tuple_list(fas_lib.get_config("phyloprofile_ids_path"))
+    header_list = [ header for header, taxon in header_taxon_tuple_list ]
+    
+    gene_ids = load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
+    
+    header_dict = dict()
+    
+    for gene_id in gene_ids:
+        header_dict[gene_id] = []
+    
+    for header in header_list:
+        gene_id = header.split("|")[0]
+        header_dict[gene_id].append(header)
+    return header_dict
 
 def ensembl_access(output_dir, species, flag_install_local, config_path):
     """
@@ -243,7 +239,6 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
         print("Library generation commencing.")
         print("Checking config for protein coding ID status.")
         # Collect the protein coding IDs
-        print(fas_lib.get_config("flag_protein_coding_genes"), type(fas_lib.get_config("flag_protein_coding_genes")))
         if fas_lib.get_config("flag_protein_coding_genes") == "True":
             print("Protein coding genes already collected. Loading list.")
             protein_coding_ids = tsv_to_tuple_list(fas_lib.get_config("protein_coding_ids_path"))
@@ -255,11 +250,20 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
                 f.write(triple_list_to_tsv(protein_coding_ids))
             fas_lib.set_config("flag_protein_coding_genes", "True")
             fas_lib.save_config()
-
-        # header_dict, count_genes = assemble_protein_seqs(protein_coding_ids, release_num, species, library_path, root_path, taxon_id)
-        header_dict, fas_lib = assemble_protein_seqs(protein_coding_ids, fas_lib)
-
-        tsv_collection_maker(header_dict, fas_lib)
+        
+        # Remove the IDs that have already been loaded.
+        progress_list = load_progress(fas_lib.get_config("phyloprofile_ids_path"))
+        protein_coding_ids = [(gene_id,
+                               protein_id,
+                               transcript_id) for  gene_id,
+                                                  protein_id,
+                                                  transcript_id in protein_coding_ids if (gene_id, protein_id) not in progress_list]
+        
+        fas_lib = assemble_protein_seqs(protein_coding_ids, fas_lib)
+        
+        if fas_lib.get_config("flag_made_pairings") == "False":
+            header_dict = make_header_dict(fas_lib)
+            tsv_collection_maker(header_dict, fas_lib)
         print(fas_lib.get_config("gene_count"), "genes assembled.")
         print("Saved isoforms as fasta in", fas_lib.get_config("isoforms_path"))
         print("Library assembly complete.")

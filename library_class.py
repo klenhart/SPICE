@@ -45,6 +45,8 @@ class Library:
         self.config["flag_protein_coding_genes"] = "False"
         self.config["flag_sequence_collection"] = "False"
         self.config["flag_gene_ids_collection"] = "False"
+        self.config["flag_made_pairings"] = "False"
+
         if not flag_init:
             print("Reached it!")
             if os.path.isfile(config_path):
