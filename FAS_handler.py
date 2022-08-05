@@ -17,15 +17,15 @@ from library_class import Library
 
 TEST = {"A" : ["A", "B", "C", "D"], "B" : ["1", "2", "3", "4"]}
 
-RAW_SLURM = """!/bin/bash
+RAW_SLURM = """#!/bin/bash
 
-SBATCH --partition=all,special,inteli7
-SBATCH --cpus-per-task=1
-SBATCH --mem-per-cpu=2G
-SBATCH --job-name="fas_{4}{12}"
-SBATCH --output=/dev/null 
-SBATCH --error=/dev/null
-SBATCH --array={10}-{11}
+#SBATCH --partition=all,special,inteli7
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=2G
+#SBATCH --job-name="fas_{4}{12}"
+#SBATCH --output=/dev/null 
+#SBATCH --error=/dev/null
+#SBATCH --array={10}-{11}
 
 gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{13}gene_ids{12}.txt")
 {0} {1} \
