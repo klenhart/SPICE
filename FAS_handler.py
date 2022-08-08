@@ -12,6 +12,7 @@ import argparse
 import os
 
 from library_class import Library
+#from expression_extraction import join_expression
 
 # python /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -b -c /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv -p /home/chrisbl/miniconda3/envs/FAS/bin/python -s /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -f /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
 
@@ -120,7 +121,7 @@ def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path):
             stop = 1000
         else:
             stop = (entry[1] % 1000)
-        output_ids = ["gene"] + gene_ids[entry[0]:entry[1]+1]
+        output_ids = gene_ids[entry[0]:entry[1]+1]
         with open(fas_lib.get_config("slurm_path") + "gene_ids{0}.txt".format(str(i)), "w") as gene_chunk:
             gene_chunk.write("\n".join(output_ids))
         output = RAW_SLURM.format(python_path,                      #0
@@ -204,6 +205,15 @@ def tsv_remove(gene_id, fas_lib):
 
     """
     os.remove(fas_lib.get_config("tsv_buffer_path") + gene_id + ".tsv")
+
+
+def generate_FAS_gtf(input_expression_paths_path, fas_lib):
+    distance_master_path = fas_lib.get_config["distance_master_path"]
+    with open(input_expression_paths_path, "r") as f:
+        pass
+        
+        
+
 
 def parser_setup():
     """
