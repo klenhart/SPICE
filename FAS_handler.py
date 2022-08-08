@@ -92,6 +92,8 @@ def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path):
     """
     with open(fas_lib.get_config("gene_ids_path"), "r") as f:
         gene_ids = f.read().split("\n")
+        if gene_ids[0] == "gene":
+            gene_ids = gene_ids[1:]
         gene_count = len(gene_ids) - 1
     jobs_ranges = start_stop_range(gene_count, 1000)
     for i, entry in enumerate(jobs_ranges):
@@ -140,7 +142,7 @@ def tsv_collection_maker(header_dict, fas_lib):
     for gene_id in header_dict.keys():
         tsv_dict[gene_id] = ""
         pairs = itertools.product(header_dict[gene_id], header_dict[gene_id])
-        pairs = [pair for pair in pairs if pair[0] < pair[1]]
+        pairs = [pair for pair in pairs if pair[0] <= pair[1]]
         for header_1, header_2 in pairs:
             tsv_dict[gene_id] += header_1 + "\t" + header_2 + "\n"
     with open(fas_lib.get_config("pairings_tsv_json_path"), 'w') as fp:

@@ -116,6 +116,11 @@ def make_folders_and_files(root_path):
         with open(isoforms_path, "w") as fp:
             pass
     
+    distance_master_path = root_path + "distance_master.phyloprofile"
+    if not os.path.isfile(distance_master_path):
+        with open(distance_master_path, "w") as fp:
+            pass
+    
     phyloprofile_ids_path = root_path + "phyloprofile_ids.tsv"
     if not os.path.isfile(phyloprofile_ids_path):
         with open(phyloprofile_ids_path, "w") as fp:
@@ -131,7 +136,7 @@ def make_folders_and_files(root_path):
         with open(protein_coding_ids_path, "w") as fp:
             pass
 
-    return tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path
+    return tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path
 
 #def install_local_ensembl(url_infix_species, release_num, library_path, url_species, assembly_name):
 def install_local_ensembl(species, output_dir):
@@ -144,7 +149,7 @@ def install_local_ensembl(species, output_dir):
         taxon_id = get_taxon_id(species)
         root_path = make_rootpath(library_path, species, release_num)
         
-        tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path = make_folders_and_files(root_path)
+        tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path = make_folders_and_files(root_path)
         pairings_tsv_json_path = root_path + "pairings_tsv.json"
 
         ftp_prefix = "http://ftp.ensembl.org/pub/release-"
@@ -177,6 +182,7 @@ def install_local_ensembl(species, output_dir):
         fas_lib.set_config("assembly_default", assembly_default)
         fas_lib.set_config("taxon_id", taxon_id)
         
+        fas_lib.set_config("distance_master_path", distance_master_path)
         fas_lib.set_config("library_path", library_path)
         fas_lib.set_config("root_path", root_path)
         fas_lib.set_config("self_path", config_path)

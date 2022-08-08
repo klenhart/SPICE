@@ -17,6 +17,7 @@ from library_class import Library
 
 #Test command line:
 # python main.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -l
+# python main.py -c /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv
 
 # /share/project/zarnack/chrisbl/FAS/utility/protein_lib
 
@@ -50,6 +51,8 @@ def load_gene_ids_txt(gene_ids_path):
         gene_ids = f.read()
         gene_ids = gene_ids.split("\n")
         gene_ids = [gene_id for gene_id in gene_ids if len(gene_id) > 0]
+        if gene_ids[0] == "gene":
+            gene_ids = gene_ids[1:]
     return gene_ids
 
 
@@ -211,6 +214,15 @@ def make_header_dict(fas_lib):
         header_dict[gene_id].append(header)
     return header_dict
 
+def count_max_isoforms(header_dict):
+    max_iso_count = 0
+    for gene in header_dict.keys():
+        iso_count = len(header_dict[gene])
+        if len(header_dict[gene]) > max_iso_count:
+            max_iso_count = iso_count
+    return max_iso_count
+            
+
 def ensembl_access(output_dir, species, flag_install_local, config_path):
     """
     Returns
@@ -260,10 +272,12 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
                                                   transcript_id in protein_coding_ids if (gene_id, protein_id) not in progress_list]
         
         fas_lib = assemble_protein_seqs(protein_coding_ids, fas_lib)
-        
+        print("Checking phyloprofile pairing.")
         if fas_lib.get_config("flag_made_pairings") == "False":
             header_dict = make_header_dict(fas_lib)
             tsv_collection_maker(header_dict, fas_lib)
+            max_iso_count = count_max_isoforms(header_dict)
+            fas_lib.set_config("max_isoform_num", str(max_iso_count))
             fas_lib.set_config("flag_made_pairings", True)
             fas_lib.save_config()
         print(fas_lib.get_config("gene_count"), "genes assembled.")

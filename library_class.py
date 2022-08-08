@@ -21,6 +21,7 @@ class Library:
         self.config["taxon_id"] = None
         
         #paths
+        self.config["distance_master_path"] = None
         self.config["library_path"] = None
         self.config["root_path"] = None
         self.config["self_path"] = None
