@@ -53,8 +53,10 @@ gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{13}gene_ids{12}.txt")
 
 def concat_FAS_output(fas_lib):
     distance_master_path = fas_lib.get_config("distance_master_path")
-    fas_buffer_path = fas_lib.get_config["fas_buffer_path"]
+    fas_buffer_path = fas_lib.get_config("fas_buffer_path")
     file_names = os.listdir(fas_buffer_path)
+    print(len(file_names))
+    print(fas_buffer_path)
     for filename in file_names:
         path = fas_buffer_path + filename
         with open(path, "r") as f_in:
@@ -65,6 +67,7 @@ def concat_FAS_output(fas_lib):
             query = "\n".join(query)
             with open(distance_master_path, "a") as f_out:
                 f_out.write(query + "\n")
+        os.remove(path)
 
 def start_stop_range(length, n):
     """

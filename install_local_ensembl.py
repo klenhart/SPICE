@@ -119,7 +119,7 @@ def make_folders_and_files(root_path):
     distance_master_path = root_path + "distance_master.phyloprofile"
     if not os.path.isfile(distance_master_path):
         with open(distance_master_path, "w") as fp:
-            fp.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n")
+            fp.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B")
     
     phyloprofile_ids_path = root_path + "phyloprofile_ids.tsv"
     if not os.path.isfile(phyloprofile_ids_path):
