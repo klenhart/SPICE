@@ -51,6 +51,21 @@ gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{13}gene_ids{12}.txt")
 -g $gene \
 -c {2}"""
 
+def concat_FAS_output(fas_lib):
+    distance_master_path = fas_lib.get_config("distance_master_path")
+    fas_buffer_path = fas_lib.get_config["fas_buffer_path"]
+    file_names = os.listdir(fas_buffer_path)
+    for filename in file_names:
+        path = fas_buffer_path + filename
+        with open(path, "r") as f_in:
+            query = f_in.read().split("\n")
+            query = query[1:]
+            if len(query[-1]) == 0:
+                query = query[0:-1]
+            query = "\n".join(query)
+            with open(distance_master_path, "a") as f_out:
+                f_out.write(query + "\n")
+
 def start_stop_range(length, n):
     """
     Splits length into equal chunks of size n.
@@ -223,6 +238,8 @@ def parser_setup():
     parser.add_argument("-b", "--bash", action="store_true",
                         help="Make one FAS bash command for each gene in a text file.")
     
+    parser.add_argument("-j", "--join", action="store_true",
+                        help="Join all the FAS_output into the distance_master.phyloprofile.")
 
     args = parser.parse_args()
 
@@ -234,14 +251,15 @@ def parser_setup():
     flag_remove = args.remove
     flag_maketsv = args.maketsv
     flag_bash = args.bash
+    flag_join = args.join
 
-    return config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash
+    return config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join
 
 def main():
     """
     Create tsv output for FAS or delete a tsv that was used by FAS already.
     """
-    config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash = parser_setup()
+    config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join = parser_setup()
     fas_lib = Library(config_path, False)
     if flag_maketsv:
         tsv_access(gene_id, fas_lib)
@@ -249,7 +267,8 @@ def main():
         tsv_remove(gene_id, fas_lib)
     elif flag_bash:
         bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path)
-        
+    elif flag_join:
+        concat_FAS_output(fas_lib)
 
 if __name__ == "__main__":
     main()
