@@ -8,6 +8,7 @@ Created on Fri Aug  5 12:43:02 2022
 
 import pyranges as pr
 
+
 from ensembl_access import tsv_to_tuple_list
 
 #generate_expression_summary("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/protein_coding_genes.tsv", "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856510.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf")
@@ -131,13 +132,19 @@ def join_expression(expression_path_list, protein_coding_path):
 
 
 def load_dist_matrix(fas_lib):
-    distance_master_path = fas_lib.get_config["distance_master_path"]
+    distance_master_path = fas_lib.get_config("distance_master_path")
     with open(distance_master_path, "r") as f:
         distance_master = f.read()
     distance_master = distance_master.split("\n")
+
+    
+    
+    distance_master = distance_master[1:]
+    if distance_master[-1] == "":
+        distance_master = distance_master[:-1]
     distance_master = [ entry.split("\t") for entry in distance_master ]
     dist_matrix_dict = dict()
-    for seed, query, fas_1, fas_2 in distance_master:
+    for seed, tax_id, query, fas_1, fas_2 in distance_master:
         fas_score = (float(fas_1) + float(fas_2)) / 2
         gene_id, prot_id_1, tax_id = seed.split("|")
         gene_id, prot_id_2, tax_id = query.split("|")
