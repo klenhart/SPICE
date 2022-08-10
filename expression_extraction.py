@@ -7,8 +7,10 @@ Created on Fri Aug  5 12:43:02 2022
 """
 
 import pyranges as pr
+import os
+import json
 
-
+from library_class import Library
 from ensembl_access import tsv_to_tuple_list
 
 #generate_expression_summary("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/protein_coding_genes.tsv", "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856510.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf")
@@ -106,21 +108,31 @@ def check_for_same_order(m1, m2):
             break
     return flag_check
 
-def join_expression(expression_path_list, protein_coding_path):
+
+def filter_exempt_genes(expression_data, exempt_genes):
+    if len(exempt_genes) == 0:
+        pass
+    else:
+        expression_data = [ entry for entry in expression_data if entry[0] not in exempt_genes ]
+    return expression_data
+
+def join_expression(expression_path_list, protein_coding_path, exempt_genes):
     protein_coding_ids = load_protein_coding_ids(protein_coding_path)
+    protein_coding_ids = [ entry for entry in protein_coding_ids if entry[0] not in exempt_genes ]
     expression_dict = dict()
     prot_to_gene_dict = dict()
+    for gene_id, prot_id, transcript_id in protein_coding_ids:
+        expression_dict[prot_id] = 0
+        prot_to_gene_dict[prot_id] = gene_id
+    # Extract all the expression from the gtf files and filter out everything unnecessary.
     for expression_path in expression_path_list:
         expression_data = load_expression_gtf(expression_path)
         expression_data = filter_non_expressed(expression_data)
         expression_data = filter_protein_coding(expression_data, protein_coding_ids)
         expression_data = fix_expression_ids(expression_data, protein_coding_ids)
+        expression_data = filter_exempt_genes(expression_data, exempt_genes)
         for gene_id, prot_id, transcript_id, fpkm in expression_data:
-            if prot_id not in expression_dict.keys():
-                expression_dict[prot_id] = fpkm
-            else:
-                expression_dict[prot_id] += fpkm
-            prot_to_gene_dict[prot_id] = gene_id
+            expression_dict[prot_id] += fpkm
     isoforms_dict = dict()
     for prot_id in expression_dict.keys():
         gene_id = prot_to_gene_dict[prot_id]
@@ -130,35 +142,37 @@ def join_expression(expression_path_list, protein_coding_path):
             isoforms_dict[gene_id] = [prot_id]
     return expression_dict, isoforms_dict
 
-
 def load_dist_matrix(fas_lib):
-    distance_master_path = fas_lib.get_config("distance_master_path")
-    with open(distance_master_path, "r") as f:
-        distance_master = f.read()
-    distance_master = distance_master.split("\n")
-
-    
-    
-    distance_master = distance_master[1:]
-    if distance_master[-1] == "":
-        distance_master = distance_master[:-1]
-    distance_master = [ entry.split("\t") for entry in distance_master ]
-    dist_matrix_dict = dict()
-    for seed, tax_id, query, fas_1, fas_2 in distance_master:
-        fas_score = (float(fas_1) + float(fas_2)) / 2
-        gene_id, prot_id_1, tax_id = seed.split("|")
-        gene_id, prot_id_2, tax_id = query.split("|")
-        if gene_id not in dist_matrix_dict.keys():
-            dist_matrix_dict[gene_id] = {prot_id_1 : { prot_id_2 : fas_score} , prot_id_2 : { prot_id_1 : fas_score} }
-        else:
-            if prot_id_1 not in dist_matrix_dict[gene_id].keys():
-                dist_matrix_dict[gene_id][prot_id_1] = { prot_id_2 : fas_score}
+    if "distance_master.json" in os.listdir(fas_lib.get_config("root_path")):
+        with open(fas_lib.get_config("root_path") + "distance_master.json", "r") as f: 
+            dist_matrix_dict = json.load(f)
+    else:
+        distance_master_path = fas_lib.get_config("distance_master_path")
+        with open(distance_master_path, "r") as f:
+            distance_master = f.read()
+        distance_master = distance_master.split("\n")   
+        distance_master = distance_master[1:]
+        if distance_master[-1] == "":
+            distance_master = distance_master[:-1]
+        distance_master = [ entry.split("\t") for entry in distance_master ]
+        dist_matrix_dict = dict()
+        for seed, tax_id, query, fas_1, fas_2 in distance_master:
+            fas_score = (float(fas_1) + float(fas_2)) / 2
+            gene_id, prot_id_1, tax_id = seed.split("|")
+            gene_id, prot_id_2, tax_id = query.split("|")
+            if gene_id not in dist_matrix_dict.keys():
+                dist_matrix_dict[gene_id] = {prot_id_1 : { prot_id_2 : fas_score} , prot_id_2 : { prot_id_1 : fas_score} }
             else:
-                dist_matrix_dict[gene_id][prot_id_1][prot_id_2] = fas_score
-            if prot_id_2 not in dist_matrix_dict[gene_id].keys():
-                dist_matrix_dict[gene_id][prot_id_2] = { prot_id_1 : fas_score}
-            else:
-                dist_matrix_dict[gene_id][prot_id_2][prot_id_1] = fas_score
+                if prot_id_1 not in dist_matrix_dict[gene_id].keys():
+                    dist_matrix_dict[gene_id][prot_id_1] = { prot_id_2 : fas_score}
+                else:
+                    dist_matrix_dict[gene_id][prot_id_1][prot_id_2] = fas_score
+                if prot_id_2 not in dist_matrix_dict[gene_id].keys():
+                    dist_matrix_dict[gene_id][prot_id_2] = { prot_id_1 : fas_score}
+                else:
+                    dist_matrix_dict[gene_id][prot_id_2][prot_id_1] = fas_score
+        with open(fas_lib.get_config("root_path") + "distance_master.json", 'w') as f:
+            json.dump(dist_matrix_dict, f,  indent=4)
     return dist_matrix_dict
 
 
@@ -173,7 +187,7 @@ def make_fas_graph_row(expression_dict, isoforms_dict, dist_matrix_dict, gene_id
     dist_matrix = dist_matrix_dict[gene_id]
     
     # Initialize the total fpkm of the gene
-    total_fpkm = 0
+    total_fpkm = 0.0
     
     # initialize dictionary to store only the fpkm of the protein_ids
     relative_expression_dict = dict()
@@ -187,7 +201,10 @@ def make_fas_graph_row(expression_dict, isoforms_dict, dist_matrix_dict, gene_id
     
     # Turn the fpkm values into relative values.
     for prot_id in isoform_prot_ids:
-        relative_expression_dict[prot_id] = relative_expression_dict[prot_id] / total_fpkm
+        if total_fpkm == 0.0:
+            relative_expression_dict[prot_id] = 0.0
+        else:
+            relative_expression_dict[prot_id] = relative_expression_dict[prot_id] / total_fpkm
 
     # Calculate the Sigma values.
     for seed_id in isoform_prot_ids:
@@ -195,11 +212,10 @@ def make_fas_graph_row(expression_dict, isoforms_dict, dist_matrix_dict, gene_id
             fas_sigma_dict[seed_id] += (dist_matrix[seed_id][query_id] * relative_expression_dict[query_id])
     
     for prot_id in isoform_prot_ids:
-        fas_graph_row += prot_id + ":" + str(fas_sigma_dict[prot_id]) + ";"
+        fas_graph_row += prot_id + ":" + str(fas_sigma_dict[prot_id]) + ":" + str(relative_expression_dict[prot_id]) + ";"
     fas_graph_row = fas_graph_row[:-1]
     
     fas_graph_row = fas_graph_row + "\t" + str(total_fpkm)
-
     return fas_graph_row
     
 
@@ -208,67 +224,35 @@ def generate_FAS_polygon(fas_lib, expression_paths_path, name_path):
     with open(expression_paths_path, "r") as f:
         expression_paths_list = f.read()
     expression_paths_list = expression_paths_list.split("\n")
+    expression_paths_list = [ expression_paths for expression_paths in expression_paths_list if len(expression_paths) > 0 ]
     expression_paths_list = [ entry.split(";") for entry in expression_paths_list ]
     
     with open(name_path, "r") as f:
         name_list = f.read()
     name_list = name_list.split("\n")
-
     for i, expression_paths in enumerate(expression_paths_list):
         name = name_list[i]
         expression_dict, isoforms_dict = join_expression(expression_paths,
-                                                         fas_lib.get_config("protein_coding_path"))
+                                                         fas_lib.get_config("protein_coding_ids_path"),
+                                                         ["ENSG00000155657"])
         polygon_output = "geneID\tisoformVectors\tgeneFPKM"
         for gene_id in isoforms_dict.keys():
             polygon_output += "\n" + make_fas_graph_row(expression_dict,
                                                         isoforms_dict,
                                                         dist_matrix_dict,
                                                         gene_id)
-        with open(fas_lib.get_config("root_path") + "polygonFAS_{0}.tsv".format(name), "w") as f:
+        if not os.path.exists(fas_lib.get_config("root_path") + "FAS_graphs"):
+            os.makedirs(fas_lib.get_config("root_path") + "FAS_graphs")
+        with open(fas_lib.get_config("root_path") +  "FAS_graphs/polygonFAS_{0}.tsv".format(name), "w") as f:
             f.write(polygon_output)
-    
-
 
 def main():
-    expression_path_list = ["/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856510.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-        "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856511.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-        "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856512.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf"]
-    protein_coding_path = '/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/protein_coding_genes.tsv'
-    expression_dict, isoforms_dict = join_expression(expression_path_list, protein_coding_path)
-#     expression_paths = ["/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856510.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856511.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856512.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856513.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856514.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856515.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856516.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856517.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856518.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856519.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856520.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR4578910.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf",
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR4578911.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf"]
-#     protein_coding_path = '/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/protein_coding_genes.tsv'
-#     stats = [generate_expression_summary(expression_path, protein_coding_path) for expression_path in expression_paths]
+    expression_paths_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/dump/test/expression_paths.txt"
+    name_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/dump/test/expression_names.txt"
     
-#     for stat_dict in stats:
-#         for gene in stat_dict.keys():
-            
+    fas_lib = Library("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv", False)
     
-#     median_list = []
-#     mean_list = []
-#     three_or_more_list = []
-#     for median, mean, three_or_more_ratio in stats:
-#         median_list.append(median)
-#         mean_list.append(mean)
-#         three_or_more_list.append(three_or_more_ratio)
-#     print("Median isoform count:", sum(median_list) / len(median_list))
-#     print("Mean isoform count:", sum(mean_list) / len(mean_list))
-#     print("three or more isoform count:", sum(three_or_more_list) / len(three_or_more_list))
-        
-        
+    generate_FAS_polygon(fas_lib, expression_paths_path, name_path)
 
 if __name__ == "__main__":
     main()
-
-
