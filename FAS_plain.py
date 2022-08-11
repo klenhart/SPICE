@@ -12,6 +12,8 @@ import math
 
 from library_class import Library
 
+from ensembl_access import load_gene_ids_txt
+
 ########
 def test():
     fas_lib = Library("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv", False)
@@ -245,12 +247,7 @@ def calc_rmsd(pair_of_lists):
     for i, _ in enumerate(list_1):
         difference_list.append((list_1[i] - list_2[i])**2)
     return math.sqrt(sum(difference_list)/count)
-    
-        
 
-        
-    
-    
 def scale_list(scale_factor, float_list):
     output_list = []
     for value in float_list:
@@ -272,69 +269,178 @@ def extract_graph(path, gene_id):
     rel_exprs = [ rel_expr for prot_id, sigma_expr, rel_expr in isoform_vector ]
     return prot_ids, sigma_exprs, rel_exprs, float(gene_fpkm)
 
+def generate_comparison(fas_graphs_dict_list, fas_lib, sample_names):
+    title = "x".join(sample_names)
+    fas_graphs_dict1, fas_graphs_dict2 = fas_graphs_dict_list
+    output = "gene_id\tsample_names\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\n"
+    for gene_name in fas_graphs_dict1.keys():
+        fas_graph_list = [fas_graphs_dict1[gene_name], fas_graphs_dict2[gene_name]]
+        title = gene_name + "_" + "x".join(sample_names)
+        protein_ids = []
+        total_fpkms = []
+        sigma_exprs = []
+        rel_exprs = []
+            
+        for prot_ids_list, sigma_expr_list, rel_expr_list, total_fpkm in fas_graph_list:
+            protein_ids = prot_ids_list
+            total_fpkms.append(total_fpkm)
+            sigma_exprs.append(sigma_expr_list)
+            rel_exprs.append(rel_expr_list)
+
+        delete_list = []
+        for i, rel_expr in enumerate(rel_exprs):
+            for j, _ in enumerate(rel_expr):
+                if all([ entry[j] == 0 for entry in rel_exprs ]):
+                    delete_list.append(j)
+            break
+
+        categories = []
+        final_sigma_exprs = []
+        
+        for name in sample_names:
+            final_sigma_exprs.append([])
+        for i, prot_id in enumerate(protein_ids):
+            if i not in delete_list:
+                categories.append(prot_id)
+                for j, name in enumerate(sample_names):
+                    final_sigma_exprs[j].append(sigma_exprs[j][i])
+        
+        total_fpkm_dict = dict()
+        for i, name in enumerate(sample_names):
+            total_fpkm_dict[name] = total_fpkms[i]
+        
+        sigma_exprs_dict = dict()
+        scaled_sigma_exprs_dict = dict()
+        for i, name in enumerate(sample_names):
+            sigma_exprs_dict[name] = final_sigma_exprs[i]
+        
+        max_fpkm_name = sample_names[0]
+        
+        for name in total_fpkm_dict.keys():
+            if total_fpkm_dict[name] > total_fpkm_dict[max_fpkm_name]:
+                max_fpkm_name = name
+
+        # Calculate Scales in comparison to largest fpkm.
+        scales = dict()
+        for name in sample_names:
+            if total_fpkm_dict[max_fpkm_name] == 0:
+                scales[name] = 0
+            else:
+                scales[name] = total_fpkm_dict[name] / total_fpkm_dict[max_fpkm_name]
+       
+        for name in sample_names:
+            scaled_sigma_exprs_dict[name] = scale_list(scales[name], sigma_exprs_dict[name])
+            
+        scaled_rmsd = calc_rmsd(list(scaled_sigma_exprs_dict.values()))
+        unscaled_rmsd = calc_rmsd(list(sigma_exprs_dict.values()))
+        
+        
+        output_row_list = [gene_name,
+                           ";".join(sample_names)]
+        unscaled_expr_list = []
+        scaled_expr_list = []
+        for name in sample_names:
+            unscaled_expr_list.append(":".join([ str(value) for value in sigma_exprs_dict[name]]))
+            scaled_expr_list.append(":".join([ str(value) for value in scaled_sigma_exprs_dict[name]]))
+        output_row_list.append(";".join(unscaled_expr_list))
+        output_row_list.append(";".join(scaled_expr_list))
+        output_row_list.append(str(unscaled_rmsd))
+        output_row_list.append(str(scaled_rmsd))
+
+        output_row = "\t".join(output_row_list)
+        
+        output += output_row + "\n"
+    with open(fas_lib.get_config("root_path") + "pictures/" + title + ".tsv", "w") as f:
+        f.write(output)
+        
+def extract_all_graph(fas_lib, path, exempt=[]):
+    fas_graphs_dict = dict()
+    gene_ids = load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
+    gene_ids = [ gene_id for gene_id in gene_ids if gene_id not in exempt]
+    for gene_id in gene_ids:
+        fas_graphs_dict[gene_id] = extract_graph(path, gene_id)
+    return fas_graphs_dict
+        
+
+fas_lib = Library("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv", False)
+    
+r634q = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_R634Q.tsv"
+wtnc = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WTNC.tsv"
+wt = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WT.tsv"
+p633l = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_P633L.tsv"
+    
+r634q_graphs_dict = extract_all_graph(fas_lib, r634q, ["ENSG00000155657"])
+wt_graphs_dict = extract_all_graph(fas_lib, wt, ["ENSG00000155657"])
+
 def main():
-    fas_lib = Library("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv", False)
+    #
+    pass
+    # fas_lib = Library("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv", False)
     
-    r634q = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_R634Q.tsv"
-    wtnc = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WTNC.tsv"
-    wt = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WT.tsv"
-    p633l = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_P633L.tsv"
+    # r634q = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_R634Q.tsv"
+    # wtnc = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WTNC.tsv"
+    # wt = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WT.tsv"
+    # p633l = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_P633L.tsv"
     
-    test_ids_dict = { "RECK" : "ENSG00000122707",
-                     "ARNTL" : "ENSG00000133794",
-                     "DPF2" : "ENSG00000133884",
-                     "PITX2" : "ENSG00000164093",
-                     "TPM4" : "ENSG00000167460",
-                     "SETD5" : "ENSG00000168137",
-                     "UPP1" : "ENSG00000183696",
-                     "BCO2" : "ENSG00000197580",     
-                     "TPM2" : "ENSG00000198467" }
+    # r634q_graphs_dict = extract_all_graph(fas_lib, r634q, ["ENSG00000155657"])
+    # wt_graphs_dict = extract_all_graph(fas_lib, wt, ["ENSG00000155657"])
 
-    r634q_graphs_dict = dict()
-    wtnc_graphs_dict = dict()
-    
-    for key in test_ids_dict.keys():
-        r634q_graphs_dict[key] = extract_graph(r634q, test_ids_dict[key])
-        wtnc_graphs_dict[key] = extract_graph(wtnc, test_ids_dict[key])
+    # generate_comparison([r634q_graphs_dict, wt_graphs_dict], fas_lib, ["R634Q", "WT"])
 
-    for gene_name in test_ids_dict.keys():
-        rmsd = make_graph_scaled(gene_name,
-                                 [r634q_graphs_dict[gene_name],
-                                  wtnc_graphs_dict[gene_name]],
-                                 fas_lib,
-                                 ["R634Q", "WTNC"])
-        print(rmsd)
-        print(gene_name)
-        rmsd = make_graph_unscaled(gene_name,
-                                 [r634q_graphs_dict[gene_name],
-                                  wtnc_graphs_dict[gene_name]],
-                                 fas_lib,
-                                 ["R634Q", "WTNC"])
-        print(rmsd)
-        print(gene_name)
     
-    p633l_graphs_dict = dict()
-    wt_graphs_dict = dict()
-    
-    for key in test_ids_dict.keys():
-        p633l_graphs_dict[key] = extract_graph(p633l, test_ids_dict[key])
-        wt_graphs_dict[key] = extract_graph(wt, test_ids_dict[key])
+    # for key in test_ids_dict.keys():
+    #     r634q_graphs_dict[key] = extract_graph(r634q, test_ids_dict[key])
+    #     wtnc_graphs_dict[key] = extract_graph(wtnc, test_ids_dict[key])
+    # test_ids_dict = { "RECK" : "ENSG00000122707",
+    #                  "ARNTL" : "ENSG00000133794",
+    #                  "DPF2" : "ENSG00000133884",
+    #                  "PITX2" : "ENSG00000164093",
+    #                  "TPM4" : "ENSG00000167460",
+    #                  "SETD5" : "ENSG00000168137",
+    #                  "UPP1" : "ENSG00000183696",
+    #                  "BCO2" : "ENSG00000197580",     
+    #                  "TPM2" : "ENSG00000198467" }
 
-    for gene_name in test_ids_dict.keys():
-        rmsd = make_graph_scaled(gene_name,
-                                 [p633l_graphs_dict[gene_name],
-                                  wt_graphs_dict[gene_name]],
-                                 fas_lib,
-                                 ["P633L", "WT"])
-        print(rmsd)
-        print(gene_name)
-        rmsd = make_graph_unscaled(gene_name,
-                                 [p633l_graphs_dict[gene_name],
-                                  wt_graphs_dict[gene_name]],
-                                 fas_lib,
-                                 ["P633L", "WT"])
-        print(rmsd)
-        print(gene_name)
+
+
+    # for gene_name in test_ids_dict.keys():
+    #     rmsd = make_graph_scaled(gene_name,
+    #                              [r634q_graphs_dict[gene_name],
+    #                               wtnc_graphs_dict[gene_name]],
+    #                              fas_lib,
+    #                              ["R634Q", "WTNC"])
+    #     print(rmsd)
+    #     print(gene_name)
+    #     rmsd = make_graph_unscaled(gene_name,
+    #                              [r634q_graphs_dict[gene_name],
+    #                               wtnc_graphs_dict[gene_name]],
+    #                              fas_lib,
+    #                              ["R634Q", "WTNC"])
+    #     print(rmsd)
+    #     print(gene_name)
+    
+    # p633l_graphs_dict = dict()
+    # wt_graphs_dict = dict()
+    
+    # for key in test_ids_dict.keys():
+    #     p633l_graphs_dict[key] = extract_graph(p633l, test_ids_dict[key])
+    #     wt_graphs_dict[key] = extract_graph(wt, test_ids_dict[key])
+
+    # for gene_name in test_ids_dict.keys():
+    #     rmsd = make_graph_scaled(gene_name,
+    #                              [p633l_graphs_dict[gene_name],
+    #                               wt_graphs_dict[gene_name]],
+    #                              fas_lib,
+    #                              ["P633L", "WT"])
+    #     print(rmsd)
+    #     print(gene_name)
+    #     rmsd = make_graph_unscaled(gene_name,
+    #                              [p633l_graphs_dict[gene_name],
+    #                               wt_graphs_dict[gene_name]],
+    #                              fas_lib,
+    #                              ["P633L", "WT"])
+    #     print(rmsd)
+    #     print(gene_name)
     #test()
     # categories = ["iso1", "iso2", "iso3"]
     
