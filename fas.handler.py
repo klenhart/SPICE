@@ -12,6 +12,7 @@ import argparse
 import os
 
 from library_class import Library
+from FAS_plain import visualize_fas_polygon
 #from expression_extraction import join_expression
 
 # python /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -b -c /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv -p /home/chrisbl/miniconda3/envs/FAS/bin/python -s /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -f /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
@@ -20,9 +21,9 @@ TEST = {"A" : ["A", "B", "C", "D"], "B" : ["1", "2", "3", "4"]}
 
 RAW_SLURM = """#!/bin/bash
 
-#SBATCH --partition=all,special,inteli7
+#SBATCH --partition={14}
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=2G
+#SBATCH --mem-per-cpu={15}G
 #SBATCH --job-name="fas_{4}{12}"
 #SBATCH --output=/dev/null 
 #SBATCH --error=/dev/null
@@ -89,7 +90,7 @@ def start_stop_range(length, n):
     for i in range(0, length, n):
         yield (i, min(i+n-1, length))
 
-def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path):
+def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path, partition_list=["all","special","inteli7"], mem_per_cpu="2"):
     """
     Generates SLURM job files for every 1000 genes in the library instance.
 
@@ -109,6 +110,7 @@ def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path):
     None.
 
     """
+    partitions = ",".join(partition_list)
     with open(fas_lib.get_config("gene_ids_path"), "r") as f:
         gene_ids = f.read().split("\n")
         if gene_ids[0] == "gene":
@@ -137,7 +139,9 @@ def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path):
                                   str(start), #10
                                   str(stop), #11
                                   str(i),   #12
-                                  fas_lib.get_config("slurm_path")) #13
+                                  fas_lib.get_config("slurm_path"), #13
+                                  partitions, #14
+                                  mem_per_cpu) #15
         with open(fas_lib.get_config("slurm_path") + "FAS_job{0}.job".format(str(i)), "w") as f:
             f.write(output)
 
@@ -253,6 +257,21 @@ def parser_setup():
     
     parser.add_argument("-j", "--join", action="store_true",
                         help="Join all the FAS_output into the distance_master.phyloprofile.")
+    
+    parser.add_argument("-o", "--memory", type=str, default="2",
+                        help="How much memory to distribute per CPU. Default=2")
+
+    parser.add_argument("-a", "--partitions", nargs="*", action="append", default=["all","special","inteli7"],
+                        help="What are the names of the partitions to be used. default=['all', 'special', 'inteli7']")
+    
+    parser.add_argument("-v", "--visualize", action="store_true",
+                        help="Generate a FAS polygon. If this argument is chosen the --visualizePath argument is required.")
+    
+    parser.add_argument("-t", "--visualizePath",default=None,
+                        help="""Path to textfile of the following format. First line: gene_id,
+                        second line: path to the first FAS_polygon file. third line. path to the second FAS_polygon file. 
+                        Fourth line: True if the tool shall precalculate all comparisons between all genes and False if not.""")
+    
 
     args = parser.parse_args()
 
@@ -261,27 +280,40 @@ def parser_setup():
     python_path = args.python
     FAS_handler_path = args.handler
     fas_path = args.fas
+    mem_per_cpu = args.memory
+    partition_list = args.partitions
+    visualize_path = args.visualizePath
+    
+    flag_visualize = args.visualize
     flag_remove = args.remove
     flag_maketsv = args.maketsv
     flag_bash = args.bash
     flag_join = args.join
 
-    return config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join
+    return config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join, mem_per_cpu, partition_list, visualize_path, flag_visualize
 
 def main():
     """
     Create tsv output for FAS or delete a tsv that was used by FAS already.
     """
-    config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join = parser_setup()
+    config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join, mem_per_cpu, partition_list, visualize_path, flag_visualize = parser_setup()
     fas_lib = Library(config_path, False)
     if flag_maketsv:
         tsv_access(gene_id, fas_lib)
     elif flag_remove:
         tsv_remove(gene_id, fas_lib)
     elif flag_bash:
-        bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path)
+        bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path, partition_list, mem_per_cpu)
     elif flag_join:
         concat_FAS_output(fas_lib)
+    elif flag_visualize:
+        with open(visualize_path, "r") as f:
+            file = f.read().split("\n")
+            gene_id = file[0]
+            path1 = file[1]
+            path2 = file[2]
+            pre_calc_flag = file[3] == "True"
+        visualize_fas_polygon(path1 ,path2, fas_lib, gene_id, pre_calc_flag)
 
 if __name__ == "__main__":
     main()
