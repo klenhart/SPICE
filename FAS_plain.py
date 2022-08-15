@@ -9,6 +9,7 @@ Created on Tue Aug  2 11:13:06 2022
 import plotly.graph_objects as go
 import json
 import math
+import os
 
 from library_class import Library
 
@@ -269,10 +270,12 @@ def extract_graph(path, gene_id):
     rel_exprs = [ rel_expr for prot_id, sigma_expr, rel_expr in isoform_vector ]
     return prot_ids, sigma_exprs, rel_exprs, float(gene_fpkm)
 
+
+
 def generate_comparison(fas_graphs_dict_list, fas_lib, sample_names):
     title = "x".join(sample_names)
     fas_graphs_dict1, fas_graphs_dict2 = fas_graphs_dict_list
-    output = "gene_id\tsample_names\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\n"
+    output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\n"
     for gene_name in fas_graphs_dict1.keys():
         fas_graph_list = [fas_graphs_dict1[gene_name], fas_graphs_dict2[gene_name]]
         title = gene_name + "_" + "x".join(sample_names)
@@ -334,11 +337,11 @@ def generate_comparison(fas_graphs_dict_list, fas_lib, sample_names):
         scaled_rmsd = calc_rmsd(list(scaled_sigma_exprs_dict.values()))
         unscaled_rmsd = calc_rmsd(list(sigma_exprs_dict.values()))
         
-        
         output_row_list = [gene_name,
                            ";".join(sample_names)]
         unscaled_expr_list = []
         scaled_expr_list = []
+        output_row_list.append(";".join(categories))
         for name in sample_names:
             unscaled_expr_list.append(":".join([ str(value) for value in sigma_exprs_dict[name]]))
             scaled_expr_list.append(":".join([ str(value) for value in scaled_sigma_exprs_dict[name]]))
@@ -361,151 +364,76 @@ def extract_all_graph(fas_lib, path, exempt=[]):
         fas_graphs_dict[gene_id] = extract_graph(path, gene_id)
     return fas_graphs_dict
         
+def get_name(path):
+    start = path.index("polygonFAS_") + 11
+    end = path.index(".tsv")
+    return path[start:end]
 
-fas_lib = Library("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv", False)
-    
-r634q = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_R634Q.tsv"
-wtnc = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WTNC.tsv"
-wt = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WT.tsv"
-p633l = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_P633L.tsv"
-    
-r634q_graphs_dict = extract_all_graph(fas_lib, r634q, ["ENSG00000155657"])
-wt_graphs_dict = extract_all_graph(fas_lib, wt, ["ENSG00000155657"])
+def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, polygon_type):
+    title = "x".join(sample_names) + "_" + polygon_type + "_" + gene_id
+    fig = go.Figure()
+    for i, name in enumerate(sample_names):
+        fig.add_trace(go.Scatterpolar(
+            r=sigma_list[i],
+            theta=categories,
+            fill="toself",
+            name=name
+            ))  
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0,1]
+                )),
+        showlegend=True
+        )
+    fig.show()
+    fig.write_image(file=fas_lib.get_config("root_path") + "pictures/" + title + ".png")
+
+def visualize_fas_polygon(path1 ,path2, fas_lib, gene_id=None, pre_calc_flag=False):
+    name1 = get_name(path1)
+    name2 = get_name(path2)
+    filepath = fas_lib.get_config("root_path") + "pictures/"
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+
+    if pre_calc_flag:
+        polygon_dict1 = extract_all_graph(fas_lib, path1, ["ENSG00000155657"])
+        polygon_dict2 = extract_all_graph(fas_lib, path2, ["ENSG00000155657"])
+        generate_comparison([polygon_dict1, polygon_dict2], fas_lib, [name1, name2])
+    else:
+        title = "x".join([name1, name2]) + ".tsv"
+        if os.path.isfile(filepath + title):
+            found = False
+            print("Matching precalculated tsv file found. Decoding the polygons found in it.")
+            with open(filepath + title, "r") as f:
+                all_polygons = f.read().split("\n")
+                all_polygons = [ polygon.split("\t") for polygon in all_polygons ]
+                all_polygons = [ entry for entry in all_polygons if entry[0] == gene_id]
+            if len(all_polygons) > 0:
+                found = True
+                gene_id, sample_names, categories, unscaled_expression, scaled_expression, unscaled_rmsd, scaled_rmsd = all_polygons[0]
+                sample_names = sample_names.split(";")
+                categories = categories.split(";")
+                unscaled1, unscaled2 = unscaled_expression.split(";")
+                scaled1, scaled2 = scaled_expression.split(";")
+                unscaled1 = [ int(entry) for entry in unscaled1.split(":") ]
+                unscaled2 = [ int(entry) for entry in  unscaled2.split(":") ]
+                scaled1 = [ int(entry) for entry in  scaled1.split(":") ]
+                scaled2 = [ int(entry) for entry in  scaled2.split(":") ]
+                make_graph(fas_lib, gene_id, sample_names, categories, [unscaled1, unscaled2], "unscaled")
+                make_graph(fas_lib, gene_id, sample_names, categories, [scaled1, scaled2], "scaled")
+
+        if not found:
+            print("No matching precalculated tsv file found. Generating the visualization from the FASpolygons of the individual samples.")
+            polygon1 = extract_graph(path1, gene_id)
+            polygon2 = extract_graph(path2, gene_id)
+            make_graph_scaled(gene_id, [polygon1, polygon2], fas_lib, [name1, name2])
+            make_graph_unscaled(gene_id, [polygon1, polygon2], fas_lib, [name1, name2])
 
 def main():
-    #
     pass
-    # fas_lib = Library("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv", False)
-    
-    # r634q = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_R634Q.tsv"
-    # wtnc = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WTNC.tsv"
-    # wt = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_WT.tsv"
-    # p633l = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/FAS_graphs/polygonFAS_P633L.tsv"
-    
-    # r634q_graphs_dict = extract_all_graph(fas_lib, r634q, ["ENSG00000155657"])
-    # wt_graphs_dict = extract_all_graph(fas_lib, wt, ["ENSG00000155657"])
 
-    # generate_comparison([r634q_graphs_dict, wt_graphs_dict], fas_lib, ["R634Q", "WT"])
-
-    
-    # for key in test_ids_dict.keys():
-    #     r634q_graphs_dict[key] = extract_graph(r634q, test_ids_dict[key])
-    #     wtnc_graphs_dict[key] = extract_graph(wtnc, test_ids_dict[key])
-    # test_ids_dict = { "RECK" : "ENSG00000122707",
-    #                  "ARNTL" : "ENSG00000133794",
-    #                  "DPF2" : "ENSG00000133884",
-    #                  "PITX2" : "ENSG00000164093",
-    #                  "TPM4" : "ENSG00000167460",
-    #                  "SETD5" : "ENSG00000168137",
-    #                  "UPP1" : "ENSG00000183696",
-    #                  "BCO2" : "ENSG00000197580",     
-    #                  "TPM2" : "ENSG00000198467" }
-
-
-
-    # for gene_name in test_ids_dict.keys():
-    #     rmsd = make_graph_scaled(gene_name,
-    #                              [r634q_graphs_dict[gene_name],
-    #                               wtnc_graphs_dict[gene_name]],
-    #                              fas_lib,
-    #                              ["R634Q", "WTNC"])
-    #     print(rmsd)
-    #     print(gene_name)
-    #     rmsd = make_graph_unscaled(gene_name,
-    #                              [r634q_graphs_dict[gene_name],
-    #                               wtnc_graphs_dict[gene_name]],
-    #                              fas_lib,
-    #                              ["R634Q", "WTNC"])
-    #     print(rmsd)
-    #     print(gene_name)
-    
-    # p633l_graphs_dict = dict()
-    # wt_graphs_dict = dict()
-    
-    # for key in test_ids_dict.keys():
-    #     p633l_graphs_dict[key] = extract_graph(p633l, test_ids_dict[key])
-    #     wt_graphs_dict[key] = extract_graph(wt, test_ids_dict[key])
-
-    # for gene_name in test_ids_dict.keys():
-    #     rmsd = make_graph_scaled(gene_name,
-    #                              [p633l_graphs_dict[gene_name],
-    #                               wt_graphs_dict[gene_name]],
-    #                              fas_lib,
-    #                              ["P633L", "WT"])
-    #     print(rmsd)
-    #     print(gene_name)
-    #     rmsd = make_graph_unscaled(gene_name,
-    #                              [p633l_graphs_dict[gene_name],
-    #                               wt_graphs_dict[gene_name]],
-    #                              fas_lib,
-    #                              ["P633L", "WT"])
-    #     print(rmsd)
-    #     print(gene_name)
-    #test()
-    # categories = ["iso1", "iso2", "iso3"]
-    
-    # fig = go.Figure()
-    
-    # fig.add_trace(go.Scatterpolar(
-    #     r=[0.91, 0.9625, 0.525],
-    #     theta=categories,
-    #     fill="toself",
-    #     name="G_1"))
-    
-    # fig.update_layout(
-    #     polar=dict(
-    #         radialaxis=dict(
-    #             visible=True,
-    #             range=[0,1]
-    #             )),
-    #     showlegend=True)
-    # fig.show()
-    # fig.write_image(file="/home/chrisbl/project/FAS_Pipe/diary/exmpl_plot1.png")
-    
-    # categories = ["iso1", "iso2", "iso3"]
-    
-    # fig = go.Figure()
-    
-    # fig.add_trace(go.Scatterpolar(
-    #     r=[0.72, 0.825, 0.645],
-    #     theta=categories,
-    #     fill="toself",
-    #     name="F_1"))
-    
-    # fig.update_layout(
-    #     polar=dict(
-    #         radialaxis=dict(
-    #             visible=True,
-    #             range=[0,1]
-    #             )),
-    #     showlegend=True)
-    # fig.show()
-    # fig.write_image(file="/home/chrisbl/project/FAS_Pipe/diary/exmpl_plot2.png")
-    
-    # fig = go.Figure()
-    
-    # fig.add_trace(go.Scatterpolar(
-    #     r=[0.91, 0.9625, 0.525],
-    #     theta=categories,
-    #     fill="toself",
-    #     name="G_1"))
-    
-    
-    # fig.add_trace(go.Scatterpolar(
-    #     r=[0.72, 0.825, 0.645],
-    #     theta=categories,
-    #     fill="toself",
-    #     name="F_1"))
-    
-    # fig.update_layout(
-    #     polar=dict(
-    #         radialaxis=dict(
-    #             visible=True,
-    #             range=[0,1]
-    #             )),
-    #     showlegend=True)
-    # fig.show()
-    # fig.write_image(file="/home/chrisbl/project/FAS_Pipe/diary/exmpl_plot3.png")
 
 if __name__ == "__main__":
     main()
