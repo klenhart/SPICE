@@ -12,8 +12,7 @@ import argparse
 import os
 
 from library_class import Library
-from fas_polygon import visualize_fas_polygon
-
+import fas_polygon
 # python /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -b -c /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv -p /home/chrisbl/miniconda3/envs/FAS/bin/python -s /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -f /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
 
 RAW_SLURM = """#!/bin/bash
@@ -269,6 +268,14 @@ def parser_setup():
                         second line: path to the first FAS_polygon file. third line. path to the second FAS_polygon file. 
                         Fourth line: True if the tool shall precalculate all comparisons between all genes and False if not.""")
     
+    parser.add_argument("-z", "--sort",action="store_true", default=None,
+                        help="""Filters and sorts a generated comparison file. Everything with RMSD of 0 or 1 gets filtered. 
+                        Then we sort first by unscaled RMSD. Second by scaled RMSD. This argument requires the --sortpath argument to be specified""")
+    
+    parser.add_argument("-q", "--sortpath", default=None,
+                        help="""The file in this path will be sorted. A sorted version will be output in the same directory.""")
+    
+    
 
     args = parser.parse_args()
 
@@ -280,20 +287,23 @@ def parser_setup():
     mem_per_cpu = args.memory
     partition_list = args.partitions
     visualize_path = args.visualizePath
+    sort_path = args.sortpath
     
     flag_visualize = args.visualize
     flag_remove = args.remove
     flag_maketsv = args.maketsv
     flag_bash = args.bash
     flag_join = args.join
+    flag_sort = args.sort
+    
 
-    return config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join, mem_per_cpu, partition_list, visualize_path, flag_visualize
+    return config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join, mem_per_cpu, partition_list, visualize_path, flag_visualize, sort_path, flag_sort
 
 def main():
     """
     Create tsv output for FAS or delete a tsv that was used by FAS already.
     """
-    config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join, mem_per_cpu, partition_list, visualize_path, flag_visualize = parser_setup()
+    config_path, python_path, FAS_handler_path, fas_path, gene_id, flag_remove, flag_maketsv, flag_bash, flag_join, mem_per_cpu, partition_list, visualize_path, flag_visualize, sort_path, flag_sort = parser_setup()
     fas_lib = Library(config_path, False)
     if flag_maketsv:
         tsv_access(gene_id, fas_lib)
@@ -310,7 +320,9 @@ def main():
             path1 = file[1]
             path2 = file[2]
             pre_calc_flag = file[3] == "True"
-        visualize_fas_polygon(path1 ,path2, fas_lib, gene_id, pre_calc_flag)
+        fas_polygon.visualize_fas_polygon(path1 ,path2, fas_lib, gene_id, pre_calc_flag)
+    elif flag_sort:
+        fas_polygon.sort_by_rmsd(fas_lib, sort_path)
 
 if __name__ == "__main__":
     main()

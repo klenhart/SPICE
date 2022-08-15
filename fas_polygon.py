@@ -15,83 +15,6 @@ from library_class import Library
 
 from ensembl_access import load_gene_ids_txt
 
-########
-def test():
-    fas_lib = Library("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv", False)
-    
-    with open(fas_lib.get_config("root_path") + "ARNTL_FAS_graph_dict.json", "r") as f: 
-        ARNTL_dict = json.load(f)
-    
-    with open(fas_lib.get_config("root_path") + "DPF2_FAS_graph_dict.json", "r") as f: 
-        DPF2_dict = json.load(f)
-    
-    DPF2_transcript_ids = set()
-    
-    DPF2_vector_dict = dict()
-    DPF2_fpkm_dict = dict()
-    
-    for sample in DPF2_dict.keys():
-        row = DPF2_dict[sample]
-        gene_id, transcripts, fpkm = row.split("\t")
-    
-        DPF2_fpkm_dict[sample] = float(fpkm)
-        DPF2_vector_dict[sample] = dict()
-        
-        protein_id_expression_tuple_list = [entry.split(":") for entry in transcripts.split(";")]
-    
-        for protein_id, rel_expr in protein_id_expression_tuple_list:
-            DPF2_transcript_ids.add(protein_id)
-            DPF2_vector_dict[sample][protein_id] = float(rel_expr)
-    
-    DPF2_transcript_ids = list(DPF2_transcript_ids)
-    
-    #######
-    
-    ARNTL_transcript_ids = set()
-    
-    ARNTL_vector_dict = dict()
-    ARNTL_fpkm_dict = dict()
-    
-    for sample in ARNTL_dict.keys():
-        row = ARNTL_dict[sample]
-        gene_id, transcripts, fpkm = row.split("\t")
-    
-        ARNTL_fpkm_dict[sample] = float(fpkm)
-        ARNTL_vector_dict[sample] = dict()
-        
-        protein_id_expression_tuple_list = [entry.split(":") for entry in transcripts.split(";")]
-    
-        for protein_id, rel_expr in protein_id_expression_tuple_list:
-            ARNTL_transcript_ids.add(protein_id)
-            ARNTL_vector_dict[sample][protein_id] = float(rel_expr)
-    
-    ARNTL_transcript_ids = list(ARNTL_transcript_ids)
-    
-    #########
-    
-    #ARNTL
-    #Example for 
-    make_graph_unscaled("ARNTL", ["WT_A2B","R634Q_A2B"], ARNTL_transcript_ids, ARNTL_vector_dict, fas_lib)
-    # Example for unscaled while several samples dont work well without scaling
-    make_graph_unscaled("ARNTL", ["WT_A2", "WT_A2B","R634Q_A2B", "R634Q_A2"], ARNTL_transcript_ids, ARNTL_vector_dict, fas_lib)
-    # Same graph but scaled
-    make_graph_scaled("ARNTL", ["WT_A2", "WT_A2B","R634Q_A2B", "R634Q_A2"], ARNTL_transcript_ids, ARNTL_vector_dict, ARNTL_fpkm_dict,fas_lib)
-    make_graph_scaled("ARNTL", ["WTNC_A2", "R634Q_A2"], ARNTL_transcript_ids, ARNTL_vector_dict, ARNTL_fpkm_dict,fas_lib)
-    make_graph_scaled("ARNTL", ["WTNC_A2B", "R634Q_A2B"], ARNTL_transcript_ids, ARNTL_vector_dict, ARNTL_fpkm_dict,fas_lib)
-    make_graph_scaled("ARNTL", ["WT_A2", "WTNC_A2"], ARNTL_transcript_ids, ARNTL_vector_dict, ARNTL_fpkm_dict,fas_lib)
-    make_graph_scaled("ARNTL", ["R634Q_A2", "P633L_A2"], ARNTL_transcript_ids, ARNTL_vector_dict, ARNTL_fpkm_dict,fas_lib)
-    
-    #DPF2
-    #Example for 
-    make_graph_unscaled("DPF2", ["WT_A2B","R634Q_A2B"], DPF2_transcript_ids, DPF2_vector_dict, fas_lib)
-    # Example for unscaled while several samples dont work well without scaling
-    make_graph_unscaled("DPF2", ["WT_A2", "WT_A2B","R634Q_A2B", "R634Q_A2"], DPF2_transcript_ids, DPF2_vector_dict, fas_lib)
-    # Same graph but scaled
-    make_graph_scaled("DPF2", ["WT_A2", "WT_A2B","R634Q_A2B", "R634Q_A2"], DPF2_transcript_ids, DPF2_vector_dict, DPF2_fpkm_dict,fas_lib)
-    make_graph_scaled("DPF2", ["P633L_A2", "P633L_A2B","R634Q_A2B", "R634Q_A2"], DPF2_transcript_ids, DPF2_vector_dict, DPF2_fpkm_dict,fas_lib)
-    make_graph_scaled("DPF2", ["WTNC_A2", "R634Q_A2B"], DPF2_transcript_ids, DPF2_vector_dict, DPF2_fpkm_dict,fas_lib)
-    make_graph_scaled("DPF2", ["WTNC_A2B", "R634Q_A2"], DPF2_transcript_ids, DPF2_vector_dict, DPF2_fpkm_dict,fas_lib)
-
 def make_graph_unscaled(gene_name, fas_graph_list, fas_lib, sample_names):
     
     title = gene_name + "_unscaled_" + "x".join(sample_names)
@@ -137,7 +60,7 @@ def make_graph_unscaled(gene_name, fas_graph_list, fas_lib, sample_names):
         sigma_exprs_dict[name] = final_sigma_exprs[i]
 
     # Calculate Scales in comparison to largest fpkm.
-    
+    rmsd = calc_rmsd(list(sigma_exprs_dict.values()))
     fig = go.Figure()
     
     for name in sample_names:
@@ -147,7 +70,9 @@ def make_graph_unscaled(gene_name, fas_graph_list, fas_lib, sample_names):
             fill="toself",
             name=name
             ))
-        
+    fig.add_annotation(x=0, y=0,
+            text=gene_name + " RMSD=" + str(rmsd),
+            showarrow=False) 
     fig.update_layout(
         polar=dict(
             radialaxis=dict(
@@ -158,7 +83,7 @@ def make_graph_unscaled(gene_name, fas_graph_list, fas_lib, sample_names):
         )
     fig.show()
     fig.write_image(file=fas_lib.get_config("root_path") + "pictures/" + title + ".png")
-    return calc_rmsd(list(sigma_exprs_dict.values()))
+    return rmsd
     
 #def make_graph_scaled(gene_name, figure_samples, categories, vector_dict,fpkm_dict , fas_lib):
 def make_graph_scaled(gene_name, fas_graph_list, fas_lib, sample_names):
@@ -184,8 +109,7 @@ def make_graph_scaled(gene_name, fas_graph_list, fas_lib, sample_names):
             if all([ entry[j] == 0 for entry in rel_exprs ]):
                 delete_list.append(j)
         break
-        
-    
+
     categories = []
     final_sigma_exprs = []
     
@@ -215,7 +139,10 @@ def make_graph_scaled(gene_name, fas_graph_list, fas_lib, sample_names):
     scales = dict()
     for name in sample_names:
             scales[name] = total_fpkm_dict[name] / total_fpkm_dict[max_fpkm_name]
+            
     
+    rmsd = calc_rmsd([scale_list(scales[sample_names[0]], sigma_exprs_dict[sample_names[0]]),
+                     scale_list(scales[sample_names[1]], sigma_exprs_dict[sample_names[1]])])
     fig = go.Figure()
     
     for name in sample_names:
@@ -227,6 +154,9 @@ def make_graph_scaled(gene_name, fas_graph_list, fas_lib, sample_names):
             fill="toself",
             name=name
             ))
+    fig.add_annotation(x=0, y=0,
+            text=gene_name + " RMSD=" + str(rmsd),
+            showarrow=False)
         
     fig.update_layout(
         polar=dict(
@@ -242,12 +172,15 @@ def make_graph_scaled(gene_name, fas_graph_list, fas_lib, sample_names):
     return calc_rmsd(list(sigma_exprs_dict.values()))
     
 def calc_rmsd(pair_of_lists):
-    count = len(pair_of_lists[0])
-    difference_list = []
-    list_1, list_2 = pair_of_lists
-    for i, _ in enumerate(list_1):
-        difference_list.append((list_1[i] - list_2[i])**2)
-    return math.sqrt(sum(difference_list)/count)
+    if len(pair_of_lists[0]) == 0:
+        return 0
+    else:
+        count = len(pair_of_lists[0])
+        difference_list = []
+        list_1, list_2 = pair_of_lists
+        for i, _ in enumerate(list_1):
+            difference_list.append((list_1[i] - list_2[i])**2)
+        return math.sqrt(sum(difference_list)/count)
 
 def scale_list(scale_factor, float_list):
     output_list = []
@@ -278,7 +211,6 @@ def generate_comparison(fas_graphs_dict_list, fas_lib, sample_names):
     output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\n"
     for gene_name in fas_graphs_dict1.keys():
         fas_graph_list = [fas_graphs_dict1[gene_name], fas_graphs_dict2[gene_name]]
-        title = gene_name + "_" + "x".join(sample_names)
         protein_ids = []
         total_fpkms = []
         sigma_exprs = []
@@ -369,7 +301,7 @@ def get_name(path):
     end = path.index(".tsv")
     return path[start:end]
 
-def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, polygon_type):
+def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, polygon_type, rmsd):
     title = "x".join(sample_names) + "_" + polygon_type + "_" + gene_id
     fig = go.Figure()
     for i, name in enumerate(sample_names):
@@ -378,7 +310,10 @@ def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, polygon_t
             theta=categories,
             fill="toself",
             name=name
-            ))  
+            ))
+    fig.add_annotation(x=0, y=0,
+                text=gene_id + " RMSD=" + str(rmsd),
+                showarrow=False)
     fig.update_layout(
         polar=dict(
             radialaxis=dict(
@@ -390,6 +325,39 @@ def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, polygon_t
     fig.show()
     fig.write_image(file=fas_lib.get_config("root_path") + "pictures/" + title + ".png")
 
+def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
+    output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\n"
+    new_path = path[:-4] + "_sorted.tsv"
+    with open(path, "r") as f:
+        file = f.read()
+        comparisons = file.split("\n")
+    comparisons = comparisons[1:]
+    comparisons = [ comparison.split("\t") for comparison in comparisons ]
+    new_comparisons = []
+    for comparison in comparisons:
+        if len(comparison) == 7:
+            new_comparisons.append(comparison)
+    comparisons = new_comparisons
+    comparisons = [ comparison[:-2] + [float(comparison[-2]), float(comparison[-1])] for comparison in comparisons ]
+    new_comparisons = []
+    for comparison in comparisons:
+        if comparison[-2] < 1 and comparison[-2] > 0 and comparison[-2] != comparison[-1]:
+            new_comparisons.append(comparison)
+    comparisons = new_comparisons
+    # if flag_more_than_2:
+    #     new_comparisons = []
+    #     for comparison in comparisons:
+    #         if len(comparison[2].split(";")) > 3:
+    #             new_comparisons.append(comparison)
+    #     comparisons = new_comparisons
+    comparisons = sorted(comparisons, key = lambda x: (-x[-2], -x[-1]))
+    comparisons = [ comparison[:-2] + [str(comparison[-2]), str(comparison[-1])] for comparison in comparisons ]
+    comparisons = [ "\t".join(comparison) for comparison in comparisons ]
+    file = "\n".join(comparisons)
+    file = output + file
+    with open(new_path, "w") as f:
+        f.write(file)
+    
 def visualize_fas_polygon(path1 ,path2, fas_lib, gene_id=None, pre_calc_flag=False):
     name1 = get_name(path1)
     name2 = get_name(path2)
@@ -403,8 +371,9 @@ def visualize_fas_polygon(path1 ,path2, fas_lib, gene_id=None, pre_calc_flag=Fal
         generate_comparison([polygon_dict1, polygon_dict2], fas_lib, [name1, name2])
     else:
         title = "x".join([name1, name2]) + ".tsv"
+        found = False
+        empty = False
         if os.path.isfile(filepath + title):
-            found = False
             print("Matching precalculated tsv file found. Decoding the polygons found in it.")
             with open(filepath + title, "r") as f:
                 all_polygons = f.read().split("\n")
@@ -415,21 +384,26 @@ def visualize_fas_polygon(path1 ,path2, fas_lib, gene_id=None, pre_calc_flag=Fal
                 gene_id, sample_names, categories, unscaled_expression, scaled_expression, unscaled_rmsd, scaled_rmsd = all_polygons[0]
                 sample_names = sample_names.split(";")
                 categories = categories.split(";")
-                unscaled1, unscaled2 = unscaled_expression.split(";")
-                scaled1, scaled2 = scaled_expression.split(";")
-                unscaled1 = [ int(entry) for entry in unscaled1.split(":") ]
-                unscaled2 = [ int(entry) for entry in  unscaled2.split(":") ]
-                scaled1 = [ int(entry) for entry in  scaled1.split(":") ]
-                scaled2 = [ int(entry) for entry in  scaled2.split(":") ]
-                make_graph(fas_lib, gene_id, sample_names, categories, [unscaled1, unscaled2], "unscaled")
-                make_graph(fas_lib, gene_id, sample_names, categories, [scaled1, scaled2], "scaled")
+                if categories == "":
+                    empty = True
+                else:
+                    unscaled1, unscaled2 = unscaled_expression.split(";")
+                    scaled1, scaled2 = scaled_expression.split(";")
+                    unscaled1 = [ float(entry) for entry in unscaled1.split(":") ]
+                    unscaled2 = [ float(entry) for entry in  unscaled2.split(":") ]
+                    scaled1 = [ float(entry) for entry in  scaled1.split(":") ]
+                    scaled2 = [ float(entry) for entry in  scaled2.split(":") ]
+                    make_graph(fas_lib, gene_id, sample_names, categories, [unscaled1, unscaled2], "unscaled", unscaled_rmsd)
+                    make_graph(fas_lib, gene_id, sample_names, categories, [scaled1, scaled2], "scaled", scaled_rmsd)
 
-        if not found:
+        if not found and not empty:
             print("No matching precalculated tsv file found. Generating the visualization from the FASpolygons of the individual samples.")
             polygon1 = extract_graph(path1, gene_id)
             polygon2 = extract_graph(path2, gene_id)
             make_graph_scaled(gene_id, [polygon1, polygon2], fas_lib, [name1, name2])
             make_graph_unscaled(gene_id, [polygon1, polygon2], fas_lib, [name1, name2])
+        if empty:
+            print("No isoforms of the gene has been found in any of the expression datasets.")
 
 def main():
     pass
