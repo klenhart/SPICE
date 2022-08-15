@@ -11,7 +11,7 @@ from all_protein_coding_gene_ID import extract_protein_coding_ids
 
 from install_local_ensembl import install_local_ensembl
 
-from FAS_handler import tsv_collection_maker
+from fas.handler import tsv_collection_maker
 
 from library_class import Library
 
