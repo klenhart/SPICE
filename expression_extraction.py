@@ -11,7 +11,7 @@ import os
 import json
 
 from library_class import Library
-from ensembl_access import tsv_to_tuple_list
+import ensembl_access
 
 #generate_expression_summary("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/protein_coding_genes.tsv", "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856510.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf")
 
@@ -36,7 +36,7 @@ def load_expression_gtf(expression_path, flag_filter_unknown=True, flag_remove_t
 
 def load_protein_coding_ids(path):
     #fas_lib.get_config("protein_coding_ids_path")
-    protein_coding_ids = tsv_to_tuple_list(path)
+    protein_coding_ids = ensembl_access.tsv_to_tuple_list(path)
     return protein_coding_ids
 
 

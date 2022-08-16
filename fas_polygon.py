@@ -323,7 +323,7 @@ def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, polygon_t
         showlegend=True
         )
     fig.show()
-    fig.write_image(file=fas_lib.get_config("root_path") + "pictures/" + title + ".png")
+    fig.write_image(file=fas_lib.get_config("root_path") + "pictures/" + title + ".svg")
 
 def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
     output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\n"
