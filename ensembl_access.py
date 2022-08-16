@@ -11,9 +11,11 @@ from all_protein_coding_gene_ID import extract_protein_coding_ids
 
 from install_local_ensembl import install_local_ensembl
 
-from fas.handler import tsv_collection_maker
+from fas_handler import tsv_collection_maker
 
 from library_class import Library
+
+from expression_extraction import generate_FAS_polygon
 
 #Test command line:
 # python main.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -l
@@ -125,7 +127,7 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
                     print("Incorrect pairing. Aborting!", query_id, protein_id)
                 header = gene_id + "|" + protein_id + "|" + fas_lib.get_config("taxon_id")
                 with open(fas_lib.get_config("phyloprofile_ids_path"), "a") as file:
-                    file.write(header + "\t" + fas_lib.get_config("taxon_id") + "\n")
+                    file.write(header + "\t" + "ncbi" + fas_lib.get_config("taxon_id") + "\n")
                 with open(fas_lib.get_config("isoforms_path"), "a") as fasta:
                     fasta.write(">" + header + "\n" + seq + "\n")
                 fas_lib.increment_acquired_seq_count()
@@ -223,7 +225,7 @@ def count_max_isoforms(header_dict):
     return max_iso_count
             
 
-def ensembl_access(output_dir, species, flag_install_local, config_path):
+def ensembl_access(output_dir, species, flag_install_local, config_path, flag_movement, name_path, expression_path):
     """
     Returns
     -------
@@ -246,6 +248,10 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
         print("Local ensembl installation commencing...")
         #install_local_ensembl(species, release_num, library_path, url_name, assembly_default)
         install_local_ensembl(species, output_dir)
+    elif flag_movement:
+        fas_lib = Library(config_path, False)
+        print("Movement calculation commencing...")
+        generate_FAS_polygon(fas_lib, expression_path, name_path)
     else:
         fas_lib = Library(config_path, False)
         print("Library generation commencing.")

@@ -97,7 +97,7 @@ def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path, partiti
     python_path : str
         path to the python binary.
     FAS_handler_path : str
-        path to FAS_handler.py
+        path to fas_handler.py
     fas_path : str
         path to fas.run binary.
 
@@ -234,7 +234,7 @@ def parser_setup():
                         help="""Specify the location of the pythonversion to use. This is only necessary when using the --bash option.""")
 
     parser.add_argument("-s", "--handler", type=str, default=None,
-                        help="""Specify the location FAS_handler.py. This is only necessary when using the --bash option.""")
+                        help="""Specify the location fas_handler.py. This is only necessary when using the --bash option.""")
     
     parser.add_argument("-f", "--fas", type=str, default=None,
                         help="""Specify the location of fas.run. This is only necessary when using the --bash option.""")
