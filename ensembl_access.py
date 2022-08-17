@@ -17,12 +17,6 @@ from library_class import Library
 
 from expression_extraction import generate_FAS_polygon
 
-#Test command line:
-# python main.py -s human -o /share/project/zarnack/chrisbl/FAS/utility/protein_lib/ -l
-# python main.py -c /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv
-
-# /share/project/zarnack/chrisbl/FAS/utility/protein_lib
-
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
@@ -292,10 +286,6 @@ def ensembl_access(output_dir, species, flag_install_local, config_path, flag_mo
     
 def main():
     species = "human"
-    # release_num = 107
-    # species, url_name, assembly_default = ('homo_sapiens', 'Homo_sapiens', 'GRCh38')
-    # library_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
-    # ensembl_path = make_local_ensembl_name(library_path, release_num, species, ".gtf", assembly_default, url_name)
     
 if __name__ == "__main__":
     main()

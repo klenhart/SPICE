@@ -138,7 +138,6 @@ def make_folders_and_files(root_path):
 
     return tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path
 
-#def install_local_ensembl(url_infix_species, release_num, library_path, url_species, assembly_name):
 def install_local_ensembl(species, output_dir):
         ping_ensembl()
         library_path = output_dir + "/FAS_library/"
@@ -204,8 +203,7 @@ def install_local_ensembl(species, output_dir):
 
 def main():
     pass
-    #install_local_ensembl("mouse", "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_Pipe/")
-    #print(make_local_ensembl_name("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/", 107, "homo_sapiens", ".gtf"))
+
 if __name__ == "__main__":
     main()
         

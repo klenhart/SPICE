@@ -13,7 +13,7 @@ import os
 
 from library_class import Library
 import fas_polygon
-# python /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -b -c /share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv -p /home/chrisbl/miniconda3/envs/FAS/bin/python -s /home/chrisbl/project/FAS_Pipe/Scripts/grand-trumpet/FAS_handler.py -f /home/chrisbl/miniconda3/envs/FAS/bin/fas.run
+
 
 RAW_SLURM = """#!/bin/bash
 

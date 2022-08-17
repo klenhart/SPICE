@@ -8,7 +8,7 @@ Created on Wed Jul 13 10:35:43 2022
 
 import pyranges as pr
 
-# /share/project/zarnack/chrisbl/FAS/utility/protein_lib/Homo_sapiens.GRCh38.107.gtf
+
 
 def load_gtf(ensembl_path):
     print("Loading local ensembl dataframe...")
@@ -40,15 +40,7 @@ def extract_protein_coding_ids(ensembl_path):
     
 def main():
     pass
-    # prefix = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/"
-    # ensembl_path1 = "Homo_sapiens.GRCh38.107.gtf"
-    # ensembl_path2 = "Tetraodon_nigroviridis.TETRAODON8.107.gtf"
-    # protein_coding_ids = extract_protein_coding_ids(prefix + ensembl_path1)
-    # print(len(protein_coding_ids))
-    # print(protein_coding_ids[0])
-    # print(protein_coding_ids[-1])
-    # gene_ids = [ gene_id for gene_id, protein_id, transcript_id in protein_coding_ids]
-    # print(len(list(set(gene_ids))))
+
 
 if __name__ == "__main__":
     main()

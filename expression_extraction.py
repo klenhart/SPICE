@@ -13,10 +13,6 @@ import json
 from library_class import Library
 import ensembl_access
 
-#generate_expression_summary("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/protein_coding_genes.tsv", "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856510.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf")
-
-# "/share/gluster/Projects/FeatureArchitectureUniverse/gtf/ERR2856510.fastq.gz_desalt.sort.bam.out_stringtie_recount.gtf"
-# "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/protein_coding_genes.tsv"
 
 def load_expression_gtf(expression_path, flag_filter_unknown=True, flag_remove_transcript_prefix=True):
     gtf = pr.read_gtf(expression_path, as_df=True)
@@ -247,12 +243,7 @@ def generate_FAS_polygon(fas_lib, expression_paths_path, name_path):
             f.write(polygon_output)
 
 def main():
-    expression_paths_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/dump/test/expression_paths.txt"
-    name_path = "/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/dump/test/expression_names.txt"
-    
-    fas_lib = Library("/share/project/zarnack/chrisbl/FAS/utility/protein_lib/FAS_library/homo_sapiens/release-107/config.tsv", False)
-    
-    generate_FAS_polygon(fas_lib, expression_paths_path, name_path)
+    pass
 
 if __name__ == "__main__":
     main()

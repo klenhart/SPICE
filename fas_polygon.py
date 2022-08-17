@@ -13,7 +13,7 @@ import os
 
 from library_class import Library
 
-from ensembl_access import load_gene_ids_txt
+import ensembl_access
 
 def make_graph_unscaled(gene_name, fas_graph_list, fas_lib, sample_names):
     
@@ -290,7 +290,7 @@ def generate_comparison(fas_graphs_dict_list, fas_lib, sample_names):
         
 def extract_all_graph(fas_lib, path, exempt=[]):
     fas_graphs_dict = dict()
-    gene_ids = load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
+    gene_ids = ensembl_access.load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
     gene_ids = [ gene_id for gene_id in gene_ids if gene_id not in exempt]
     for gene_id in gene_ids:
         fas_graphs_dict[gene_id] = extract_graph(path, gene_id)
