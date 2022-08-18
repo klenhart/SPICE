@@ -115,10 +115,10 @@ def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path, partiti
     jobs_ranges = start_stop_range(gene_count, 1000)
     for i, entry in enumerate(jobs_ranges):
         start = 1
-        if entry[1] + 1 % 1000 == 0:
+        if (entry[1] + 1) % 1000 == 0:
             stop = 1000
         else:
-            stop = (entry[1] + 1 % 1000)
+            stop = ((entry[1] + 1) % 1000)
         output_ids = gene_ids[entry[0]:entry[1]+1]
         with open(fas_lib.get_config("slurm_path") + "gene_ids{0}.txt".format(str(i)), "w") as gene_chunk:
             gene_chunk.write("\n".join(output_ids))
