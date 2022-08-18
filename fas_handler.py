@@ -285,7 +285,10 @@ def parser_setup():
     FAS_handler_path = args.handler
     fas_path = args.fas
     mem_per_cpu = args.memory
-    partition_list = args.partitions
+    if len(args.partitions) == 4:
+        partition_list = args.partitions[-1]
+    else:
+        partition_list = args.partitions
     visualize_path = args.visualizePath
     sort_path = args.sortpath
     
