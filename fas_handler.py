@@ -131,35 +131,23 @@ def parser_setup():
     parser.add_argument("-j", "--join", action="store_true",
                         help="Join all the FAS_output into the distance_master.phyloprofile.")
     
-    parser.add_argument("-z", "--sort",action="store_true", default=None,
-                        help="""Filters and sorts a generated comparison file. Everything with RMSD of 0 or 1 gets filtered. 
-                        Then we sort first by unscaled RMSD. Second by scaled RMSD. This argument requires the --sortpath argument to be specified""")
-    
-    parser.add_argument("-q", "--sortpath", default=None,
-                        help="""The file in this path will be sorted. A sorted version will be output in the same directory.""")
-    
-    
-
     args = parser.parse_args()
 
     config_path = args.config
     gene_id = args.gene
-    sort_path = args.sortpath
-    
 
     flag_remove = args.remove
     flag_maketsv = args.maketsv
     flag_join = args.join
-    flag_sort = args.sort
     
 
-    return config_path, gene_id, flag_remove, flag_maketsv, flag_join, sort_path, flag_sort
+    return config_path, gene_id, flag_remove, flag_maketsv, flag_join
 
 def main():
     """
     Create tsv output for FAS or delete a tsv that was used by FAS already.
     """
-    config_path, gene_id, flag_remove, flag_maketsv, flag_join, sort_path, flag_sort = parser_setup()
+    config_path, gene_id, flag_remove, flag_maketsv, flag_join = parser_setup()
     fas_lib = Library(config_path, False)
     if flag_maketsv:
         tsv_access(gene_id, fas_lib)
@@ -167,8 +155,6 @@ def main():
         tsv_remove(gene_id, fas_lib)
     elif flag_join:
         concat_FAS_output(fas_lib)
-    elif flag_sort:
-        fas_polygon.sort_by_rmsd(fas_lib, sort_path)
 
 if __name__ == "__main__":
     main()
