@@ -237,9 +237,9 @@ def generate_FAS_polygon(fas_lib, expression_paths_path, name_path):
                                                         isoforms_dict,
                                                         dist_matrix_dict,
                                                         gene_id)
-        if not os.path.exists(fas_lib.get_config("root_path") + "FAS_graphs"):
-            os.makedirs(fas_lib.get_config("root_path") + "FAS_graphs")
-        with open(fas_lib.get_config("root_path") +  "FAS_graphs/polygonFAS_{0}.tsv".format(name), "w") as f:
+        if not os.path.exists(fas_lib.get_config("root_path") + "FAS_polygon"):
+            os.makedirs(fas_lib.get_config("root_path") + "FAS_polygon")
+        with open(fas_lib.get_config("root_path") +  "FAS_polygon/polygonFAS_{0}.tsv".format(name), "w") as f:
             f.write(polygon_output)
 
 def main():
