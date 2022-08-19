@@ -301,8 +301,7 @@ def get_name(path):
     end = path.index(".tsv")
     return path[start:end]
 
-def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, polygon_type, rmsd):
-    title = "x".join(sample_names) + "_" + polygon_type + "_" + gene_id
+def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, rmsd, filepath):
     fig = go.Figure()
     for i, name in enumerate(sample_names):
         fig.add_trace(go.Scatterpolar(
@@ -323,7 +322,7 @@ def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, polygon_t
         showlegend=True
         )
     fig.show()
-    fig.write_image(file=fas_lib.get_config("root_path") + "pictures/" + title + ".svg")
+    fig.write_image(file=filepath)
 
 def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
     output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\n"
@@ -357,53 +356,111 @@ def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
     file = output + file
     with open(new_path, "w") as f:
         f.write(file)
+
+def prepare_polygon_pair_visual(polygon_list, name_list, gene_id):
+    protein_ids = []
+    total_fpkms = []
+    sigma_exprs = []
+    rel_exprs = []
     
-def visualize_fas_polygon(path1 ,path2, fas_lib, gene_id=None, pre_calc_flag=False):
-    name1 = get_name(path1)
-    name2 = get_name(path2)
-    filepath = fas_lib.get_config("root_path") + "pictures/"
-    if not os.path.exists(filepath):
-        os.makedirs(filepath)
+    for prot_ids_list, sigma_expr_list, rel_expr_list, total_fpkm in polygon_list:
+        protein_ids = prot_ids_list
+        total_fpkms.append(total_fpkm)
+        sigma_exprs.append(sigma_expr_list)
+        rel_exprs.append(rel_expr_list)
+    
+    delete_list = []
+    for i, rel_expr in enumerate(rel_exprs):
+        for j, _ in enumerate(rel_expr):
+            if all([ entry[j] == 0 for entry in rel_exprs ]):
+                delete_list.append(j)
+        break
+    
+    categories = []
+    final_sigma_exprs = []
+    
+    for name in name_list:
+        final_sigma_exprs.append([])
+    for i, prot_id in enumerate(protein_ids):
+        if i not in delete_list:
+            categories.append(prot_id)
+            for j, name in enumerate(name_list):
+                final_sigma_exprs[j].append(sigma_exprs[j][i])
+    
+    total_fpkm_dict = dict()
+    for i, name in enumerate(name_list):
+        total_fpkm_dict[name] = total_fpkms[i]
+    
+    sigma_exprs_dict = dict()
+    scaled_sigma_exprs_dict = dict()
+    for i, name in enumerate(name_list):
+        sigma_exprs_dict[name] = final_sigma_exprs[i]
+    
+    max_fpkm_name = name_list[0]
+    
+    for name in total_fpkm_dict.keys():
+        if total_fpkm_dict[name] > total_fpkm_dict[max_fpkm_name]:
+            max_fpkm_name = name
+    
+    # Calculate Scales in comparison to largest fpkm.
+    scales = dict()
+    for name in name_list:
+        if total_fpkm_dict[max_fpkm_name] == 0:
+            scales[name] = 0
+        else:
+            scales[name] = total_fpkm_dict[name] / total_fpkm_dict[max_fpkm_name]
+    
+    for name in name_list:
+        scaled_sigma_exprs_dict[name] = scale_list(scales[name], sigma_exprs_dict[name])
+        
+    scaled_rmsd = calc_rmsd(list(scaled_sigma_exprs_dict.values()))
+    unscaled_rmsd = calc_rmsd(list(sigma_exprs_dict.values()))
+    
+    output_dict = dict()
+    output_dict["gene_id"] = gene_id
+    output_dict["name_list"] = name_list
+    output_dict["categories"] = categories
+    output_dict["unscaled_rel_expr"] = list(sigma_exprs_dict.values())
+    output_dict["scaled_rel_expr"] =  list(scaled_sigma_exprs_dict.values())
+    output_dict["unscaled_rmsd"] = unscaled_rmsd
+    output_dict["unscaled_rmsd"] = scaled_rmsd
+    
+    return output_dict
 
-    if pre_calc_flag:
-        polygon_dict1 = extract_all_graph(fas_lib, path1, ["ENSG00000155657"])
-        polygon_dict2 = extract_all_graph(fas_lib, path2, ["ENSG00000155657"])
-        generate_comparison([polygon_dict1, polygon_dict2], fas_lib, [name1, name2])
-    else:
-        title = "x".join([name1, name2]) + ".tsv"
-        found = False
-        empty = False
-        if os.path.isfile(filepath + title):
-            print("Matching precalculated tsv file found. Decoding the polygons found in it.")
-            with open(filepath + title, "r") as f:
-                all_polygons = f.read().split("\n")
-                all_polygons = [ polygon.split("\t") for polygon in all_polygons ]
-                all_polygons = [ entry for entry in all_polygons if entry[0] == gene_id]
-            if len(all_polygons) > 0:
-                found = True
-                gene_id, sample_names, categories, unscaled_expression, scaled_expression, unscaled_rmsd, scaled_rmsd = all_polygons[0]
-                sample_names = sample_names.split(";")
-                categories = categories.split(";")
-                if categories == "":
-                    empty = True
-                else:
-                    unscaled1, unscaled2 = unscaled_expression.split(";")
-                    scaled1, scaled2 = scaled_expression.split(";")
-                    unscaled1 = [ float(entry) for entry in unscaled1.split(":") ]
-                    unscaled2 = [ float(entry) for entry in  unscaled2.split(":") ]
-                    scaled1 = [ float(entry) for entry in  scaled1.split(":") ]
-                    scaled2 = [ float(entry) for entry in  scaled2.split(":") ]
-                    make_graph(fas_lib, gene_id, sample_names, categories, [unscaled1, unscaled2], "unscaled", unscaled_rmsd)
-                    make_graph(fas_lib, gene_id, sample_names, categories, [scaled1, scaled2], "scaled", scaled_rmsd)
-
-        if not found and not empty:
-            print("No matching precalculated tsv file found. Generating the visualization from the FASpolygons of the individual samples.")
-            polygon1 = extract_graph(path1, gene_id)
-            polygon2 = extract_graph(path2, gene_id)
-            make_graph_scaled(gene_id, [polygon1, polygon2], fas_lib, [name1, name2])
-            make_graph_unscaled(gene_id, [polygon1, polygon2], fas_lib, [name1, name2])
-        if empty:
-            print("No isoforms of the gene has been found in any of the expression datasets.")
+def visualize_fas_polygon(path_list, fas_lib, gene_id, outFormat):    
+    path_list = sorted(path_list)
+    name_list = [get_name(path_list[0]), get_name(path_list[1])]
+    title = "x".join(name_list) + "/"
+    pictures_path = fas_lib.get_config("root_path") + "pictures/"
+    comparison_path = pictures_path + title
+    filepath_scaled = comparison_path + gene_id + "_scaled." + outFormat
+    filepath_unscaled = comparison_path + gene_id + "_unscaled." + outFormat
+    
+    if not os.path.exists(pictures_path):
+        os.makedirs(pictures_path)
+    if not os.path.exists(comparison_path):
+        os.makedirs(comparison_path)
+    
+    polygon_list = [ extract_graph(path, gene_id) for path in path_list ]   
+    polygon_dict = prepare_polygon_pair_visual(polygon_list, name_list, gene_id)
+    
+    # Unscaled
+    make_graph(fas_lib,
+               gene_id,
+               polygon_dict["name_list"],
+               polygon_dict["categories"],
+               polygon_dict["unscaled_rel_expr"],
+               polygon_dict["unscaled_rmsd"],
+               filepath_unscaled)
+    
+    # Scaled
+    make_graph(fas_lib,
+               gene_id,
+               polygon_dict["name_list"],
+               polygon_dict["categories"],
+               polygon_dict["scaled_rel_expr"],
+               polygon_dict["scaled_rmsd"],
+               filepath_scaled)
 
 def main():
     pass
