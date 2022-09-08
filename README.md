@@ -15,6 +15,7 @@ Additionally the pipeline is able to apply the quantification of functional simi
     * [Initialize the FAS library and download local ensembl release](#initialize-the-fas-library-and-download-local-ensembl-release)
     * [Install FAS](#install-fas)
     * [Collect sequences](#collect-sequences)
+    * [Annotation](#annotation)
     * [Generate job arrays](#generate-job-arrays)
     * [Run FAS](#run-fas)
     * [Concatenate FAS output](#concatenate-fas-output)
@@ -52,6 +53,8 @@ cd grand-trumpet
 git clone https://github.com/chrisbluemel/grand-trumpet
 ```
 
+**IMPORTANT**: Running these scripts without access to a processing cluster will be more or less impossible. You can try to calculate one million FAS comparisons on your home computer, but do not say I didn't warn you. Also be aware that the helper scripts to generate job arrays are only capable of generate SLURM job arrays.
+
 ### Generate FAS library
 
 First decide on a location for your FAS library. When finished the library can take up several GB of space.
@@ -66,15 +69,101 @@ python fas_lib.py -l \
 --species human
 ```
 
-The *config.tsv* file, which 
+The path the **config.tsv** file, which can be found at
+```
+/parent/folder/of/the/library/homo_sapiens/release-num/config.tsv
+```
+will be necessary as an input for all further steps of the pipeline.
+
 
 #### Collect sequences
 
+Now we will collect the actual protein sequences from ensembl by using this command:
 
+```
+python fas_lib.py \
+--config /parent/folder/of/the/library/homo_sapiens/release-num/config.tsv
+```
+
+This step has significant RAM requirements and should not be run on any old potato, but rather using a decently powerful machine or even a processing cluster. The latter will be necessary for the later steps anyway. For the human genome this one is done in about three hours.
+
+**IMPORTANT**: Sometimes it might happen that while you are collecting sequences your internet connection drops out or the ensembl servers have a major hiccup. For this reason Grand-Trumpet remembers what it was doing, if it crashes during sequence collection. Just run the command again and the requests will continue right where they were interrupted.
+
+#### Annotation
+
+After having collected all the sequences, we need to annotate them. This example was written when the most recent ensembl release was 107. You could have any higher release number. (Greetings from the past!) Run this command: 
+
+```
+fas.doAnno \
+-i /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
+-o /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/annotation/ \
+-n isoforms \
+--cpus 16
+```
+
+You can use as many or as few CPUs as you have access to, but remember that annotation takes a lot of time and it will take longer, if you have less workers.
+
+**IMPORTANT** The output name under the argument -n must be the same as the name of the fasta-file. This is why in my case I used isoforms as the -n argument. 
 
 #### Generate job arrays
 
+Now that all sequences are collected and annotated we can do the FAS Scoring. It is recommended to run fas.run once per gene and not all genes at once. Create a SLURM job array that references the gene_ids.txt, which was created in the folder /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/. This is an example job array to calculate the FAS-Scores for the first 1000 genes in the gene_ids.txt: 
+
+```
+#!/bin/bash
+
+#SBATCH --partition=all
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=2G
+#SBATCH --job-name="fas_human"
+#SBATCH --output=/dev/null 
+#SBATCH --error=/dev/null
+#SBATCH --array=1-1000
+
+gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "/parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/gene_ids.txt")
+python fas_handler.py \
+--maketsv \
+--gene $gene \
+--config /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+&& \
+fas.run \
+--seed /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
+--query /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
+--annotation_dir /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/annotation/ \
+--out_dir /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/FAS_buffer/ \
+--bidirectional \
+--pairwise /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/tsv_buffer/$gene.tsv \
+--out_name $gene \
+--tsv \
+--phyloprofile /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/phyloprofile_ids.tsv \
+--domain \
+--empty_as_1 \
+; \
+python fas_handler.py \
+--remove \
+--gene $gene \
+--config /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+```
+Since creating 20 of those files by hand to wade through all roughly 20000 protein coding genes in the human genome is pretty tedious, I created a helper script that automatically generates one job array for every 1000 protein coding genes in the library. For human this might turn into 20 job arrays, for other species it might be less or more depending on the gene count. To automatically generate the arrays use this command:
+
+```
+python fas_bashAssist.py \
+--config /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+--partitions all ni nini ninini
+--memory 2
+```
+
+The finished job arrays can be found in in the library in the folder
+
+```
+/parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/SLURM/
+```
+
+
 #### Run FAS
+
+Now that we have either created the job arrays by hand or by using the fas_bashAssist.py script, we can start running FAS. Remember that many processing clusters have limits on how many jobs you can commit at once. I made Grand-Trumpet work in such a way that it usually automatically prevents the case of too many files being generated at once, which could overburden a file system easily. During the FAS runs I did not implement such a fail save. This is why you should do the next step several times beforehaving finished to run FAS on all scripts.
+
 
 #### Concatenate FAS Output
 
