@@ -26,7 +26,7 @@ Additionally the pipeline is able to apply the quantification of functional simi
 
 ## Requirements
 
-Grand-Trumpet has been implemented for python 3.7. To run the full pipeline all 13 scripts should be downloaded and put into the same folder. To run the scripts the following python modules are required:
+Grand-Trumpet has been implemented for python 3.7. To run the scripts the following python modules are required:
 
 ```
 argparse
@@ -39,7 +39,6 @@ requests
 shutil
 urllib
 ```
-
 
 ## Usage
 
