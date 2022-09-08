@@ -61,17 +61,17 @@ First decide on a location for your FAS library. When finished the library can t
 
 #### Initialize the FAS library and download local ensembl release
 
-Now we need to download a local ensembl assembly for the required species. This will also create the entire folder structure and initialize the config.tsv file. As an output choose the folder that is supposed to contain the finished library. This is what an example command for initialiazing a library for human would look like: 
+Now we need to download a local ensembl assembly for the required species. This will also create the entire directory structure and initialize the config.tsv file. As an output choose the directory that is supposed to contain the finished library. This is what an example command for initialiazing a library for human would look like: 
 
 ```
 python fas_lib.py -l \
---output /parent/folder/of/the/library \
+--output /parent/directory/of/the/library \
 --species human
 ```
 
 The path the **config.tsv** file, which can be found at
 ```
-/parent/folder/of/the/library/homo_sapiens/release-num/config.tsv
+/parent/directory/of/the/library/homo_sapiens/release-num/config.tsv
 ```
 will be necessary as an input for all further steps of the pipeline.
 
@@ -82,7 +82,7 @@ Now we will collect the actual protein sequences from ensembl by using this comm
 
 ```
 python fas_lib.py \
---config /parent/folder/of/the/library/homo_sapiens/release-num/config.tsv
+--config /parent/directory/of/the/library/homo_sapiens/release-num/config.tsv
 ```
 
 This step has significant RAM requirements and should not be run on any old potato, but rather using a decently powerful machine or even a processing cluster. The latter will be necessary for the later steps anyway. For the human genome this one is done in about three hours.
@@ -95,8 +95,8 @@ After having collected all the sequences, we need to annotate them. This example
 
 ```
 fas.doAnno \
--i /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
--o /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/annotation/ \
+-i /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
+-o /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/annotation/ \
 -n isoforms \
 --cpus 16
 ```
@@ -107,7 +107,7 @@ You can use as many or as few CPUs as you have access to, but remember that anno
 
 #### Generate job arrays
 
-Now that all sequences are collected and annotated we can do the FAS Scoring. It is recommended to run fas.run once per gene and not all genes at once. Create a SLURM job array that references the gene_ids.txt, which was created in the folder /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/. This is an example job array to calculate the FAS-Scores for the first 1000 genes in the gene_ids.txt: 
+Now that all sequences are collected and annotated we can do the FAS Scoring. It is recommended to run fas.run once per gene and not all genes at once. Create a SLURM job array that references the gene_ids.txt, which was created in the directory /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/. This is an example job array to calculate the FAS-Scores for the first 1000 genes in the gene_ids.txt: 
 
 ```
 #!/bin/bash
@@ -120,58 +120,113 @@ Now that all sequences are collected and annotated we can do the FAS Scoring. It
 #SBATCH --error=/dev/null
 #SBATCH --array=1-1000
 
-gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "/parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/gene_ids.txt")
+gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "/parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/gene_ids.txt")
 python fas_handler.py \
 --maketsv \
 --gene $gene \
---config /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+--config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
 && \
 fas.run \
---seed /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
---query /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
---annotation_dir /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/annotation/ \
---out_dir /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/FAS_buffer/ \
+--seed /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
+--query /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
+--annotation_dir /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/annotation/ \
+--out_dir /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/FAS_buffer/ \
 --bidirectional \
---pairwise /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/tsv_buffer/$gene.tsv \
+--pairwise /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/tsv_buffer/$gene.tsv \
 --out_name $gene \
 --tsv \
---phyloprofile /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/phyloprofile_ids.tsv \
+--phyloprofile /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/phyloprofile_ids.tsv \
 --domain \
 --empty_as_1 \
 ; \
 python fas_handler.py \
 --remove \
 --gene $gene \
---config /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+--config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
 ```
-Since creating 20 of those files by hand to wade through all roughly 20000 protein coding genes in the human genome is pretty tedious, I created a helper script that automatically generates one job array for every 1000 protein coding genes in the library. For human this might turn into 20 job arrays, for other species it might be less or more depending on the gene count. To automatically generate the arrays use this command:
+Since creating 20 of those files by hand to wade through all roughly 20000 protein coding genes in the human genome is pretty tedious, I created a helper script that automatically generates one job array for every 1000 protein coding genes in the library. For human this might turn into about 20 job arrays, for other species it might be less or more depending on the gene count. To automatically generate the arrays use this command:
 
 ```
 python fas_bashAssist.py \
---config /parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+--config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
 --partitions all ni nini ninini
 --memory 2
 ```
 
-The finished job arrays can be found in in the library in the folder
+The finished job arrays can be found in in the library in this directory:
 
 ```
-/parent/folder/of/the/library/FAS_library/homo_sapiens/release-107/SLURM/
+/parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/SLURM/
 ```
 
 
 #### Run FAS
 
-Now that we have either created the job arrays by hand or by using the fas_bashAssist.py script, we can start running FAS. Remember that many processing clusters have limits on how many jobs you can commit at once. I made Grand-Trumpet work in such a way that it usually automatically prevents the case of too many files being generated at once, which could overburden a file system easily. During the FAS runs I did not implement such a fail save. This is why you should do the next step several times beforehaving finished to run FAS on all scripts.
+Now that we have either created the job arrays by hand or by using the fas_bashAssist.py script, we can start running FAS. Remember that many processing clusters have limits on how many jobs you can commit at once. I made Grand-Trumpet work in such a way that it usually automatically prevents the case of too many files being generated at once, which could overburden a file system easily. During the FAS runs I did not implement such a fail save. This is why you should do the next step several times before having finished to run FAS on all genes.
 
 
 #### Concatenate FAS Output
 
+Run this script several times. It concatenates all FAS output that is currently done into one distance_master.phyloprofile file. Use this command:
+
+
+```
+python fas_handler.py \
+--join \
+--config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+```
+
 ### Apply library to expression data
+
+The library is now finished. Now we want to make use of it. Grand-Trumpet uses the FAS scores for all protein coding  isoforms of a gene and combines them with the expression levels of each isofrom to generate a Movement score for each isoform. The movement score assumes how much of the functional diversity of the isoform is represented in the transcript composition of the gene. 
+
+To calculate the Movement scores for any number of samples you need to make two textfiles. One that contains the names of the samples (one name per row) and one that contains the corresponding paths to the expression GTF files. Several expression files can be joined together by writing them into the same line and seperating them with a semicolon (;). At the moment the expression files will be joined by calculating the mean of all FPKM values between expression files.
+
+Here is an example for the name path text file:
+
+
+```
+sample1
+sample2
+sample3
+```
+
+And here an example for the expression path text file:
+
+```
+path/to/sample1_replicate1.gtf;path/to/sample1_replicate2.gtf
+path/to/sample2_replicate1.gtf
+path/to/sample3_replicate1.gtf;path/to/sample3_replicate2.gtf;path/to/sample3_replicate3.gtf
+```
+
+You can then calculate the Movement for all expression files in the text files by running this command:
+
+```
+python fas_movement.py \
+--config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+--namepath /path/to/name.txt \
+--expressionpath /path/to/expressionpath.txt 
+```
+The Movement scores will be saved as tsv files within the libraries FAS_polygon directory
+
 
 #### Calculate comparison between pair of samples
 
+If you have calculated Movement scores for at least two samples you can generate a comparison between them. At the moment comparisons between more than two samples are not possible. Simply use this command:
+
+```
+python fas_compare.py \
+--config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+--input path/to/polygonFAS_sample1.tsv path/to/polygonFAS_sample2.tsv
+```
+
+The input parameter takes paths to the files generated in the previous step. The fas_compare.py script generates another tsv file in the pictures directory of the library. For the example it would be called **sample1xsample2.tsv**. Additionally in will generate a sorted and filtered version of the output file, which will be important for the next step.
+
 #### Identify genes of interest
+
+Now the raw output of the comparison does not give a lot of insight about which comparisons might have yielded something interesting. You can ofcourse just visualize any gene that you are interested in - maybe you even have information from previous analysis of the data that you wanna get another perspective on. But to identify genes of interest independent of any other information we need the sorted and filtered version of the file. It has been automatically generated in the last step. It only contains genes for which any of the two samples had at least two isoforms and the roots-mean-square-deviation (RMSD) between Movement scores was higher than 0 and lower than 1. Additionally the file is sorted by unscaled RMSD first, and then by scaled RMSD. You can now manually scroll through the file from top to bottom
+
+
 
 #### Visualize comparison
 
