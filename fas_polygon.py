@@ -7,13 +7,9 @@ Created on Tue Aug  2 11:13:06 2022
 """
 
 import plotly.graph_objects as go
-import json
 import math
 import os
 
-from library_class import Library
-
-import ensembl_access
 import fas_utility
     
 def calc_rmsd(pair_of_lists):

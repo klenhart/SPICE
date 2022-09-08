@@ -12,7 +12,6 @@ import argparse
 import os
 
 from library_class import Library
-import fas_polygon
 
 def concat_FAS_output(fas_lib):
     distance_master_path = fas_lib.get_config("distance_master_path")
@@ -96,12 +95,6 @@ def tsv_remove(gene_id, fas_lib):
 
     """
     os.remove(fas_lib.get_config("tsv_buffer_path") + gene_id + ".tsv")
-
-
-def generate_FAS_gtf(input_expression_paths_path, fas_lib):
-    distance_master_path = fas_lib.get_config["distance_master_path"]
-    with open(input_expression_paths_path, "r") as f:
-        pass
         
 
 def parser_setup():
