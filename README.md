@@ -12,7 +12,7 @@ Additionally the pipeline is able to apply the quantification of functional simi
 * [Requirements](#requirements)
 * [Usage](#usage)
   * [Generate FAS library](#generate-fas-library)
-    * [Initialize the FAS library](#initialize-the-fas-library)
+    * [Initialize the FAS library and download local ensembl release](#initialize-the-fas-library-and-download-local-ensembl-release)
     * [Install FAS](#install-fas)
     * [Collect sequences](#collect-sequences)
     * [Generate job arrays](#generate-job-arrays)
@@ -40,6 +40,8 @@ shutil
 urllib
 ```
 
+Since Grand-Trumpet makes use of the FAS algorithm, it should be installed beforehand. Check out the [FAS](https://github.com/BIONF/FAS) repository for further instruction on setting it up.
+
 ## Usage
 
 In order to simply get all Grand-Trumpet scripts in this GitHub repository use this set of commands in the terminal:
@@ -52,11 +54,23 @@ git clone https://github.com/chrisbluemel/grand-trumpet
 
 ### Generate FAS library
 
-#### Initialize the FAS library
+First decide on a location for your FAS library. When finished the library can take up several GB of space.
 
-#### Install FAS
+#### Initialize the FAS library and download local ensembl release
+
+Now we need to download a local ensembl assembly for the required species. This will also create the entire folder structure and initialize the config.tsv file. As an output choose the folder that is supposed to contain the finished library. This is what an example command for initialiazing a library for human would look like: 
+
+```
+python fas_lib.py -l \
+--output /parent/folder/of/the/library \
+--species human
+```
+
+The *config.tsv* file, which 
 
 #### Collect sequences
+
+
 
 #### Generate job arrays
 
