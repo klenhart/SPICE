@@ -1,4 +1,12 @@
-## grand-trumpet: genome wide appliance and visualization of the [FAS]() algorithm
+## Grand-Trumpet: genome wide appliance and visualization of the [FAS](https://github.com/BIONF/FAS) algorithm
+
+Grand-Trumpet makes use of the Feature Architecture Similarity (FAS) algorithm to calculate how similar feature architectures of all pairs of isoforms of all protein coding genes in a genome are. Additionally Grand-Trumpet has the capability to apply this genome wide output of FAS onto transcript expression data (GTF format).
+
+Typically gene expression levels are used as a proxy to determine protein composition and thereby functional diversity of cells or tissue samples. This disregards the fact that alternative Splicing (AS) of pre-mRNA can disrupt, delete or insert entire protein domains and thereby change the corresponding proteins functional effect. This means that using only gene expression levels as a proxy for functional diversity is not sufficient. To gain further insight about the functional diversity it is necessary to characterize the function of a protein isoform by relating it to it's domain content. Only a small set of proteins undergo experimental characterization, which is why the remaining proteins must be assessed using bioinformatics tools.
+
+Grand-Trumpet is able to assemble all protein sequences of a genome as represented in the ensembl genome browser and quantify the functional similarity between each isoform of each protein coding gene using the Feature Architecture Similarity (FAS) algorithm. FAS makes use of databases that contain all known protein domains like PFAM.
+
+Additionally the pipeline is able to apply the quantification of functional similarity to a set of expression data, thereby generating a map of functional diversity among all genes while also being able to visualize the difference of functional diversity between two given samples.
 
 <!--
 Stringtie employs efficient algorithms for transcript structure recovery and abundance estimation from bulk RNA-Seq reads aligned to a reference genome. 
