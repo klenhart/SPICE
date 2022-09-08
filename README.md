@@ -28,7 +28,18 @@ Additionally the pipeline is able to apply the quantification of functional simi
 
 Grand-Trumpet has been implemented for python 3.7. To run the full pipeline all 13 scripts should be downloaded and put into the same folder. To run the scripts the following python modules are required:
 
+* Bread
+* Toast
+
 ## Usage
+
+In order to simply get all Grand-Trumpet scripts in this GitHub repository use this set of commands in the terminal:
+
+```
+mkdir grand-trumpet
+cd grand-trumpet
+git clone https://github.com/chrisbluemel/grand-trumpet
+```
 
 ### Generate FAS library
 
