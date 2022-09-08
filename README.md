@@ -1,6 +1,5 @@
-## Grand-Trumpet: genome wide appliance and visualization of the [FAS](https://github.com/BIONF/FAS) algorithm
-
-Grand-Trumpet makes use of the Feature Architecture Similarity (FAS) algorithm to calculate how similar feature architectures of all pairs of isoforms of all protein coding genes in a genome are. Additionally Grand-Trumpet has the capability to apply this genome wide output of FAS onto transcript expression data (GTF format).
+#Grand-Trumpet
+## Genome wide appliance and visualization of the [FAS](https://github.com/BIONF/FAS) algorithm
 
 Typically gene expression levels are used as a proxy to determine protein composition and thereby functional diversity of cells or tissue samples. This disregards the fact that alternative Splicing (AS) of pre-mRNA can disrupt, delete or insert entire protein domains and thereby change the corresponding proteins functional effect. This means that using only gene expression levels as a proxy for functional diversity is not sufficient. To gain further insight about the functional diversity it is necessary to characterize the function of a protein isoform by relating it to it's domain content. Only a small set of proteins undergo experimental characterization, which is why the remaining proteins must be assessed using bioinformatics tools.
 
@@ -8,19 +7,54 @@ Grand-Trumpet is able to assemble all protein sequences of a genome as represent
 
 Additionally the pipeline is able to apply the quantification of functional similarity to a set of expression data, thereby generating a map of functional diversity among all genes while also being able to visualize the difference of functional diversity between two given samples.
 
+
+# Table of Contents
+* [Requirements](#requirements)
+* [Usage](#usage)
+  * [Generate FAS library](#generate-fas-library)
+   * [Initialize the FAS library](#initialize-the-fas-library)
+   * [Install FAS](#install-fas)
+   * [Collect sequences](#collect-sequences)
+   * [Generate job arrays](#generate-job-arrays)
+   * [Run FAS](#run-fas)
+   * [Concatenate FAS output](#concatenate-fas-output)
+  * [Apply library to expression data](#apply-library-to-expression-data)
+   * [Calculate comparison between pair of samples](#calculate-comparison-between-pair-of-samples)
+   * [Identify genes of interest](#identify-genes-of-interest)
+   * [Visualize comparison](#visualize-comparison)
+* [Contact](#contact)
+
+## Requirements
+
+Grand-Trumpet has been implemented for python 3.7. To run the full pipeline all 13 scripts should be downloaded and put into the same folder. To run the scripts the following python modules are required:
+
+## Usage
+
+### Generate FAS library
+
+#### Initialize the FAS library
+
+#### Install FAS
+
+#### Collect sequences
+
+#### Generate job arrays
+
+#### Run FAS
+
+#### Concatenate FAS Output
+
+### Apply library to expression data
+
+#### Calculate comparison between pair of samples
+
+#### Identify genes of interest
+
+#### Visualize comparison
+
+## Contact
+
 <!--
-Stringtie employs efficient algorithms for transcript structure recovery and abundance estimation from bulk RNA-Seq reads aligned to a reference genome. 
-It takes as input spliced alignments in coordinate-sorted SAM/BAM/CRAM format and produces a GTF output which consists of assembled 
-transcript structures and their estimated expression levels (FPKM/TPM and base coverage values).
-
-For additional StringTie documentation and the latest official source and binary packages please refer to the official website: <https://ccb.jhu.edu/software/stringtie>
-
-## Obtaining and installing StringTie
-
-Source and binary packages for this software can be directly downloaded from the [Releases](https://github.com/gpertea/stringtie/releases) page for this repository. 
-StringTie is compatible with a wide range of Linux and Apple OS systems.
-The main program (StringTie) does not have any other library dependencies (besides zlib) and in order to compile it from source it requires
-a C++ compiler which supports the C++ 11 standard (GCC 4.8 or newer).
 
 ### Building the latest version from the repository 
 In order to compile the StringTie source in this GitHub repository the following steps can be taken:
