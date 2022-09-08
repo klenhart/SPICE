@@ -219,7 +219,7 @@ def count_max_isoforms(header_dict):
     return max_iso_count
             
 
-def ensembl_access(output_dir, species, flag_install_local, config_path, flag_movement, name_path, expression_path):
+def ensembl_access(output_dir, species, flag_install_local, config_path):
     """
     Returns
     -------
@@ -242,10 +242,6 @@ def ensembl_access(output_dir, species, flag_install_local, config_path, flag_mo
         print("Local ensembl installation commencing...")
         #install_local_ensembl(species, release_num, library_path, url_name, assembly_default)
         install_local_ensembl(species, output_dir)
-    elif flag_movement:
-        fas_lib = Library(config_path, False)
-        print("Movement calculation commencing...")
-        generate_FAS_polygon(fas_lib, expression_path, name_path)
     else:
         fas_lib = Library(config_path, False)
         print("Library generation commencing.")

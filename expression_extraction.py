@@ -10,7 +10,6 @@ import pyranges as pr
 import os
 import json
 
-from library_class import Library
 import ensembl_access
 
 
@@ -153,20 +152,20 @@ def load_dist_matrix(fas_lib):
         distance_master = [ entry.split("\t") for entry in distance_master ]
         dist_matrix_dict = dict()
         for seed, tax_id, query, fas_1, fas_2 in distance_master:
-            fas_score = (float(fas_1) + float(fas_2)) / 2
+            #fas_score = (float(fas_1) + float(fas_2)) / 2
             gene_id, prot_id_1, tax_id = seed.split("|")
             gene_id, prot_id_2, tax_id = query.split("|")
             if gene_id not in dist_matrix_dict.keys():
-                dist_matrix_dict[gene_id] = {prot_id_1 : { prot_id_2 : fas_score} , prot_id_2 : { prot_id_1 : fas_score} }
+                dist_matrix_dict[gene_id] = {prot_id_1 : { prot_id_2 : fas_1} , prot_id_2 : { prot_id_1 : fas_2} }
             else:
                 if prot_id_1 not in dist_matrix_dict[gene_id].keys():
-                    dist_matrix_dict[gene_id][prot_id_1] = { prot_id_2 : fas_score}
+                    dist_matrix_dict[gene_id][prot_id_1] = { prot_id_2 : fas_1}
                 else:
-                    dist_matrix_dict[gene_id][prot_id_1][prot_id_2] = fas_score
+                    dist_matrix_dict[gene_id][prot_id_1][prot_id_2] = fas_1
                 if prot_id_2 not in dist_matrix_dict[gene_id].keys():
-                    dist_matrix_dict[gene_id][prot_id_2] = { prot_id_1 : fas_score}
+                    dist_matrix_dict[gene_id][prot_id_2] = { prot_id_1 : fas_2}
                 else:
-                    dist_matrix_dict[gene_id][prot_id_2][prot_id_1] = fas_score
+                    dist_matrix_dict[gene_id][prot_id_2][prot_id_1] = fas_2
         with open(fas_lib.get_config("root_path") + "distance_master.json", 'w') as f:
             json.dump(dist_matrix_dict, f,  indent=4)
     return dist_matrix_dict
@@ -237,9 +236,9 @@ def generate_FAS_polygon(fas_lib, expression_paths_path, name_path):
                                                         isoforms_dict,
                                                         dist_matrix_dict,
                                                         gene_id)
-        if not os.path.exists(fas_lib.get_config("root_path") + "FAS_graphs"):
-            os.makedirs(fas_lib.get_config("root_path") + "FAS_graphs")
-        with open(fas_lib.get_config("root_path") +  "FAS_graphs/polygonFAS_{0}.tsv".format(name), "w") as f:
+        if not os.path.exists(fas_lib.get_config("root_path") + "FAS_polygon"):
+            os.makedirs(fas_lib.get_config("root_path") + "FAS_polygon")
+        with open(fas_lib.get_config("root_path") +  "FAS_polygon/polygonFAS_{0}.tsv".format(name), "w") as f:
             f.write(polygon_output)
 
 def main():
