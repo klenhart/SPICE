@@ -1,4 +1,4 @@
-#Grand-Trumpet
+# Grand-Trumpet
 ## Genome wide appliance and visualization of the [FAS](https://github.com/BIONF/FAS) algorithm
 
 Typically gene expression levels are used as a proxy to determine protein composition and thereby functional diversity of cells or tissue samples. This disregards the fact that alternative Splicing (AS) of pre-mRNA can disrupt, delete or insert entire protein domains and thereby change the corresponding proteins functional effect. This means that using only gene expression levels as a proxy for functional diversity is not sufficient. To gain further insight about the functional diversity it is necessary to characterize the function of a protein isoform by relating it to it's domain content. Only a small set of proteins undergo experimental characterization, which is why the remaining proteins must be assessed using bioinformatics tools.
@@ -8,7 +8,7 @@ Grand-Trumpet is able to assemble all protein sequences of a genome as represent
 Additionally the pipeline is able to apply the quantification of functional similarity to a set of expression data, thereby generating a map of functional diversity among all genes while also being able to visualize the difference of functional diversity between two given samples.
 
 
-# Table of Contents
+## Table of Contents
 * [Requirements](#requirements)
 * [Usage](#usage)
   * [Generate FAS library](#generate-fas-library)
@@ -28,8 +28,18 @@ Additionally the pipeline is able to apply the quantification of functional simi
 
 Grand-Trumpet has been implemented for python 3.7. To run the full pipeline all 13 scripts should be downloaded and put into the same folder. To run the scripts the following python modules are required:
 
-* Bread
-* Toast
+```
+argparse
+gzip
+itertools
+json
+plotly
+pyranges
+requests
+shutil
+urllib
+```
+
 
 ## Usage
 
