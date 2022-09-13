@@ -54,8 +54,11 @@ def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, rmsd, fil
             fill="toself",
             name=name
             ))
-    fig.add_annotation(x=0, y=0,
-                text=gene_id + " RMSD=" + str(rmsd),
+    fig.add_annotation(x=0, y=-0.12,
+                text="RMSD=" + str(rmsd),
+                showarrow=False)
+    fig.add_annotation(x=0, y=-0.08,
+                text=gene_id,
                 showarrow=False)
     fig.update_layout(
         polar=dict(

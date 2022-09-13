@@ -56,7 +56,7 @@ def parser_setup():
 
     config_path = args.config
     gene_id = args.gene
-    path_list = args.path
+    path_list = args.path[0]
     outFormat = args.outFormat
     flag_quick = args.quick
 
@@ -81,8 +81,8 @@ def main():
         filename_scaled = filename[:-1] + [gene_id + "_scaled." + outFormat]
         filename_unscaled = filename[:-1] + [gene_id + "_unscaled." + outFormat]
         
-        filename_scaled = filename_scaled.join("/")
-        filename_unscaled = filename_unscaled.join("/")
+        filename_scaled = "/".join(filename_scaled)
+        filename_unscaled = "/".join(filename_unscaled)
         
         # Import pregenerated file.
         with open(path_list[0], "r") as f:
@@ -105,7 +105,9 @@ def main():
                 unscaled2 = [ float(entry) for entry in  unscaled2.split(":") ]
                 scaled1 = [ float(entry) for entry in  scaled1.split(":") ]
                 scaled2 = [ float(entry) for entry in  scaled2.split(":") ]
-
+                
+                filepath_unscaled = fas_lib.get_config("root_path") + "/pictures/" + filename[-1] + "/" + filename_unscaled
+                filepath_scaled = fas_lib.get_config("root_path") + "/pictures/" + filename[-1] + "/" + filename_scaled
                 # Actually draw the graphs.
                 fas_polygon.make_graph(fas_lib,
                                        gene_id,
@@ -113,14 +115,14 @@ def main():
                                        categories,
                                        [unscaled1, unscaled2],
                                        unscaled_rmsd,
-                                       filename_unscaled)
+                                       filepath_unscaled)
                 fas_polygon.make_graph(fas_lib,
                                        gene_id,
                                        sample_names,
                                        categories,
                                        [scaled1, scaled2],
                                        scaled_rmsd,
-                                       filename_scaled)
+                                       filepath_scaled)
 
 
 if __name__ == "__main__":
