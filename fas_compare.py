@@ -51,11 +51,9 @@ def generate_comparison(polygon_dict_list, path_list, fas_lib, name_list):
         unscaled_expr_list = []
         scaled_expr_list = []
         output_row_list.append(";".join(polygon_dict["categories"]))
-        for i, name in enumerate(name_list):
-            print(polygon_dict["unscaled_rel_expr"])
-            print(2.0*"")
-            unscaled_expr_list.append(":".join([ str(value) for value in polygon_dict["unscaled_rel_expr"]]))
-            scaled_expr_list.append(":".join([ str(value) for value in polygon_dict["scaled_rel_expr"]]))
+        unscaled_expr_list = [ ":".join([ str(value) for value in val_list]) for val_list in polygon_dict["unscaled_rel_expr"]]
+        scaled_expr_list = [ ":".join([ str(value) for value in val_list]) for val_list in polygon_dict["scaled_rel_expr"]]
+
         output_row_list.append(";".join(unscaled_expr_list))
         output_row_list.append(";".join(scaled_expr_list))
         output_row_list.append(str(polygon_dict["unscaled_rmsd"]))
