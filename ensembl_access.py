@@ -15,9 +15,6 @@ from fas_handler import tsv_collection_maker
 
 from library_class import Library
 
-from expression_extraction import generate_FAS_polygon
-
-
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):

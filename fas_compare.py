@@ -20,7 +20,7 @@ Move the generation of a sample comparison file part of the
 option from fas_handler.py to this
 """
 
-def extract_all_graph(fas_lib, path, exempt=[]):
+def extract_all_graph(fas_lib, path, exempt=["ENSG00000155657"]):
     fas_graphs_dict = dict()
     gene_ids = ensembl_access.load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
     gene_ids = [ gene_id for gene_id in gene_ids if gene_id not in exempt]
@@ -52,12 +52,14 @@ def generate_comparison(polygon_dict_list, path_list, fas_lib, name_list):
         scaled_expr_list = []
         output_row_list.append(";".join(polygon_dict["categories"]))
         for i, name in enumerate(name_list):
+            print(polygon_dict["unscaled_rel_expr"])
+            print(2.0*"")
             unscaled_expr_list.append(":".join([ str(value) for value in polygon_dict["unscaled_rel_expr"]]))
             scaled_expr_list.append(":".join([ str(value) for value in polygon_dict["scaled_rel_expr"]]))
         output_row_list.append(";".join(unscaled_expr_list))
         output_row_list.append(";".join(scaled_expr_list))
-        output_row_list.append(polygon_dict["unscaled_rmsd"])
-        output_row_list.append(polygon_dict["scaled_rmsd"])
+        output_row_list.append(str(polygon_dict["unscaled_rmsd"]))
+        output_row_list.append(str(polygon_dict["scaled_rmsd"]))
 
         output_row = "\t".join(output_row_list)
         
@@ -114,15 +116,19 @@ def parser_setup():
     args = parser.parse_args()
     
     config_path = args.config
-    path_list = args.input
-    
+    path_list = args.input[0]
+
     return config_path, path_list
     
 def main():
     config_path, path_list = parser_setup()
     fas_lib = library_class.Library(config_path, False)
     path_list = sorted(path_list)
-    fas_graphs_dict_list = [ extract_all_graph(path) for path in path_list ]
+    fas_graphs_dict_list = [ extract_all_graph(fas_lib, path) for path in path_list ]
     name_list = [ fas_utility.get_name(path) for path in path_list ]
     file_path = generate_comparison(fas_graphs_dict_list, path_list, fas_lib, name_list)
     sort_by_rmsd(fas_lib, file_path, flag_more_than_2=True)
+
+if __name__ == "__main__":
+    main()
+   

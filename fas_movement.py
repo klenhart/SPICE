@@ -54,4 +54,7 @@ def main():
     fas_lib = library_class.Library(config_path, False)
     print("Movement calculation commencing...")
     ee.generate_FAS_polygon(fas_lib, expression_path, name_path)
+    
+if __name__ == "__main__":
+    main()
    

@@ -33,8 +33,14 @@ def extract_graph(path, gene_id):
         fas_graph = f.read()
     fas_graph = fas_graph.split("\n")
     fas_graph = [ entry for entry in fas_graph if entry.startswith(gene_id)]
-    fas_graph = fas_graph[0].split("\t")
-    gene_id, isoform_vector, gene_fpkm = fas_graph
+    try:
+        fas_graph = fas_graph[0].split("\t")
+    
+        gene_id, isoform_vector, gene_fpkm = fas_graph
+    except:
+        print(fas_graph)
+        print(gene_id)
+        print(2.0 * "")
     isoform_vector = isoform_vector.split(";")
     isoform_vector = [ entry.split(":") for entry in isoform_vector ]
     isoform_vector = [ [prot_id, float(sigma_expr), float(rel_expr)] for prot_id, sigma_expr, rel_expr in isoform_vector ]
@@ -138,7 +144,7 @@ def prepare_polygon_pair_visual(polygon_list, name_list, gene_id):
     output_dict["unscaled_rel_expr"] = list(sigma_exprs_dict.values())
     output_dict["scaled_rel_expr"] =  list(scaled_sigma_exprs_dict.values())
     output_dict["unscaled_rmsd"] = unscaled_rmsd
-    output_dict["unscaled_rmsd"] = scaled_rmsd
+    output_dict["scaled_rmsd"] = scaled_rmsd
     
     return output_dict
 

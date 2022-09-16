@@ -153,6 +153,8 @@ def load_dist_matrix(fas_lib):
         dist_matrix_dict = dict()
         for seed, tax_id, query, fas_1, fas_2 in distance_master:
             #fas_score = (float(fas_1) + float(fas_2)) / 2
+            fas_1 = float(fas_1)
+            fas_2 = float(fas_2)
             gene_id, prot_id_1, tax_id = seed.split("|")
             gene_id, prot_id_2, tax_id = query.split("|")
             if gene_id not in dist_matrix_dict.keys():
@@ -200,12 +202,11 @@ def make_fas_graph_row(expression_dict, isoforms_dict, dist_matrix_dict, gene_id
             relative_expression_dict[prot_id] = 0.0
         else:
             relative_expression_dict[prot_id] = relative_expression_dict[prot_id] / total_fpkm
-
+    
     # Calculate the Sigma values.
     for seed_id in isoform_prot_ids:
         for query_id in isoform_prot_ids:
             fas_sigma_dict[seed_id] += (dist_matrix[seed_id][query_id] * relative_expression_dict[query_id])
-    
     for prot_id in isoform_prot_ids:
         fas_graph_row += prot_id + ":" + str(fas_sigma_dict[prot_id]) + ":" + str(relative_expression_dict[prot_id]) + ";"
     fas_graph_row = fas_graph_row[:-1]
