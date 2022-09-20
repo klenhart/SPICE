@@ -15,19 +15,12 @@ from fas_handler import tsv_collection_maker
 
 from library_class import Library
 
-def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+from fas_utility import make_request_data
+from fas_utility import chunks
+from fas_utility import load_gene_ids_txt
+from fas_utility import tsv_to_tuple_list
 
-def make_request_data(id_list):
-    id_list = [protein_id for gene_id, protein_id, transcript_id in id_list]
-    request_data = '{ "ids" : ['
-    for entry in id_list:
-        request_data += '"' + entry + '", '
-    request_data = request_data[:-2]
-    request_data += ' ] }'
-    return request_data
+from consensus_transcript import make_fasta_of_canonical_transcript_ids
 
 def extract_gene_ids(protein_coding_ids):
     gene_ids = sorted(list(set([gene_id for gene_id, protein_id, transcript_id in protein_coding_ids])))
@@ -38,16 +31,6 @@ def save_gene_ids_txt(gene_ids, gene_ids_path):
     gene_id_str = "\n".join(["gene"] + gene_ids)
     with open(gene_ids_path, "w") as f:
         f.write(gene_id_str)
-
-def load_gene_ids_txt(gene_ids_path):
-    with open(gene_ids_path, "r") as f:
-        gene_ids = f.read()
-        gene_ids = gene_ids.split("\n")
-        gene_ids = [gene_id for gene_id in gene_ids if len(gene_id) > 0]
-        if gene_ids[0] == "gene":
-            gene_ids = gene_ids[1:]
-    return gene_ids
-
 
 def load_progress(path):
     tuple_list = tsv_to_tuple_list(path)
@@ -182,14 +165,6 @@ def tuple_list_to_tsv(tuple_list):
         tsv += str_x + "\t" + str_y + "\n"
     return tsv
 
-def tsv_to_tuple_list(path):
-    tuple_list = []
-    with open(path, "r") as f:
-        tsv = f.read()
-        tsv = tsv.split("\n")
-        tsv = [ entry for entry in tsv if len(entry) > 0 ]
-    tuple_list = [ tuple(entry.split("\t")) for entry in tsv ]
-    return tuple_list
 
 def make_header_dict(fas_lib):
     header_taxon_tuple_list = tsv_to_tuple_list(fas_lib.get_config("phyloprofile_ids_path"))
@@ -275,6 +250,13 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
             fas_lib.save_config()
         print(fas_lib.get_config("gene_count"), "genes assembled.")
         print("Saved isoforms as fasta in", fas_lib.get_config("isoforms_path"))
+        if fas_lib.get_config("flag_assemble_canonical_transcripts") == "True":
+            print("Canonical transcripts already assembled.")
+        else:
+            print("Assembling canonical transcripts...")
+            make_fasta_of_canonical_transcript_ids(fas_lib)
+            print("Canonical transcripts assembled!")
+            fas_lib.set_config("flag_assemble_canonical_transcripts", "True")
         print("Library assembly complete.")
     
 def main():

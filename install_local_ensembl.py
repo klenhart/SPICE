@@ -135,8 +135,13 @@ def make_folders_and_files(root_path):
     if not os.path.isfile(protein_coding_ids_path):
         with open(protein_coding_ids_path, "w") as fp:
             pass
+    
+    canonical_path = root_path + "canonical_transcripts.fasta"
+    if not os.path.isfile(gene_ids_path):
+        with open(gene_ids_path, "w") as fp:
+            pass
 
-    return tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path
+    return tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path, canonical_path
 
 def install_local_ensembl(species, output_dir):
         ping_ensembl()
@@ -148,7 +153,7 @@ def install_local_ensembl(species, output_dir):
         taxon_id = get_taxon_id(species)
         root_path = make_rootpath(library_path, species, release_num)
         
-        tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path = make_folders_and_files(root_path)
+        tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path, canonical_path = make_folders_and_files(root_path)
         pairings_tsv_json_path = root_path + "pairings_tsv.json"
 
         ftp_prefix = "http://ftp.ensembl.org/pub/release-"
@@ -195,6 +200,7 @@ def install_local_ensembl(species, output_dir):
         fas_lib.set_config("tsv_buffer_path", tsv_buffer_path)
         fas_lib.set_config("fas_buffer_path", fas_buffer_path)
         fas_lib.set_config("annotation_path", annotation_path)
+        fas_lib.set_config("canonical_path", canonical_path)
         
         fas_lib.save_config()
         

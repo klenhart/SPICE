@@ -10,7 +10,7 @@ import pyranges as pr
 import os
 import json
 
-import ensembl_access
+from fas_utility import tsv_to_tuple_list
 
 
 def load_expression_gtf(expression_path, flag_filter_unknown=True, flag_remove_transcript_prefix=True):
@@ -31,7 +31,7 @@ def load_expression_gtf(expression_path, flag_filter_unknown=True, flag_remove_t
 
 def load_protein_coding_ids(path):
     #fas_lib.get_config("protein_coding_ids_path")
-    protein_coding_ids = ensembl_access.tsv_to_tuple_list(path)
+    protein_coding_ids = tsv_to_tuple_list(path)
     return protein_coding_ids
 
 

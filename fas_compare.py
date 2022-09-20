@@ -10,7 +10,6 @@ import argparse
 import os
 
 import fas_polygon as poly
-import ensembl_access
 import library_class
 import fas_utility
 
@@ -22,7 +21,7 @@ option from fas_handler.py to this
 
 def extract_all_graph(fas_lib, path, exempt=["ENSG00000155657"]):
     fas_graphs_dict = dict()
-    gene_ids = ensembl_access.load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
+    gene_ids = fas_utility.load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
     gene_ids = [ gene_id for gene_id in gene_ids if gene_id not in exempt]
     for gene_id in gene_ids:
         fas_graphs_dict[gene_id] = poly.extract_graph(path, gene_id)

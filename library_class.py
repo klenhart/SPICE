@@ -35,6 +35,7 @@ class Library:
         self.config["tsv_buffer_path"] = None
         self.config["fas_buffer_path"] = None
         self.config["annotation_path"] = None
+        self.config["canonical_path"] = None
         
         #counts
         self.config["acquired_seq_count"] = "0"
@@ -47,6 +48,7 @@ class Library:
         self.config["flag_sequence_collection"] = "False"
         self.config["flag_gene_ids_collection"] = "False"
         self.config["flag_made_pairings"] = "False"
+        self.config["flag_assemble_canonical_transcripts"] = "False"
 
         if not flag_init:
             if os.path.isfile(config_path):
