@@ -1,7 +1,7 @@
 # How to FAS
  
 1. Assemble all sequence that FAS scores should be calculated for in a fasta file. (You will need the headers for each sequence)
-2. Annotate the entire fasta file using. Note that the output file must have the same name as the input file for FAS to recognize it automatically.
+2. Annotate the entire fasta file using fas.doAnno. Note that the output file must have the same name as the input file for FAS to recognize it automatically.
 
 > fas.doAnno \
 > -i sequences.fasta \
