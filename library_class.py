@@ -22,6 +22,10 @@ class Library:
         
         #paths
         self.config["distance_master_path"] = None
+        self.config["distance_master_lcr_path"] = None
+        self.config["distance_master_tmhmm_path"] = None
+        self.config["lcr_path"] = None
+        self.config["tmhmm_path"] = None
         self.config["library_path"] = None
         self.config["root_path"] = None
         self.config["self_path"] = None
