@@ -12,9 +12,16 @@ import os
 
 from library_class import Library
 
-def concat_FAS_output(fas_lib):
-    distance_master_path = fas_lib.get_config("distance_master_path")
-    fas_buffer_path = fas_lib.get_config("fas_buffer_path")
+def concat_FAS_output(fas_lib, flag_lcr, flag_tmhmm):
+    if flag_lcr:
+        distance_master_path = fas_lib.get_config("distance_master_lcr_path")
+        fas_buffer_path = fas_lib.get_config("fas_buffer_lcr_path")
+    elif flag_tmhmm:
+        distance_master_path = fas_lib.get_config("distance_master_tmhmm_path")
+        fas_buffer_path = fas_lib.get_config("fas_buffer_tmhmm_path")
+    else:
+        distance_master_path = fas_lib.get_config("distance_master_path")
+        fas_buffer_path = fas_lib.get_config("fas_buffer_path")
     file_names = os.listdir(fas_buffer_path)
     print(len(file_names))
     print(fas_buffer_path)
@@ -113,6 +120,12 @@ def parser_setup():
     parser.add_argument("-j", "--join", action="store_true",
                         help="Join all the FAS_output into the distance_master.phyloprofile.")
     
+    parser.add_argument("-t", "--tmhmm", action="store_true",
+                        help="""Only do the FAS runs using TMHMM and SignalP domains.""")
+
+    parser.add_argument("-l", "--lcr", action="store_true",
+                        help="""Only do the FAS runs using flPS and SEG domains.""")
+    
     args = parser.parse_args()
 
     config_path = args.config
@@ -121,22 +134,23 @@ def parser_setup():
     flag_remove = args.remove
     flag_maketsv = args.maketsv
     flag_join = args.join
-    
+    flag_lcr = args.lcr
+    flag_tmhmm = args.tmhmm
 
-    return config_path, gene_id, flag_remove, flag_maketsv, flag_join
+    return config_path, gene_id, flag_remove, flag_maketsv, flag_join, flag_lcr, flag_tmhmm
 
 def main():
     """
     Create tsv output for FAS or delete a tsv that was used by FAS already.
     """
-    config_path, gene_id, flag_remove, flag_maketsv, flag_join = parser_setup()
+    config_path, gene_id, flag_remove, flag_maketsv, flag_join, flag_lcr, flag_tmhmm = parser_setup()
     fas_lib = Library(config_path, False)
     if flag_maketsv:
         tsv_access(gene_id, fas_lib)
     elif flag_remove:
         tsv_remove(gene_id, fas_lib)
     elif flag_join:
-        concat_FAS_output(fas_lib)
+        concat_FAS_output(fas_lib, flag_lcr, flag_tmhmm)
 
 if __name__ == "__main__":
     main()

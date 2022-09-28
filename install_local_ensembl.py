@@ -122,6 +122,14 @@ def make_folders_and_files(root_path):
     fas_buffer_path = root_path + "FAS_buffer/"
     if not os.path.exists(fas_buffer_path):
         os.makedirs(fas_buffer_path)
+    
+    fas_buffer_tmhmm_path = root_path + "FAS_buffer_tmhmm/"
+    if not os.path.exists(fas_buffer_tmhmm_path):
+        os.makedirs(fas_buffer_tmhmm_path)
+    
+    fas_buffer_lcr_path = root_path + "FAS_buffer_lcr/"
+    if not os.path.exists(fas_buffer_lcr_path):
+        os.makedirs(fas_buffer_lcr_path)
         
     annotation_path = root_path + "annotation/"
     if not os.path.exists(annotation_path):
@@ -181,7 +189,8 @@ def make_folders_and_files(root_path):
             isoforms_path, phyloprofile_ids_path, gene_ids_path,
             slurm_path, protein_coding_ids_path, distance_master_path,
             canonical_path, distance_master_lcr_path, distance_master_tmhmm_path,
-            tmhmm_path, lcr_path]
+            tmhmm_path, lcr_path, fas_buffer_tmhmm_path,
+            fas_buffer_lcr_path]
 
 def install_local_ensembl(species, output_dir):
         ping_ensembl()
@@ -193,7 +202,7 @@ def install_local_ensembl(species, output_dir):
         taxon_id = get_taxon_id(species)
         root_path = make_rootpath(library_path, species, release_num)
         
-        tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path, canonical_path, distance_master_lcr_path, distance_master_tmhmm_path, tmhmm_path, lcr_path = make_folders_and_files(root_path)
+        tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path, canonical_path, distance_master_lcr_path, distance_master_tmhmm_path, tmhmm_path, lcr_path, fas_buffer_tmhmm_path, fas_buffer_lcr_path = make_folders_and_files(root_path)
         pairings_tsv_json_path = root_path + "pairings_tsv.json"
 
         ftp_prefix = "http://ftp.ensembl.org/pub/release-"
@@ -243,6 +252,8 @@ def install_local_ensembl(species, output_dir):
         fas_lib.set_config("slurm_path", slurm_path)
         fas_lib.set_config("tsv_buffer_path", tsv_buffer_path)
         fas_lib.set_config("fas_buffer_path", fas_buffer_path)
+        fas_lib.set_config("fas_buffer_tmhmm_path", fas_buffer_tmhmm_path)
+        fas_lib.set_config("fas_buffer_lcr_path", fas_buffer_lcr_path)
         fas_lib.set_config("annotation_path", annotation_path)
         fas_lib.set_config("canonical_path", canonical_path)
         

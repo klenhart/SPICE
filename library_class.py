@@ -38,6 +38,8 @@ class Library:
         self.config["slurm_path"] = None
         self.config["tsv_buffer_path"] = None
         self.config["fas_buffer_path"] = None
+        self.config["fas_buffer_tmhmm_path"] = None
+        self.config["fas_buffer_lcr_path"] = None
         self.config["annotation_path"] = None
         self.config["canonical_path"] = None
         
