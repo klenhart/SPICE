@@ -46,8 +46,7 @@ gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{13}gene_ids{12}.txt")
 --empty_as_1 \
 """
 
-RAW_SLURM_2 = """
-; \
+RAW_SLURM_2 = """; \
 {0} {1} \
 -r \
 -g $gene \
@@ -95,6 +94,12 @@ tmhmm_flag, partition_list=["all","special","inteli7"], mem_per_cpu="2"):
         output_ids = gene_ids[entry[0]:entry[1]+1]
         with open(fas_lib.get_config("slurm_path") + "gene_ids{0}.txt".format(str(i)), "w") as gene_chunk:
             gene_chunk.write("\n".join(output_ids))
+        if lcr_flag:
+            outdir = fas_lib.get_config("fas_buffer_lcr_path")
+        elif tmhmm_flag:
+            outdir = fas_lib.get_config("fas_buffer_tmhmm_path")
+        else:
+            outdir = fas_lib.get_config("fas_buffer_path")
         output = RAW_SLURM_1.format(python_path,                      #0
                                   FAS_handler_path,                 #1
                                   fas_lib.get_config("self_path"),  #2
@@ -102,7 +107,7 @@ tmhmm_flag, partition_list=["all","special","inteli7"], mem_per_cpu="2"):
                                   fas_lib.get_config("species"),    #4
                                   fas_lib.get_config("isoforms_path"), #5
                                   fas_lib.get_config("annotation_path"), #6
-                                  fas_lib.get_config("fas_buffer_path"), #7
+                                  outdir, #7
                                   fas_lib.get_config("tsv_buffer_path"), #8
                                   fas_lib.get_config("phyloprofile_ids_path"), #9
                                   str(start), #10
@@ -121,10 +126,10 @@ tmhmm_flag, partition_list=["all","special","inteli7"], mem_per_cpu="2"):
             elif tmhmm_flag:
                 mod_path = fas_lib.get_config("tmhmm_path")
                 job_name = "tmhmm_FAS_job{0}.job"
-            output = output + "-d " + mod_path + " \ "
+            output = output + "-d " + mod_path + " "
         else:
             job_name = "FAS_job{0}.job"
-        output + output_2
+        output = output + output_2
         with open(fas_lib.get_config("slurm_path") + job_name.format(str(i)), "w") as f:
             f.write(output)
 
