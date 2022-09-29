@@ -197,6 +197,7 @@ def install_local_ensembl(species, output_dir):
         library_path = output_dir + "/FAS_library/"
         if not os.path.exists(library_path):
             os.makedirs(library_path)
+            os.makedirs(library_path + "/annoTools/")
         release_num = get_release()
         species, url_name, assembly_default = get_species_info(species)
         taxon_id = get_taxon_id(species)
