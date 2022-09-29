@@ -184,13 +184,27 @@ def make_folders_and_files(root_path):
     if not os.path.isfile(lcr_path):
         with open(lcr_path, "w") as fp:
             fp.write(LCR)
-            
-    return [tsv_buffer_path, fas_buffer_path, annotation_path,
-            isoforms_path, phyloprofile_ids_path, gene_ids_path,
-            slurm_path, protein_coding_ids_path, distance_master_path,
-            canonical_path, distance_master_lcr_path, distance_master_tmhmm_path,
-            tmhmm_path, lcr_path, fas_buffer_tmhmm_path,
-            fas_buffer_lcr_path]
+    
+    path_dict = dict()
+    path_dict["distance_master_path"] = distance_master_path
+    path_dict["distance_master_lcr_path"] = distance_master_lcr_path
+    path_dict["distance_master_tmhmm_path"] = distance_master_tmhmm_path
+    path_dict["tmhmm_path"] = tmhmm_path
+    path_dict["lcr_path"] = lcr_path
+    path_dict["root_path"] = root_path
+    path_dict["gene_ids_path"] = gene_ids_path
+    path_dict["isoforms_path"] = isoforms_path
+    path_dict["protein_coding_ids_path"] = protein_coding_ids_path
+    path_dict["phyloprofile_ids_path"] = phyloprofile_ids_path
+    path_dict["slurm_path"] = slurm_path
+    path_dict["tsv_buffer_path"] = tsv_buffer_path
+    path_dict["fas_buffer_path"] = fas_buffer_path
+    path_dict["fas_buffer_tmhmm_path"] = fas_buffer_tmhmm_path
+    path_dict["fas_buffer_lcr_path"] = fas_buffer_lcr_path
+    path_dict["annotation_path"] = annotation_path
+    path_dict["canonical_path"] = canonical_path
+    
+    return path_dict
 
 def install_local_ensembl(species, output_dir):
         ping_ensembl()
@@ -203,7 +217,7 @@ def install_local_ensembl(species, output_dir):
         taxon_id = get_taxon_id(species)
         root_path = make_rootpath(library_path, species, release_num)
         
-        tsv_buffer_path, fas_buffer_path, annotation_path, isoforms_path, phyloprofile_ids_path, gene_ids_path, slurm_path, protein_coding_ids_path, distance_master_path, canonical_path, distance_master_lcr_path, distance_master_tmhmm_path, tmhmm_path, lcr_path, fas_buffer_tmhmm_path, fas_buffer_lcr_path = make_folders_and_files(root_path)
+        path_dict = make_folders_and_files(root_path)
         pairings_tsv_json_path = root_path + "pairings_tsv.json"
 
         ftp_prefix = "http://ftp.ensembl.org/pub/release-"
@@ -228,35 +242,18 @@ def install_local_ensembl(species, output_dir):
         os.remove(local_assembly_path)
         
         config_path = root_path + "config.tsv"
-        
         fas_lib = Library(None, True)
+        fas_lib.set_config("self_path", config_path)
+        fas_lib.set_config("pairings_tsv_json_path", pairings_tsv_json_path)
+
         fas_lib.set_config("species", species)
         fas_lib.set_config("release_num", release_num)
         fas_lib.set_config("url_name", url_name)
         fas_lib.set_config("assembly_default", assembly_default)
         fas_lib.set_config("taxon_id", taxon_id)
-        
-        fas_lib.set_config("distance_master_path", distance_master_path)
-        fas_lib.set_config("distance_master_lcr_path", distance_master_lcr_path)
-        fas_lib.set_config("distance_master_tmhmm_path", distance_master_tmhmm_path)
-        fas_lib.set_config("tmhmm_path", tmhmm_path)
-        fas_lib.set_config("lcr_path", lcr_path)
-        fas_lib.set_config("library_path", library_path)
-        fas_lib.set_config("root_path", root_path)
-        fas_lib.set_config("self_path", config_path)
-        fas_lib.set_config("pairings_tsv_json_path", pairings_tsv_json_path)
-        fas_lib.set_config("gene_ids_path", gene_ids_path)
-        fas_lib.set_config("isoforms_path", isoforms_path)
-        fas_lib.set_config("protein_coding_ids_path", protein_coding_ids_path)
-        fas_lib.set_config("phyloprofile_ids_path", phyloprofile_ids_path)
-        fas_lib.set_config("local_assembly_path", local_assembly_path[:-3])
-        fas_lib.set_config("slurm_path", slurm_path)
-        fas_lib.set_config("tsv_buffer_path", tsv_buffer_path)
-        fas_lib.set_config("fas_buffer_path", fas_buffer_path)
-        fas_lib.set_config("fas_buffer_tmhmm_path", fas_buffer_tmhmm_path)
-        fas_lib.set_config("fas_buffer_lcr_path", fas_buffer_lcr_path)
-        fas_lib.set_config("annotation_path", annotation_path)
-        fas_lib.set_config("canonical_path", canonical_path)
+    
+        for key in path_dict.keys():
+            fas_lib.set_config(key, path_dict[key])
         
         fas_lib.save_config()
         
