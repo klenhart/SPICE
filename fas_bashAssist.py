@@ -16,7 +16,7 @@ import library_class
 import fas_utility
 
 
-RAW_SLURM = """#!/bin/bash
+RAW_SLURM_1 = """#!/bin/bash
 
 #SBATCH --partition={14}
 #SBATCH --cpus-per-task=1
@@ -44,14 +44,17 @@ gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{13}gene_ids{12}.txt")
 --phyloprofile {9} \
 --domain \
 --empty_as_1 \
-; \
+"""
+
+RAW_SLURM_2 = """; \
 {0} {1} \
 -r \
 -g $gene \
 -c {2}"""
 
 
-def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path, partition_list=["all","special","inteli7"], mem_per_cpu="2"):
+def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path, lcr_flag,
+tmhmm_flag, partition_list=["all","special","inteli7"], mem_per_cpu="2"):
     """
     Generates SLURM job files for every 1000 genes in the library instance.
 
@@ -91,14 +94,20 @@ def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path, partiti
         output_ids = gene_ids[entry[0]:entry[1]+1]
         with open(fas_lib.get_config("slurm_path") + "gene_ids{0}.txt".format(str(i)), "w") as gene_chunk:
             gene_chunk.write("\n".join(output_ids))
-        output = RAW_SLURM.format(python_path,                      #0
+        if lcr_flag:
+            outdir = fas_lib.get_config("fas_buffer_lcr_path")
+        elif tmhmm_flag:
+            outdir = fas_lib.get_config("fas_buffer_tmhmm_path")
+        else:
+            outdir = fas_lib.get_config("fas_buffer_path")
+        output = RAW_SLURM_1.format(python_path,                      #0
                                   FAS_handler_path,                 #1
                                   fas_lib.get_config("self_path"),  #2
                                   fas_path,                         #3
                                   fas_lib.get_config("species"),    #4
                                   fas_lib.get_config("isoforms_path"), #5
                                   fas_lib.get_config("annotation_path"), #6
-                                  fas_lib.get_config("fas_buffer_path"), #7
+                                  outdir, #7
                                   fas_lib.get_config("tsv_buffer_path"), #8
                                   fas_lib.get_config("phyloprofile_ids_path"), #9
                                   str(start), #10
@@ -107,7 +116,21 @@ def bash_command_maker(fas_lib, python_path, FAS_handler_path, fas_path, partiti
                                   fas_lib.get_config("slurm_path"), #13
                                   partitions, #14
                                   mem_per_cpu) #15
-        with open(fas_lib.get_config("slurm_path") + "FAS_job{0}.job".format(str(i)), "w") as f:
+        output_2 = RAW_SLURM_2.format(python_path,                      #0
+                                      FAS_handler_path,                 #1
+                                      fas_lib.get_config("self_path"))  #2
+        if lcr_flag or tmhmm_flag:
+            if lcr_flag:
+                mod_path = fas_lib.get_config("lcr_path")
+                job_name = "lcr_FAS_job{0}.job"
+            elif tmhmm_flag:
+                mod_path = fas_lib.get_config("tmhmm_path")
+                job_name = "tmhmm_FAS_job{0}.job"
+            output = output + "-d " + mod_path + " "
+        else:
+            job_name = "FAS_job{0}.job"
+        output = output + output_2
+        with open(fas_lib.get_config("slurm_path") + job_name.format(str(i)), "w") as f:
             f.write(output)
 
 
@@ -132,6 +155,12 @@ def parser_setup():
 
     parser.add_argument("-p", "--partitions", nargs="*", action="append", default=["all","special","inteli7"],
                         help="What are the names of the partitions to be used. default=['all', 'special', 'inteli7']")
+    
+    parser.add_argument("-t", "--tmhmm", action="store_true",
+                        help="""Only do the FAS runs using TMHMM and SignalP domains.""")
+
+    parser.add_argument("-l", "--lcr", action="store_true",
+                        help="""Only do the FAS runs using flPS and SEG domains.""")
 
     args = parser.parse_args()
 
@@ -141,13 +170,16 @@ def parser_setup():
         partition_list = args.partitions[-1]
     else:
         partition_list = args.partitions
-    return config_path, mem_per_cpu, partition_list
+    lcr_flag = args.lcr
+    tmhmm_flag = args.tmhmm
+
+    return config_path, mem_per_cpu, partition_list, tmhmm_flag, lcr_flag
 
 
 def main():
     
     # Read out the parser input.
-    config_path, mem_per_cpu, partition_list = parser_setup()
+    config_path, mem_per_cpu, partition_list, tmhmm_flag, lcr_flag = parser_setup()
     
     # Construct the fas_handler.py path
     fas_handler_path = os.path.abspath(__file__).split("/")[:-1]
@@ -173,6 +205,8 @@ def main():
                        python_path,
                        fas_handler_path,
                        fas_path,
+                       lcr_flag,
+                       tmhmm_flag,
                        partition_list,
                        mem_per_cpu)
 

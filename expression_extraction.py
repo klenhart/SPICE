@@ -137,12 +137,20 @@ def join_expression(expression_path_list, protein_coding_path, exempt_genes):
             isoforms_dict[gene_id] = [prot_id]
     return expression_dict, isoforms_dict
 
-def load_dist_matrix(fas_lib):
-    if "distance_master.json" in os.listdir(fas_lib.get_config("root_path")):
-        with open(fas_lib.get_config("root_path") + "distance_master.json", "r") as f: 
+def load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm):
+    if flag_lcr:
+        distance_master_name = "distance_master_lcr.json"
+        distance_master_path = fas_lib.get_config("distance_master_lcr_path")
+    elif flag_tmhmm:
+        distance_master_name = "distance_master_tmhmm.json"
+        distance_master_path = fas_lib.get_config("distance_master_tmhmm_path")
+    else:
+        distance_master_name = "distance_master.json"
+        distance_master_path = fas_lib.get_config("distance_master_path")
+    if distance_master_name in os.listdir(fas_lib.get_config("root_path")):
+        with open(fas_lib.get_config("root_path") + distance_master_name, "r") as f: 
             dist_matrix_dict = json.load(f)
     else:
-        distance_master_path = fas_lib.get_config("distance_master_path")
         with open(distance_master_path, "r") as f:
             distance_master = f.read()
         distance_master = distance_master.split("\n")   
@@ -168,7 +176,7 @@ def load_dist_matrix(fas_lib):
                     dist_matrix_dict[gene_id][prot_id_2] = { prot_id_1 : fas_2}
                 else:
                     dist_matrix_dict[gene_id][prot_id_2][prot_id_1] = fas_2
-        with open(fas_lib.get_config("root_path") + "distance_master.json", 'w') as f:
+        with open(fas_lib.get_config("root_path") + distance_master_name, 'w') as f:
             json.dump(dist_matrix_dict, f,  indent=4)
     return dist_matrix_dict
 
@@ -215,8 +223,8 @@ def make_fas_graph_row(expression_dict, isoforms_dict, dist_matrix_dict, gene_id
     return fas_graph_row
     
 
-def generate_FAS_polygon(fas_lib, expression_paths_path, name_path):
-    dist_matrix_dict = load_dist_matrix(fas_lib)
+def generate_FAS_polygon(fas_lib, expression_paths_path, name_path, flag_lcr, flag_tmhmm):
+    dist_matrix_dict = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm)
     with open(expression_paths_path, "r") as f:
         expression_paths_list = f.read()
     expression_paths_list = expression_paths_list.split("\n")
@@ -239,7 +247,13 @@ def generate_FAS_polygon(fas_lib, expression_paths_path, name_path):
                                                         gene_id)
         if not os.path.exists(fas_lib.get_config("root_path") + "FAS_polygon"):
             os.makedirs(fas_lib.get_config("root_path") + "FAS_polygon")
-        with open(fas_lib.get_config("root_path") +  "FAS_polygon/polygonFAS_{0}.tsv".format(name), "w") as f:
+        if flag_lcr:
+            polygonFAS_name = "FAS_polygon/lcr_polygonFAS_{0}.tsv"
+        elif flag_tmhmm:
+            polygonFAS_name = "FAS_polygon/tmhmm_polygonFAS_{0}.tsv"
+        else:
+            polygonFAS_name = "FAS_polygon/polygonFAS_{0}.tsv"            
+        with open(fas_lib.get_config("root_path") +  polygonFAS_name.format(name), "w") as f:
             f.write(polygon_output)
 
 def main():
