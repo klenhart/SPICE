@@ -109,20 +109,24 @@ def parser_setup():
 
     parser.add_argument("-i", "--input", nargs="+", action="append",
                         help="Paths to two fas_polygon files for which all comparisons shall be calculated.")
+                        
+    parser.add_argument("-p", "--prefix", type=str,
+                        help="Prefix for the output file.")
     
     args = parser.parse_args()
     
     config_path = args.config
+    prefix = args.prefix
     path_list = args.input[0]
 
-    return config_path, path_list
+    return config_path, path_list, prefix
     
 def main():
-    config_path, path_list = parser_setup()
+    config_path, path_list, prefix = parser_setup()
     fas_lib = library_class.Library(config_path, False)
     path_list = sorted(path_list)
     fas_graphs_dict_list = [ extract_all_graph(fas_lib, path) for path in path_list ]
-    name_list = [ fas_utility.get_name(path) for path in path_list ]
+    name_list = [ prefix + fas_utility.get_name(path) for path in path_list ]
     file_path = generate_comparison(fas_graphs_dict_list, path_list, fas_lib, name_list)
     sort_by_rmsd(fas_lib, file_path, flag_more_than_2=True)
 
