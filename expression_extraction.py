@@ -26,6 +26,7 @@ def load_expression_gtf(expression_path, flag_filter_unknown=True, flag_remove_t
         gtf = [ [entry[0], entry[1].split(":")[-1], entry[2]] for entry in gtf ]
     if flag_filter_unknown:
         gtf = [ entry for entry in gtf if entry[1].startswith("ENS") ]
+    gtf = [ [entry[0].split["."][0], entry[1].split(".")[0], entry[2]] for entry in gtf ]
     return gtf
 
 
