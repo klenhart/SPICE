@@ -87,7 +87,7 @@ def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
         if comparison[-2] < 1 and comparison[-2] > 0 and comparison[-2] != comparison[-1]:
             new_comparisons.append(comparison)
     comparisons = new_comparisons
-    comparisons = sorted(comparisons, key = lambda x: (-x[-3], -x[-2], x[-1]))
+    comparisons = sorted(comparisons, key = lambda x: (x[-1], -x[-3], -x[-2]))
     comparisons = [ comparison[:-2] + [str(comparison[-2]), str(comparison[-1])] for comparison in comparisons ]
     comparisons = [ "\t".join(comparison) for comparison in comparisons ]
     file = "\n".join(comparisons)

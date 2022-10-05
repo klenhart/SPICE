@@ -91,7 +91,7 @@ def main():
                 all_polygons = [ entry for entry in all_polygons if entry[0] == gene_id]
         # Check if the file actually contains the gene. This should technically always work if the library is intact.
         if len(all_polygons) > 0:
-            gene_id, sample_names, categories, unscaled_expression, scaled_expression, unscaled_rmsd, scaled_rmsd = all_polygons[0]
+            gene_id, sample_names, categories, unscaled_expression, scaled_expression, unscaled_rmsd, scaled_rmsd, max_tsl = all_polygons[0]
             sample_names = sample_names.split(";")
             categories = categories.split(";")
             # Check if there is no expression for any isoforms in both graphs.
