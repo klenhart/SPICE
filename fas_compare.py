@@ -40,11 +40,13 @@ def generate_comparison(polygon_dict_list, path_list, fas_lib, name_list):
         os.makedirs(comparison_path)
     
     polygon_dict1, polygon_dict2 = polygon_dict_list
-    output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\n"
+    output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\tmax_tsl\n"
     for gene_name in polygon_dict1.keys():
         polygon_list = [ polygon_dict1[gene_name], polygon_dict2[gene_name]]
         polygon_dict = poly.prepare_polygon_pair_visual(polygon_list, name_list, gene_name)
-
+        
+        max_tsl = fas_utility.find_max_tsl(fas_lib, polygon_dict["categories"])
+        
         output_row_list = [polygon_dict["gene_id"],
                            ";".join(polygon_dict["name_list"])]
         unscaled_expr_list = []
@@ -57,6 +59,7 @@ def generate_comparison(polygon_dict_list, path_list, fas_lib, name_list):
         output_row_list.append(";".join(scaled_expr_list))
         output_row_list.append(str(polygon_dict["unscaled_rmsd"]))
         output_row_list.append(str(polygon_dict["scaled_rmsd"]))
+        output_row_list.append(max_tsl)
 
         output_row = "\t".join(output_row_list)
         
@@ -66,7 +69,7 @@ def generate_comparison(polygon_dict_list, path_list, fas_lib, name_list):
     return file_path
 
 def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
-    output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\n"
+    output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\tmax_tsl\n"
     new_path = path[:-4] + "_sorted.tsv"
     with open(path, "r") as f:
         file = f.read()
@@ -75,16 +78,16 @@ def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
     comparisons = [ comparison.split("\t") for comparison in comparisons ]
     new_comparisons = []
     for comparison in comparisons:
-        if len(comparison) == 7:
+        if len(comparison) == 8:
             new_comparisons.append(comparison)
     comparisons = new_comparisons
-    comparisons = [ comparison[:-2] + [float(comparison[-2]), float(comparison[-1])] for comparison in comparisons ]
+    comparisons = [ comparison[:-3] + [float(comparison[-3]), float(comparison[-2]), float(comparison[-1])] for comparison in comparisons ]
     new_comparisons = []
     for comparison in comparisons:
         if comparison[-2] < 1 and comparison[-2] > 0 and comparison[-2] != comparison[-1]:
             new_comparisons.append(comparison)
     comparisons = new_comparisons
-    comparisons = sorted(comparisons, key = lambda x: (-x[-2], -x[-1]))
+    comparisons = sorted(comparisons, key = lambda x: (-x[-3], -x[-2], x[-1]))
     comparisons = [ comparison[:-2] + [str(comparison[-2]), str(comparison[-1])] for comparison in comparisons ]
     comparisons = [ "\t".join(comparison) for comparison in comparisons ]
     file = "\n".join(comparisons)

@@ -10,6 +10,10 @@ Created on Thu Aug 18 11:34:52 2022
 Move all minor tools from all modules to this.
 """
 
+def find_max_tsl(fas_lib, protein_id_list):
+    tuple_list = tsv_to_tuple_list(fas_lib.get_config("protein_coding_ids_path"))
+    return str(max([int(entry[-2]) for entry in tuple_list if entry[1] in protein_id_list]))
+
 def tuple_list_to_tsv(tuple_list):
     tsv = ""
     for str_x, str_y in tuple_list:
