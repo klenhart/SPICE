@@ -10,6 +10,30 @@ Created on Thu Aug 18 11:34:52 2022
 Move all minor tools from all modules to this.
 """
 
+def tuple_list_to_tsv(tuple_list):
+    tsv = ""
+    for str_x, str_y in tuple_list:
+        tsv += str_x + "\t" + str_y + "\n"
+    return tsv
+
+def triple_list_to_tsv(triple_list):
+    tsv = ""
+    for str_x, str_y, str_z in triple_list:
+        tsv += str_x + "\t" + str_y + "\t" + str_z + "\n"
+    return tsv
+
+def quadruple_list_to_tsv(quadruple_list):
+    tsv = ""
+    for str_w, str_x, str_y, str_z in quadruple_list:
+        tsv += str_w + "\t" + str_x + "\t" + str_y + "\t" + str_z + "\n"
+    return tsv
+
+def quintuple_list_to_tsv(quintuple_list):
+    tsv = ""
+    for str_v, str_w, str_x, str_y, str_z in quintuple_list:
+        tsv += str_v + "\t" + str_w + "\t" + str_x + "\t" + str_y + "\t" + str_z + "\n"
+    return tsv
+
 def tsv_to_tuple_list(path):
     tuple_list = []
     with open(path, "r") as f:

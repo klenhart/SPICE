@@ -19,6 +19,10 @@ from fas_utility import make_request_data
 from fas_utility import chunks
 from fas_utility import load_gene_ids_txt
 from fas_utility import tsv_to_tuple_list
+from fas_utility import tuple_list_to_tsv
+from fas_utility import triple_list_to_tsv
+from fas_utility import quadruple_list_to_tsv
+from fas_utility import quintuple_list_to_tsv
 
 from consensus_transcript import make_fasta_of_canonical_transcript_ids
 
@@ -152,19 +156,7 @@ def check_isoforms(isoforms_path):
         if not all([flag_same_id, flag_biotype2, flag_biotype]):
             print("Problem found!")
             print(gene_id, transcript_id, protein_id)
-
-def triple_list_to_tsv(triple_list):
-    tsv = ""
-    for str_x, str_y, str_z in triple_list:
-        tsv += str_x + "\t" + str_y + "\t" + str_z + "\n"
-    return tsv
-
-def tuple_list_to_tsv(tuple_list):
-    tsv = ""
-    for str_x, str_y in tuple_list:
-        tsv += str_x + "\t" + str_y + "\n"
-    return tsv
-
+            
 
 def make_header_dict(fas_lib):
     header_taxon_tuple_list = tsv_to_tuple_list(fas_lib.get_config("phyloprofile_ids_path"))
@@ -227,7 +219,7 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
             protein_coding_ids = extract_protein_coding_ids(fas_lib.get_config("local_assembly_path"))
             fas_lib.set_config("total_seq_count", len(protein_coding_ids))
             with open(fas_lib.get_config("protein_coding_ids_path"), "w") as f:
-                f.write(triple_list_to_tsv(protein_coding_ids))
+                f.write(quintuple_list_to_tsv(protein_coding_ids))
             fas_lib.set_config("flag_protein_coding_genes", "True")
             fas_lib.save_config()
         
