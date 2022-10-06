@@ -53,6 +53,8 @@ def transcript_id_to_protein_id(transcript_ids, ids_path):
     ids_triple = tsv_to_tuple_list(ids_path)
     return [protein_id for _, protein_id, transcript_id in ids_triple if transcript_id in transcript_ids]
 
+
+
 def build_fasta_from_ids_and_fasta(id_list, input_fasta_path, output_fasta_path):
     output_list = []
     with open(input_fasta_path, "r") as f:
@@ -105,6 +107,23 @@ def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
+
+def longest_common_prefix(str_list):
+    prefix = ""
+    i = 0
+    flag_break = False
+    while i < len(str_list[0]):
+        for string in str_list[1:]:
+            if str_list[0][i] != string[i]:
+                flag_break = True
+                break
+        if flag_break:
+            break
+        else:
+            prefix += str_list[0][i]
+            i += 1
+    return prefix
+                
 
 def load_gene_ids_txt(gene_ids_path):
     with open(gene_ids_path, "r") as f:
