@@ -84,11 +84,11 @@ def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
     comparisons = [ comparison[:-3] + [float(comparison[-3]), float(comparison[-2]), int(comparison[-1])] for comparison in comparisons ]
     new_comparisons = []
     for comparison in comparisons:
-        if comparison[-2] < 1 and comparison[-2] > 0 and comparison[-2] != comparison[-1]:
+        if comparison[-3] < 1 and comparison[-3] > 0 and comparison[-3] != comparison[-2]:
             new_comparisons.append(comparison)
     comparisons = new_comparisons
     comparisons = sorted(comparisons, key = lambda x: (x[-1], -x[-3], -x[-2]))
-    comparisons = [ comparison[:-2] + [str(comparison[-3]), str(comparison[-2], str(comparison[-1]))] for comparison in comparisons ]
+    comparisons = [ comparison[:-3] + [str(comparison[-3]), str(comparison[-2]), str(comparison[-1])] for comparison in comparisons ]
     comparisons = [ "\t".join(comparison) for comparison in comparisons ]
     file = "\n".join(comparisons)
     file = output + file
@@ -132,6 +132,7 @@ def main():
     name_list = [ prefix + fas_utility.get_name(path) for path in path_list ]
     file_path = generate_comparison(fas_graphs_dict_list, path_list, fas_lib, name_list)
     sort_by_rmsd(fas_lib, file_path, flag_more_than_2=True)
+
 
 if __name__ == "__main__":
     main()
