@@ -55,27 +55,32 @@ def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, rmsd, fil
     fig = go.Figure()
     for i, name in enumerate(sample_names):
         fig.add_trace(go.Scatterpolar(
-            r=sigma_list[i],
-            theta=categories,
+            r=sigma_list[i] + [sigma_list[i][0]],
+            theta=categories + [categories[0]],
             fill="toself",
             name=name
             ))
-    fig.add_annotation(x=0, y=-0.12,
+    fig.add_annotation(x=0, y=-0.2,
                 text="RMSD=" + str(rmsd),
                 showarrow=False)
-    fig.add_annotation(x=0, y=-0.08,
+    fig.add_annotation(x=0, y=-0.14,
                 text=gene_id,
                 showarrow=False)
     fig.update_layout(
+        autosize=False,
+        width=604,
+        height=387,
         polar=dict(
             radialaxis=dict(
                 visible=True,
                 range=[0,1]
                 )),
-        showlegend=True
+        showlegend=True,
+        paper_bgcolor="LightSteelBlue"
         )
-    fig.show()
+    #fig.show()
     fig.write_image(file=filepath)
+    
 
 
 def prepare_polygon_pair_visual(polygon_list, name_list, gene_id):
