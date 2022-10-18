@@ -12,8 +12,8 @@ import os
 import sys
 
 # self-made modules
-import library_class
-import fas_utility
+import valves.library_class as library_class
+import valves.fas_utility as fas_utility
 
 
 RAW_SLURM_1 = """#!/bin/bash

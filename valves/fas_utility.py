@@ -10,6 +10,32 @@ Created on Thu Aug 18 11:34:52 2022
 Move all minor tools from all modules to this.
 """
 
+import itertools
+import json
+
+def tsv_collection_maker(header_dict, fas_lib):
+    """
+    Generates a pairings_tsv.json file in the root_path that contains all pairings.tsv files.
+    Parameters
+    ----------
+    header_dict : dict.keys() == [str], dict.values() == [str]
+        dictionary containing all headers indexed by their ENS gene ID
+    fas_lib : FAS Library class object
+        path to the root of specific species library (e.g. /home/FAS_library/homo_sapiens/release_107/)
+    Returns
+    -------
+    None.
+    """
+    tsv_dict = dict()
+    for gene_id in header_dict.keys():
+        tsv_dict[gene_id] = ""
+        pairs = itertools.product(header_dict[gene_id], header_dict[gene_id])
+        pairs = [pair for pair in pairs if pair[0] <= pair[1]]
+        for header_1, header_2 in pairs:
+            tsv_dict[gene_id] += header_1 + "\t" + header_2 + "\n"
+    with open(fas_lib.get_config("pairings_tsv_json_path"), 'w') as fp:
+        json.dump(tsv_dict, fp,  indent=4)
+
 def find_max_tsl(fas_lib, protein_id_list):
     if len(protein_id_list) == 0:
         return "7"

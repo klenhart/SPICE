@@ -8,8 +8,8 @@ Created on Thu Aug 18 11:30:47 2022
 
 import argparse
 
-import library_class
-import expression_extraction as ee
+import valves.library_class as library_class
+import valves.expression_extraction as ee
 
 
 def parser_setup():

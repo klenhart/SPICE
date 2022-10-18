@@ -9,9 +9,9 @@ Created on Thu Aug 18 11:31:47 2022
 import argparse
 import os
 
-import fas_polygon as poly
-import library_class
-import fas_utility
+import valves.fas_polygon as poly
+import valves.library_class as library_class
+import valves.fas_utility as fas_utility
 
 """
 Move the generation of a sample comparison file part of the

@@ -11,17 +11,13 @@ from all_protein_coding_gene_ID import extract_protein_coding_ids
 
 from install_local_ensembl import install_local_ensembl
 
-from fas_handler import tsv_collection_maker
-
 from library_class import Library
 
+from fas_utility import tsv_collection_maker
 from fas_utility import make_request_data
 from fas_utility import chunks
 from fas_utility import load_gene_ids_txt
 from fas_utility import tsv_to_tuple_list
-from fas_utility import tuple_list_to_tsv
-from fas_utility import triple_list_to_tsv
-from fas_utility import quadruple_list_to_tsv
 from fas_utility import quintuple_list_to_tsv
 
 from consensus_transcript import make_fasta_of_canonical_transcript_ids

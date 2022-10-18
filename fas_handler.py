@@ -6,11 +6,10 @@ Created on Wed Jul 27 10:00:07 2022
 """
 
 import json
-import itertools
 import argparse
 import os
 
-from library_class import Library
+from valves.library_class import Library
 
 def concat_FAS_output(fas_lib, flag_lcr, flag_tmhmm):
     if flag_lcr:
@@ -36,29 +35,6 @@ def concat_FAS_output(fas_lib, flag_lcr, flag_tmhmm):
             with open(distance_master_path, "a") as f_out:
                 f_out.write(query + "\n")
         os.remove(path)
-
-def tsv_collection_maker(header_dict, fas_lib):
-    """
-    Generates a pairings_tsv.json file in the root_path that contains all pairings.tsv files.
-    Parameters
-    ----------
-    header_dict : dict.keys() == [str], dict.values() == [str]
-        dictionary containing all headers indexed by their ENS gene ID
-    fas_lib : FAS Library class object
-        path to the root of specific species library (e.g. /home/FAS_library/homo_sapiens/release_107/)
-    Returns
-    -------
-    None.
-    """
-    tsv_dict = dict()
-    for gene_id in header_dict.keys():
-        tsv_dict[gene_id] = ""
-        pairs = itertools.product(header_dict[gene_id], header_dict[gene_id])
-        pairs = [pair for pair in pairs if pair[0] <= pair[1]]
-        for header_1, header_2 in pairs:
-            tsv_dict[gene_id] += header_1 + "\t" + header_2 + "\n"
-    with open(fas_lib.get_config("pairings_tsv_json_path"), 'w') as fp:
-        json.dump(tsv_dict, fp,  indent=4)
 
 def tsv_access(gene_id, fas_lib):
     """

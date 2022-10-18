@@ -8,7 +8,7 @@ Created on Tue Aug  2 15:01:57 2022
 
 import argparse
 
-import ensembl_access
+from valves.ensembl_access import ensembl_access
 
 def parser_setup():
     """
@@ -50,10 +50,10 @@ def parser_setup():
 
 def main():
     output_dir, species, flag_install_local, config_path = parser_setup()
-    ensembl_access.ensembl_access(output_dir,
-                                  species,
-                                  flag_install_local,
-                                  config_path)
+    ensembl_access(output_dir,
+                   species,
+                   flag_install_local,
+                   config_path)
     
 if __name__ == "__main__":
     main()

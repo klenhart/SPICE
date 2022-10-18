@@ -17,9 +17,9 @@ import argparse
 import sys
 
 # self made modules
-import library_class
-import fas_utility
-import fas_polygon
+import valves.library_class as library_class
+import valves.fas_utility as fas_utility
+import valves.fas_polygon as fas_polygon
 
 def parser_setup():
     """
