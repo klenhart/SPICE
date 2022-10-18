@@ -50,7 +50,13 @@ setup(
         'pathlib'
     ],
     entry_points={
-        'console_scripts': ["gt.run = grand-trumpet.fas_lib:main"],
+        'console_scripts': ["gt.run = grand-trumpet.fas_lib:main",
+                            "gt.run = grand-trumpet.fas_compare:main",
+                            "gt.run = grand-trumpet.fas_visualize:main",
+                            "gt.run = grand-trumpet.fas_bashAssist:main",
+                            "gt.run = grand-trumpet.get_domain_importance:main",
+                            "gt.run = grand-trumpet.fas_handler:main",
+                            "gt.run = grand-trumpet.fas_movement:main"],
     },
     license="GPL-3.0",
     classifiers=[
