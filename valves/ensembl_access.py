@@ -7,20 +7,20 @@ __author__ = "Christian Bluemel"
 import requests
 import sys
 
-from all_protein_coding_gene_ID import extract_protein_coding_ids
+from valves.all_protein_coding_gene_ID import extract_protein_coding_ids
 
-from install_local_ensembl import install_local_ensembl
+from valves.install_local_ensembl import install_local_ensembl
 
-from library_class import Library
+from valves.library_class import Library
 
-from fas_utility import tsv_collection_maker
-from fas_utility import make_request_data
-from fas_utility import chunks
-from fas_utility import load_gene_ids_txt
-from fas_utility import tsv_to_tuple_list
-from fas_utility import quintuple_list_to_tsv
+from valves.fas_utility import tsv_collection_maker
+from valves.fas_utility import make_request_data
+from valves.fas_utility import chunks
+from valves.fas_utility import load_gene_ids_txt
+from valves.fas_utility import tsv_to_tuple_list
+from valves.fas_utility import quintuple_list_to_tsv
 
-from consensus_transcript import make_fasta_of_canonical_transcript_ids
+from valves.consensus_transcript import make_fasta_of_canonical_transcript_ids
 
 def extract_gene_ids(protein_coding_ids):
     gene_ids = sorted(list(set([gene_id for gene_id, protein_id, transcript_id in protein_coding_ids])))

@@ -10,7 +10,7 @@ import pyranges as pr
 import os
 import json
 
-from fas_utility import tsv_to_tuple_list
+from valves.fas_utility import tsv_to_tuple_list
 
 
 def load_expression_gtf(expression_path, flag_filter_unknown=True, flag_remove_transcript_prefix=True):
@@ -167,16 +167,16 @@ def load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm):
             gene_id, prot_id_1, tax_id = seed.split("|")
             gene_id, prot_id_2, tax_id = query.split("|")
             if gene_id not in dist_matrix_dict.keys():
-                dist_matrix_dict[gene_id] = {prot_id_1 : { prot_id_2 : fas_1} , prot_id_2 : { prot_id_1 : fas_2} }
+                dist_matrix_dict[gene_id] = {prot_id_1 : { prot_id_2 : fas_2} , prot_id_2 : { prot_id_1 : fas_1} }
             else:
                 if prot_id_1 not in dist_matrix_dict[gene_id].keys():
-                    dist_matrix_dict[gene_id][prot_id_1] = { prot_id_2 : fas_1}
+                    dist_matrix_dict[gene_id][prot_id_1] = { prot_id_2 : fas_2}
                 else:
-                    dist_matrix_dict[gene_id][prot_id_1][prot_id_2] = fas_1
+                    dist_matrix_dict[gene_id][prot_id_1][prot_id_2] = fas_2
                 if prot_id_2 not in dist_matrix_dict[gene_id].keys():
-                    dist_matrix_dict[gene_id][prot_id_2] = { prot_id_1 : fas_2}
+                    dist_matrix_dict[gene_id][prot_id_2] = { prot_id_1 : fas_1}
                 else:
-                    dist_matrix_dict[gene_id][prot_id_2][prot_id_1] = fas_2
+                    dist_matrix_dict[gene_id][prot_id_2][prot_id_1] = fas_1
         with open(fas_lib.get_config("root_path") + distance_master_name, 'w') as f:
             json.dump(dist_matrix_dict, f,  indent=4)
     return dist_matrix_dict

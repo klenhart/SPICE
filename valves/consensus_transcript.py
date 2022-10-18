@@ -8,11 +8,11 @@ Created on Tue Sep 20 10:50:12 2022
 
 import requests, sys
 
-from fas_utility import make_request_data
-from fas_utility import tsv_to_tuple_list
-from fas_utility import chunks
-from fas_utility import build_fasta_from_ids_and_fasta
-from fas_utility import transcript_id_to_protein_id
+from valves.fas_utility import make_request_data
+from valves.fas_utility import tsv_to_tuple_list
+from valves.fas_utility import chunks
+from valves.fas_utility import build_fasta_from_ids_and_fasta
+from valves.fas_utility import transcript_id_to_protein_id
 
 def make_fasta_of_canonical_transcript_ids(fas_lib):
     all_ids_path = fas_lib.get_config("protein_coding_ids_path") 

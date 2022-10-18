@@ -14,7 +14,7 @@ import gzip
 import urllib.request as request
 from contextlib import closing
 
-from library_class import Library
+from valves.library_class import Library
 
 TMHMM_SIGNALP = """#linearized
 #normal

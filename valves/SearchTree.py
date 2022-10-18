@@ -6,7 +6,7 @@ Created on Thu Oct  6 10:44:50 2022
 @author: chrisbl
 """
 
-from fas_utility import longest_common_prefix
+from valves.fas_utility import longest_common_prefix
 
 class SearchTree:
     def __init__(self, tuple_list):
