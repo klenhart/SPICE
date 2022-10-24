@@ -34,6 +34,7 @@ import shutil
 import gzip
 import urllib.request as request
 from contextlib import closing
+import json
 
 from valves.library_class import Library
 
@@ -223,10 +224,10 @@ def make_folders_and_files(root_path):
     if not os.path.exists(main_comparison_path):
         os.makedirs(main_comparison_path)
 
-    result_config_path = root_path + "result_config.tsv"
+    result_config_path = root_path + "result_config.json"
     if not os.path.isfile(result_config_path):
-        with open(lcr_path, "w") as fp:
-            fp.write("condition\tsamples\tFAS_modes\tLibrary\texpr_normalization\n")
+        with open(result_config_path, 'w') as f:
+            json.dump(dict(), f,  indent=4)
     
     path_dict = dict()
     path_dict["fas_all_path"] = distance_master_path

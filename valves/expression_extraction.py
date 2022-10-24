@@ -32,6 +32,7 @@ import os
 import json
 
 from valves.fas_utility import tsv_to_tuple_list
+from valves.fas_utility import longest_common_prefix
 
 
 def load_expression_gtf(expression_path, flag_filter_unknown=True, flag_remove_transcript_prefix=True):
@@ -88,6 +89,11 @@ def fix_expression_ids( expression_data, protein_coding_ids):
 
 
 def filter_non_expressed(expression_data, fpkm_threshold=0):
+    """
+    Not in use anymore
+
+
+    """
     return [ [gene_id, transcript_id, fpkm] for gene_id, transcript_id, fpkm in expression_data if fpkm > fpkm_threshold ]
 
 def make_isoform_protein_id_dict(expression_data):
@@ -139,17 +145,16 @@ def join_expression(expression_path_list, protein_coding_path, exempt_genes):
     expression_dict = dict()
     prot_to_gene_dict = dict()
     for gene_id, prot_id, transcript_id, tsl, tag in protein_coding_ids:
-        expression_dict[prot_id] = 0
+        expression_dict[prot_id] = []
         prot_to_gene_dict[prot_id] = gene_id
     # Extract all the expression from the gtf files and filter out everything unnecessary.
     for expression_path in expression_path_list:
         expression_data = load_expression_gtf(expression_path)
-        expression_data = filter_non_expressed(expression_data)
         expression_data = filter_protein_coding(expression_data, protein_coding_ids)
         expression_data = fix_expression_ids(expression_data, protein_coding_ids)
         expression_data = filter_exempt_genes(expression_data, exempt_genes)
         for gene_id, prot_id, transcript_id, fpkm in expression_data:
-            expression_dict[prot_id] += fpkm
+            expression_dict[prot_id].append(fpkm)
     isoforms_dict = dict()
     for prot_id in expression_dict.keys():
         gene_id = prot_to_gene_dict[prot_id]
@@ -162,10 +167,10 @@ def join_expression(expression_path_list, protein_coding_path, exempt_genes):
 def load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm):
     if flag_lcr:
         distance_master_name = "fas_lcr.json"
-        distance_master_path = fas_lib.get_config("distance_master_lcr_path")
+        distance_master_path = fas_lib.get_config("fas_lcr_path")
     elif flag_tmhmm:
         distance_master_name = "fas_tmhmm.json"
-        distance_master_path = fas_lib.get_config("distance_master_tmhmm_path")
+        distance_master_path = fas_lib.get_config("fas_tmhmm_path")
     else:
         distance_master_name = "fas.json"
         distance_master_path = fas_lib.get_config("fas_all_path")
@@ -245,8 +250,12 @@ def make_fas_graph_row(expression_dict, isoforms_dict, dist_matrix_dict, gene_id
     return fas_graph_row
     
 
-def generate_FAS_polygon(fas_lib, expression_paths_path, name_path, flag_lcr, flag_tmhmm):
-    dist_matrix_dict = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm)
+def generate_expression_file(fas_lib, expression_paths_path, name_path):
+    result_config_path = fas_lib.get_config("result_config")
+    expression_path = fas_lib.get_config("expression")
+    
+    #dist_matrix_dict = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm)
+
     with open(expression_paths_path, "r") as f:
         expression_paths_list = f.read()
     expression_paths_list = expression_paths_list.split("\n")
@@ -258,25 +267,67 @@ def generate_FAS_polygon(fas_lib, expression_paths_path, name_path, flag_lcr, fl
     name_list = name_list.split("\n")
     for i, expression_paths in enumerate(expression_paths_list):
         name = name_list[i]
+        
+        prefix = longest_common_prefix(expression_paths)
+        name_cutoff_index = len(prefix)
+        expression_names = [ path[name_cutoff_index:] for path in expression_paths ]
+        
         expression_dict, isoforms_dict = join_expression(expression_paths,
                                                          fas_lib.get_config("protein_coding_ids_path"),
                                                          ["ENSG00000155657"])
-        polygon_output = "geneID\tisoformVectors\tgeneFPKM"
+        expression_output = "!condition\t" + name + "\n"
+        expression_output = "!replicates\t" + ";".join(expression_names) + "\n"
+        expression_output = "!normalization\tFPKM\n"
+        expression_output = "!prefix\t" + prefix + "\n"
+        expression_output = "gene_id\tisoform_prot_ids\texpression\n"
         for gene_id in isoforms_dict.keys():
-            polygon_output += "\n" + make_fas_graph_row(expression_dict,
-                                                        isoforms_dict,
-                                                        dist_matrix_dict,
-                                                        gene_id)
-        if not os.path.exists(fas_lib.get_config("root_path") + "FAS_polygon"):
-            os.makedirs(fas_lib.get_config("root_path") + "FAS_polygon")
-        if flag_lcr:
-            polygonFAS_name = "FAS_polygon/lcr_polygonFAS_{0}.tsv"
-        elif flag_tmhmm:
-            polygonFAS_name = "FAS_polygon/tmhmm_polygonFAS_{0}.tsv"
-        else:
-            polygonFAS_name = "FAS_polygon/polygonFAS_{0}.tsv"            
-        with open(fas_lib.get_config("root_path") +  polygonFAS_name.format(name), "w") as f:
-            f.write(polygon_output)
+            prot_ids = []
+            expression = []
+            for prot_id in isoforms_dict[gene_id]:
+                prot_ids.append(prot_id)
+                expression.append([])
+                expression[-1].append(str(expression_dict[prot_id]))
+            prot_ids = ";".join(prot_ids)
+            expression = ";".join([ ":".join(entry) for entry in expression])
+            expression_output += "\t".join([ gene_id, prot_ids, expression ]) + "\n"
+        
+        expression_file_path = expression_path + "expression_" + name + ".tsv"
+        with open(expression_file_path, "w") as f:
+            f.write(expression_output)
+
+        with open(result_config_path, "r") as f: 
+            result_config_dict = json.load(f)
+        
+        result_config_dict[name] = dict()
+        result_config_dict[name]["prefix"] = prefix
+        result_config_dict[name]["replicates"] = expression_names
+        result_config_dict[name]["normalization"] = "FPKM"
+        result_config_dict[name]["FAS_modes"] = []
+        result_config_dict[name]["species"] = fas_lib.get_config("species")
+        result_config_dict[name]["release"] = fas_lib.get_config("release")
+
+        with open(result_config_path, 'w') as f:
+            json.dump(result_config_dict, f,  indent=4)
+
+        # polygon_output = "geneID\tisoformVectors\tgeneFPKM"
+        # for gene_id in isoforms_dict.keys():
+        #     polygon_output += "\n" + make_fas_graph_row(expression_dict,
+        #                                                 isoforms_dict,
+        #                                                 dist_matrix_dict,
+        #                                                 gene_id)
+        # if not os.path.exists(fas_lib.get_config("root_path") + "FAS_polygon"):
+        #     os.makedirs(fas_lib.get_config("root_path") + "FAS_polygon")
+        # if flag_lcr:
+        #     polygonFAS_name = "FAS_polygon/lcr_polygonFAS_{0}.tsv"
+        # elif flag_tmhmm:
+        #     polygonFAS_name = "FAS_polygon/tmhmm_polygonFAS_{0}.tsv"
+        # else:
+        #     polygonFAS_name = "FAS_polygon/polygonFAS_{0}.tsv"            
+        # with open(fas_lib.get_config("root_path") +  polygonFAS_name.format(name), "w") as f:
+        #     f.write(polygon_output)
+
+def generate_movement_file(fas_lib, expression_paths_path, name_path, flag_lcr, flag_tmhmm):
+    pass
 
 def main():
     pass

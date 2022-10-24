@@ -83,7 +83,8 @@ def main():
 
     fas_lib = library_class.Library(config_path, False)
     print("Movement calculation commencing...")
-    ee.generate_FAS_polygon(fas_lib, expression_path, name_path, flag_lcr, flag_tmhmm)
+    ee.generate_expression_file(fas_lib, expression_path, name_path)
+    ee.generate_movement_file(fas_lib, expression_path, name_path, flag_lcr, flag_tmhmm)
     
 if __name__ == "__main__":
     main()
