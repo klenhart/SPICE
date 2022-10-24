@@ -133,84 +133,105 @@ def make_folders_and_files(root_path):
     if not os.path.exists(root_path):
         os.makedirs(root_path)
     
-    tsv_buffer_path = root_path + "tsv_buffer/"
+    tsv_buffer_path = root_path + "temp/tsv_buffer/"
     if not os.path.exists(tsv_buffer_path):
         os.makedirs(tsv_buffer_path)
     
-    slurm_path = root_path + "SLURM/"
+    slurm_path = root_path + "temp/SLURM/"
     if not os.path.exists(slurm_path):
         os.makedirs(slurm_path)
     
-    fas_buffer_path = root_path + "FAS_buffer/"
+    fas_buffer_path = root_path + "temp/FAS_buffer/"
     if not os.path.exists(fas_buffer_path):
         os.makedirs(fas_buffer_path)
     
-    fas_buffer_tmhmm_path = root_path + "FAS_buffer_tmhmm/"
+    fas_buffer_tmhmm_path = root_path + "temp/FAS_buffer_tmhmm/"
     if not os.path.exists(fas_buffer_tmhmm_path):
         os.makedirs(fas_buffer_tmhmm_path)
     
-    fas_buffer_lcr_path = root_path + "FAS_buffer_lcr/"
+    fas_buffer_lcr_path = root_path + "temp/FAS_buffer_lcr/"
     if not os.path.exists(fas_buffer_lcr_path):
         os.makedirs(fas_buffer_lcr_path)
         
-    annotation_path = root_path + "annotation/"
+    annotation_path = root_path + "src/annotation/"
     if not os.path.exists(annotation_path):
         os.makedirs(annotation_path)
     
-    isoforms_path = root_path + "isoforms.fasta"
+    isoforms_path = root_path + "src/isoforms.fasta"
     if not os.path.isfile(isoforms_path):
         with open(isoforms_path, "w") as fp:
             pass
     
-    distance_master_path = root_path + "distance_master.phyloprofile"
+    distance_master_path = root_path + "src/fas_all.phyloprofile"
     if not os.path.isfile(distance_master_path):
         with open(distance_master_path, "w") as fp:
             fp.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n")
     
-    distance_master_lcr_path = root_path + "distance_master_lcr.phyloprofile"
+    distance_master_lcr_path = root_path + "src/fas_lcr.phyloprofile"
     if not os.path.isfile(distance_master_lcr_path):
         with open(distance_master_lcr_path, "w") as fp:
             fp.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n")
             
-    distance_master_tmhmm_path = root_path + "distance_master_tmhmm.phyloprofile"
+    distance_master_tmhmm_path = root_path + "src/fas_tmhmm.phyloprofile"
     if not os.path.isfile(distance_master_tmhmm_path):
         with open(distance_master_tmhmm_path, "w") as fp:
             fp.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n")
     
-    phyloprofile_ids_path = root_path + "phyloprofile_ids.tsv"
+    phyloprofile_ids_path = root_path + "src/phyloprofile_ids.tsv"
     if not os.path.isfile(phyloprofile_ids_path):
         with open(phyloprofile_ids_path, "w") as fp:
             pass
     
-    gene_ids_path = root_path + "gene_ids.txt"
+    gene_ids_path = root_path + "src/gene_ids.txt"
     if not os.path.isfile(gene_ids_path):
         with open(gene_ids_path, "w") as fp:
             pass
         
-    protein_coding_ids_path = root_path + "protein_coding_genes.tsv"
+    protein_coding_ids_path = root_path + "src/protein_coding_genes.tsv"
     if not os.path.isfile(protein_coding_ids_path):
         with open(protein_coding_ids_path, "w") as fp:
             pass
     
-    canonical_path = root_path + "canonical_transcripts.fasta"
+    canonical_path = root_path + "src/canonical_transcripts.fasta"
     if not os.path.isfile(canonical_path):
         with open(canonical_path, "w") as fp:
             pass
     
-    tmhmm_path = root_path + "featuretypes_tmhmm_SignalP.txt"
+    tmhmm_path = root_path + "src/featuretypes_tmhmm_SignalP.txt"
     if not os.path.isfile(tmhmm_path):
         with open(tmhmm_path, "w") as fp:
             fp.write(TMHMM_SIGNALP)
     
-    lcr_path = root_path + "featuretypes_lcr.txt"
+    lcr_path = root_path + "src/featuretypes_lcr.txt"
     if not os.path.isfile(lcr_path):
         with open(lcr_path, "w") as fp:
             fp.write(LCR)
     
+    result_path = root_path + "result/"
+    if not os.path.exists(result_path):
+        os.makedirs(result_path)
+        
+    movement_path = root_path + "movement/"
+    if not os.path.exists(movement_path):
+        os.makedirs(movement_path)
+        
+    expression_path = root_path + "expression/"
+    if not os.path.exists(expression_path):
+        os.makedirs(expression_path)
+
+    main_comparison_path = root_path + "main_comparison/"
+    if not os.path.exists(main_comparison_path):
+        os.makedirs(main_comparison_path)
+
+    result_config_path = root_path + "result_config.tsv"
+    if not os.path.isfile(result_config_path):
+        with open(lcr_path, "w") as fp:
+            fp.write("condition\tsamples\tFAS_modes\tLibrary\texpr_normalization\n")
+    
     path_dict = dict()
-    path_dict["distance_master_path"] = distance_master_path
-    path_dict["distance_master_lcr_path"] = distance_master_lcr_path
-    path_dict["distance_master_tmhmm_path"] = distance_master_tmhmm_path
+    path_dict["fas_all_path"] = distance_master_path
+    path_dict["fas_lcr_path"] = distance_master_lcr_path
+    path_dict["fas_tmhmm_path"] = distance_master_tmhmm_path
     path_dict["tmhmm_path"] = tmhmm_path
     path_dict["lcr_path"] = lcr_path
     path_dict["root_path"] = root_path
@@ -225,6 +246,11 @@ def make_folders_and_files(root_path):
     path_dict["fas_buffer_lcr_path"] = fas_buffer_lcr_path
     path_dict["annotation_path"] = annotation_path
     path_dict["canonical_path"] = canonical_path
+    path_dict["result"] = result_path
+    path_dict["result_config"] = result_config_path
+    path_dict["main_comparison"] = main_comparison_path
+    path_dict["expression"] = expression_path
+    path_dict["movement"] = movement_path
     
     return path_dict
 
@@ -240,7 +266,7 @@ def install_local_ensembl(species, output_dir):
         root_path = make_rootpath(library_path, species, release_num)
         
         path_dict = make_folders_and_files(root_path)
-        pairings_tsv_json_path = root_path + "pairings_tsv.json"
+        pairings_tsv_json_path = root_path + "src/pairings_tsv.json"
 
         ftp_prefix = "http://ftp.ensembl.org/pub/release-"
         ftp_suffix = ".gtf.gz"        
@@ -251,7 +277,7 @@ def install_local_ensembl(species, output_dir):
         ### Assemble FTP address according to standard /release-{release_num}/{species}.{assembly_dafault}.{assembly_num}.gtf.gz
         file_name = url_name + "." + assembly_default + "." + release_num + ftp_suffix 
         ftp_address = ftp_prefix + release_num + ftp_infix + file_name 
-        local_assembly_path = root_path + file_name
+        local_assembly_path = root_path + "src/" + file_name
         print("Downloading", ftp_address, "to", local_assembly_path + "...")
         with closing(request.urlopen(ftp_address)) as r:
             with open(local_assembly_path, 'wb') as f:

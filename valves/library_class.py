@@ -42,9 +42,9 @@ class Library:
         self.config["taxon_id"] = None
         
         #paths
-        self.config["distance_master_path"] = None
-        self.config["distance_master_lcr_path"] = None
-        self.config["distance_master_tmhmm_path"] = None
+        self.config["fas_all_path"] = None
+        self.config["fas_lcr_path"] = None
+        self.config["fas_tmhmm_path"] = None
         self.config["lcr_path"] = None
         self.config["tmhmm_path"] = None
         self.config["library_path"] = None
@@ -63,6 +63,11 @@ class Library:
         self.config["fas_buffer_lcr_path"] = None
         self.config["annotation_path"] = None
         self.config["canonical_path"] = None
+        self.config["result"] = None
+        self.config["result_config"] = None
+        self.config["main_comparison"] = None
+        self.config["expression"] = None
+        self.config["movement"] = None
         
         #counts
         self.config["acquired_seq_count"] = "0"

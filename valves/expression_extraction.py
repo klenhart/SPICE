@@ -161,14 +161,14 @@ def join_expression(expression_path_list, protein_coding_path, exempt_genes):
 
 def load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm):
     if flag_lcr:
-        distance_master_name = "distance_master_lcr.json"
+        distance_master_name = "fas_lcr.json"
         distance_master_path = fas_lib.get_config("distance_master_lcr_path")
     elif flag_tmhmm:
-        distance_master_name = "distance_master_tmhmm.json"
+        distance_master_name = "fas_tmhmm.json"
         distance_master_path = fas_lib.get_config("distance_master_tmhmm_path")
     else:
-        distance_master_name = "distance_master.json"
-        distance_master_path = fas_lib.get_config("distance_master_path")
+        distance_master_name = "fas.json"
+        distance_master_path = fas_lib.get_config("fas_all_path")
     if distance_master_name in os.listdir(fas_lib.get_config("root_path")):
         with open(fas_lib.get_config("root_path") + distance_master_name, "r") as f: 
             dist_matrix_dict = json.load(f)

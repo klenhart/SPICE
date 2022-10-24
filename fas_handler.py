@@ -34,13 +34,13 @@ from valves.library_class import Library
 
 def concat_FAS_output(fas_lib, flag_lcr, flag_tmhmm):
     if flag_lcr:
-        distance_master_path = fas_lib.get_config("distance_master_lcr_path")
+        distance_master_path = fas_lib.get_config("fas_lcr_path")
         fas_buffer_path = fas_lib.get_config("fas_buffer_lcr_path")
     elif flag_tmhmm:
-        distance_master_path = fas_lib.get_config("distance_master_tmhmm_path")
+        distance_master_path = fas_lib.get_config("fas_tmhmm_path")
         fas_buffer_path = fas_lib.get_config("fas_buffer_tmhmm_path")
     else:
-        distance_master_path = fas_lib.get_config("distance_master_path")
+        distance_master_path = fas_lib.get_config("fas_all_path")
         fas_buffer_path = fas_lib.get_config("fas_buffer_path")
     file_names = os.listdir(fas_buffer_path)
     print(len(file_names))
