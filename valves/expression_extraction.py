@@ -30,6 +30,7 @@ Created on Fri Aug  5 12:43:02 2022
 import pyranges as pr
 import os
 import json
+import numpy as np
 
 from valves.fas_utility import tsv_to_tuple_list
 from valves.fas_utility import longest_common_prefix
@@ -92,9 +93,9 @@ def filter_non_expressed(expression_data, fpkm_threshold=0):
     """
     Not in use anymore
 
-
     """
     return [ [gene_id, transcript_id, fpkm] for gene_id, transcript_id, fpkm in expression_data if fpkm > fpkm_threshold ]
+
 
 def make_isoform_protein_id_dict(expression_data):
     isoform_protein_id_dict = dict()
@@ -118,6 +119,7 @@ def isoform_count_distribution_check(isoform_protein_id_dict):
     mean = sum(isoform_count_list) / len(isoform_count_list)
     return median, mean, three_or_more_ratio
 
+
 def check_for_same_order(m1, m2):
     flag_check = True
     for i, entry in enumerate(m1):
@@ -138,6 +140,7 @@ def filter_exempt_genes(expression_data, exempt_genes):
     else:
         expression_data = [ entry for entry in expression_data if entry[0] not in exempt_genes ]
     return expression_data
+
 
 def join_expression(expression_path_list, protein_coding_path, exempt_genes):
     protein_coding_ids = load_protein_coding_ids(protein_coding_path)
@@ -208,47 +211,31 @@ def load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm):
     return dist_matrix_dict
 
 
-def make_fas_graph_row(expression_dict, isoforms_dict, dist_matrix_dict, gene_id):
-    # Start the row
-    fas_graph_row = gene_id + "\t"
-    
-    # Extract the IDs of all isoforms of the gene in a list
-    isoform_prot_ids = isoforms_dict[gene_id]
+def calculate_movement(fas_dist_matrix, expression_vector, gene_id, prot_ids):
+    rel_expressions = calculate_relative_expression(expression_vector)
+    relative_expression_dict = dict(zip(prot_ids, rel_expressions))
     
     # Extract the distance matrix containing th FAS scores
-    dist_matrix = dist_matrix_dict[gene_id]
-    
-    # Initialize the total fpkm of the gene
-    total_fpkm = 0.0
-    
-    # initialize dictionary to store only the fpkm of the protein_ids
-    relative_expression_dict = dict()
-    fas_sigma_dict = dict()
-    
-    # Sum up the total fpkm and store all single fpkm values for each protein id
-    for prot_id in isoform_prot_ids:
-        total_fpkm += expression_dict[prot_id]
-        relative_expression_dict[prot_id] = expression_dict[prot_id]
-        fas_sigma_dict[prot_id] = 0
-    
-    # Turn the fpkm values into relative values.
-    for prot_id in isoform_prot_ids:
-        if total_fpkm == 0.0:
-            relative_expression_dict[prot_id] = 0.0
-        else:
-            relative_expression_dict[prot_id] = relative_expression_dict[prot_id] / total_fpkm
+    dist_matrix = fas_dist_matrix[gene_id]
+    movement_dict = dict()
     
     # Calculate the Sigma values.
-    for seed_id in isoform_prot_ids:
-        for query_id in isoform_prot_ids:
-            fas_sigma_dict[seed_id] += (dist_matrix[seed_id][query_id] * relative_expression_dict[query_id])
-    for prot_id in isoform_prot_ids:
-        fas_graph_row += prot_id + ":" + str(fas_sigma_dict[prot_id]) + ":" + str(relative_expression_dict[prot_id]) + ";"
-    fas_graph_row = fas_graph_row[:-1]
+    for seed_id in prot_ids:
+        movement_dict[seed_id] = 0
+        for query_id in prot_ids:
+            movement_dict[seed_id] += (dist_matrix[seed_id][query_id] * relative_expression_dict[query_id])
     
-    fas_graph_row = fas_graph_row + "\t" + str(total_fpkm)
-    return fas_graph_row
+    movement_list = []
+    for prot_id in prot_ids:
+        movement_list.append(movement_dict[prot_id])
+    return movement_list, rel_expressions
+
+
+def calculate_relative_expression(expression_vector):
+    total = sum(expression_vector)
+    return expression_vector / total
     
+
 
 def generate_expression_file(fas_lib, expression_paths_path, name_path):
     result_config_path = fas_lib.get_config("result_config")
@@ -281,7 +268,6 @@ def generate_expression_file(fas_lib, expression_paths_path, name_path):
         expression_dict["replicates"] = expression_names
         expression_dict["normalization"] = "FPKM"
         expression_dict["prefix"] = prefix
-        expression_dict["compared_with"] = []
         
         expression_dict["expression"] = dict()
 
@@ -316,6 +302,7 @@ def generate_expression_file(fas_lib, expression_paths_path, name_path):
 def generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm):
     result_config_path = fas_lib.get_config("result_config")
     movement_path = fas_lib.get_config("movement")
+    fas_dist_matrix = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm)
     
     if flag_lcr:
         fas_mode = "lcr"
@@ -347,20 +334,68 @@ Check this file:""", result_config_dict[name]["movement_path"][fas_mode])
         with open(expression_path, "r") as f: 
             expression_dict = json.load(f)
         condition = expression_dict["condition"]
-        replicates = expression_dict["replicates"]  
-        for gene_id in list(expression_dict["expression"].keys()):
-            expr_matrix = []
-            for replicate in replicates:
-                expr_matrix.append([])
-                for prot_id in list(expression_dict["expression"][gene_id][replicate].keys()):
-                    expr_matrix[-1].append(expression_dict["expression"][gene_id][replicate][prot_id])
-            
-                    
-                    
-                    
+        replicates = expression_dict["replicates"]
         
-    
-    
+        output_dict = dict()
+
+        output_dict["condition"] = condition
+        output_dict["replicates"] = replicates
+        output_dict["normalization"] = "FPKM"
+        output_dict["movement"] = dict()
+        output_dict["compared_with"] = []
+        
+        for gene_id in list(expression_dict["expression"].keys()):
+            expr_matrix = np.array([])
+            prot_ids = []
+            for replicate in replicates:
+                expr_matrix = np.append(expr_matrix, [])
+                for prot_id in list(expression_dict["expression"][gene_id][replicate].keys()):
+                    prot_ids.append(prot_id)
+                    expr_matrix[-1] = np.append(expr_matrix[-1], expression_dict["expression"][gene_id][replicate][prot_id])
+            t_expr_matrix = np.transpose(expr_matrix)
+            
+            min_list = np.array([ min(entry) for entry in t_expr_matrix ])
+            min_movement, min_relative_expression = calculate_movement(fas_dist_matrix, min_list, gene_id, prot_ids)
+            
+            max_list = np.array([ max(entry) for entry in t_expr_matrix ])
+            max_movement, max_relative_expression = calculate_movement(fas_dist_matrix, max_list, gene_id, prot_ids)
+            
+            mean_list = np.array([ np.mean(entry) for entry in t_expr_matrix ])
+            mean_movement, mean_relative_expression = calculate_movement(fas_dist_matrix, mean_list, gene_id, prot_ids)
+            
+            standard_deviation_list = np.array([ np.std(entry) for entry in t_expr_matrix ])
+            standard_deviation_movement, standard_deviation_relative_expression = calculate_movement(fas_dist_matrix, standard_deviation_list, gene_id, prot_ids)
+            
+            plus_std_list = standard_deviation_list + mean_list
+            plus_std_movement, plus_std_relative_expression = calculate_movement(fas_dist_matrix, plus_std_list, gene_id, prot_ids)
+            
+            minus_std_list = standard_deviation_list - mean_list
+            minus_std_movement, minus_std_relative_expression = calculate_movement(fas_dist_matrix, minus_std_list, gene_id, prot_ids)
+            
+            gene_dict = dict()
+            gene_dict["prot_ids"] = prot_ids
+            gene_dict["min_mov"] = min_movement
+            gene_dict["min_rel_expr"] = min_relative_expression
+            gene_dict["max_mov"] = max_movement
+            gene_dict["max_rel_expr"] = max_relative_expression
+            gene_dict["mean_mov"] = mean_movement
+            gene_dict["mean_rel_expr"] = mean_relative_expression
+            gene_dict["plus_std_mov"] = plus_std_movement
+            gene_dict["plus_std_rel_expr"] = plus_std_relative_expression
+            gene_dict["minus_std_mov"] = plus_std_movement
+            gene_dict["minus_std_rel_expr"] = plus_std_relative_expression
+            
+            output_dict["movement"][gene_id] = gene_dict
+
+        result_config_dict[condition]["movement_path"][fas_mode] = movement_path + "_".join("movement", condition, fas_mode) + ".json"
+        result_config_dict[condition]["FAS_modes"].append(fas_mode)
+        
+        with open(result_config_dict[condition]["movement_path"][fas_mode], 'w') as f:
+            json.dump(output_dict, f,  indent=4)
+        
+        with open(result_config_path, 'w') as f:
+            json.dump(result_config_dict, f,  indent=4)
+        
 
 def main():
     pass

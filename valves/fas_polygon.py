@@ -30,7 +30,7 @@ import plotly.graph_objects as go
 import math
 import os
 
-import valves.fas_utility
+import valves.fas_utility as fas_utility
     
 def calc_rmsd(pair_of_lists):
     if len(pair_of_lists[0]) == 0:
