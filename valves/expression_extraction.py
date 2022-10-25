@@ -265,6 +265,7 @@ def generate_expression_file(fas_lib, expression_paths_path, name_path):
     with open(name_path, "r") as f:
         name_list = f.read()
     name_list = name_list.split("\n")
+        
     for i, expression_paths in enumerate(expression_paths_list):
         name = name_list[i]
         
@@ -275,25 +276,23 @@ def generate_expression_file(fas_lib, expression_paths_path, name_path):
         expression_dict, isoforms_dict = join_expression(expression_paths,
                                                          fas_lib.get_config("protein_coding_ids_path"),
                                                          ["ENSG00000155657"])
-        expression_output = "!condition\t" + name + "\n"
-        expression_output = "!replicates\t" + ";".join(expression_names) + "\n"
-        expression_output = "!normalization\tFPKM\n"
-        expression_output = "!prefix\t" + prefix + "\n"
-        expression_output = "gene_id\tisoform_prot_ids\texpression\n"
-        for gene_id in isoforms_dict.keys():
-            prot_ids = []
-            expression = []
-            for prot_id in isoforms_dict[gene_id]:
-                prot_ids.append(prot_id)
-                expression.append([])
-                expression[-1].append(str(expression_dict[prot_id]))
-            prot_ids = ";".join(prot_ids)
-            expression = ";".join([ ":".join(entry) for entry in expression])
-            expression_output += "\t".join([ gene_id, prot_ids, expression ]) + "\n"
+        expression_dict = dict()
+        expression_dict["condition"] = name
+        expression_dict["replicates"] = expression_names
+        expression_dict["normalization"] = "FPKM"
+        expression_dict["prefix"] = prefix
+        expression_dict["compared_with"] = []
         
-        expression_file_path = expression_path + "expression_" + name + ".tsv"
+        expression_dict["expression"] = dict()
+
+        for gene_id in isoforms_dict.keys():
+            expression_dict["expression"][gene_id] = dict()
+            for prot_id in isoforms_dict[gene_id]:
+                expression_dict["expression"][gene_id][prot_id] = expression_dict[prot_id]
+        
+        expression_file_path = expression_path + "expression_" + name + ".json"
         with open(expression_file_path, "w") as f:
-            f.write(expression_output)
+            json.dump(expression_dict, f,  indent=4)
 
         with open(result_config_path, "r") as f: 
             result_config_dict = json.load(f)
@@ -305,28 +304,15 @@ def generate_expression_file(fas_lib, expression_paths_path, name_path):
         result_config_dict[name]["FAS_modes"] = []
         result_config_dict[name]["species"] = fas_lib.get_config("species")
         result_config_dict[name]["release"] = fas_lib.get_config("release")
+        result_config_dict[name]["expression_path"] = expression_file_path
+        result_config_dict[name]["movement_path"]["all"] = None
+        result_config_dict[name]["movement_path"]["lcr"] = None
+        result_config_dict[name]["movement_path"]["tmhmm"] = None
 
         with open(result_config_path, 'w') as f:
             json.dump(result_config_dict, f,  indent=4)
 
-        # polygon_output = "geneID\tisoformVectors\tgeneFPKM"
-        # for gene_id in isoforms_dict.keys():
-        #     polygon_output += "\n" + make_fas_graph_row(expression_dict,
-        #                                                 isoforms_dict,
-        #                                                 dist_matrix_dict,
-        #                                                 gene_id)
-        # if not os.path.exists(fas_lib.get_config("root_path") + "FAS_polygon"):
-        #     os.makedirs(fas_lib.get_config("root_path") + "FAS_polygon")
-        # if flag_lcr:
-        #     polygonFAS_name = "FAS_polygon/lcr_polygonFAS_{0}.tsv"
-        # elif flag_tmhmm:
-        #     polygonFAS_name = "FAS_polygon/tmhmm_polygonFAS_{0}.tsv"
-        # else:
-        #     polygonFAS_name = "FAS_polygon/polygonFAS_{0}.tsv"            
-        # with open(fas_lib.get_config("root_path") +  polygonFAS_name.format(name), "w") as f:
-        #     f.write(polygon_output)
-
-def generate_movement_file(fas_lib, expression_paths_path, name_path, flag_lcr, flag_tmhmm):
+def generate_movement_file(fas_lib, expression_json_paths, flag_lcr, flag_tmhmm):
     pass
 
 def main():
