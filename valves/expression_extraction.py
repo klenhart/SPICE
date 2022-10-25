@@ -288,7 +288,8 @@ def generate_expression_file(fas_lib, expression_paths_path, name_path):
         for gene_id in isoforms_dict.keys():
             expression_dict["expression"][gene_id] = dict()
             for prot_id in isoforms_dict[gene_id]:
-                expression_dict["expression"][gene_id][prot_id] = expression_dict[prot_id]
+                for i, replicate in enumerate(expression_names):
+                    expression_dict["expression"][gene_id][replicate][prot_id] = expression_dict[prot_id][i]
         
         expression_file_path = expression_path + "expression_" + name + ".json"
         with open(expression_file_path, "w") as f:
@@ -312,8 +313,54 @@ def generate_expression_file(fas_lib, expression_paths_path, name_path):
         with open(result_config_path, 'w') as f:
             json.dump(result_config_dict, f,  indent=4)
 
-def generate_movement_file(fas_lib, expression_json_paths, flag_lcr, flag_tmhmm):
-    pass
+def generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm):
+    result_config_path = fas_lib.get_config("result_config")
+    movement_path = fas_lib.get_config("movement")
+    
+    if flag_lcr:
+        fas_mode = "lcr"
+    elif flag_tmhmm:
+        fas_mode = "tmhmm"
+    else:
+        fas_mode = "all"
+     
+    with open(name_path, "r") as f:
+        name_list = f.read()
+    name_list = name_list.split("\n")
+    
+    with open(result_config_path, "r") as f: 
+        result_config_dict = json.load(f)
+        
+    conditions = list(result_config_dict.keys())
+    path_list = []
+    for name in name_list:
+        if name in conditions:
+            if fas_mode in result_config_dict[name]["FAS_modes"]:
+                print("""Movement using FAS_""" + fas_mode, """distances has already been calculated.
+Check this file:""", result_config_dict[name]["movement_path"][fas_mode])
+            else:
+                path_list.append(result_config_dict[name]["expression_path"])
+        else:
+            print("No condition of the name", name, "processed yet. Will skip movement generation for this one.")
+    
+    for expression_path in path_list:
+        with open(expression_path, "r") as f: 
+            expression_dict = json.load(f)
+        condition = expression_dict["condition"]
+        replicates = expression_dict["replicates"]  
+        for gene_id in list(expression_dict["expression"].keys()):
+            expr_matrix = []
+            for replicate in replicates:
+                expr_matrix.append([])
+                for prot_id in list(expression_dict["expression"][gene_id][replicate].keys()):
+                    expr_matrix[-1].append(expression_dict["expression"][gene_id][replicate][prot_id])
+            
+                    
+                    
+                    
+        
+    
+    
 
 def main():
     pass
