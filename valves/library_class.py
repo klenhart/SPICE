@@ -63,11 +63,6 @@ class Library:
         self.config["fas_buffer_lcr_path"] = None
         self.config["annotation_path"] = None
         self.config["canonical_path"] = None
-        self.config["result"] = None
-        self.config["result_config"] = None
-        self.config["main_comparison"] = None
-        self.config["expression"] = None
-        self.config["movement"] = None
         
         #counts
         self.config["acquired_seq_count"] = "0"

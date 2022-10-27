@@ -239,67 +239,53 @@ def calculate_relative_expression(expression_vector):
     
 
 
-def generate_expression_file(fas_lib, expression_paths_path, name_path):
-    result_config_path = fas_lib.get_config("result_config")
-    expression_path = fas_lib.get_config("expression")
-    
-    #dist_matrix_dict = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm)
+def generate_expression_file(fas_lib, result_config_path, expression_paths, expression_path, name):
+    release_num = fas_lib.get_config("release_num")
+        
+    prefix = longest_common_prefix(expression_paths)
+    name_cutoff_index = len(prefix)
+    expression_names = [ path[name_cutoff_index:] for path in expression_paths ]
+        
+    expression_dict, isoforms_dict = join_expression(expression_paths,
+                                                     fas_lib.get_config("protein_coding_ids_path"),
+                                                     ["ENSG00000155657"])
+    expression_dict = dict()
+    expression_dict["condition"] = name
+    expression_dict["replicates"] = expression_names
+    expression_dict["normalization"] = "FPKM"
+    expression_dict["prefix"] = prefix
 
-    with open(expression_paths_path, "r") as f:
-        expression_paths_list = f.read()
-    expression_paths_list = expression_paths_list.split("\n")
-    expression_paths_list = [ expression_paths for expression_paths in expression_paths_list if len(expression_paths) > 0 ]
-    expression_paths_list = [ entry.split(";") for entry in expression_paths_list ]
-    
-    with open(name_path, "r") as f:
-        name_list = f.read()
-    name_list = name_list.split("\n")
-        
-    for i, expression_paths in enumerate(expression_paths_list):
-        name = name_list[i]
-        
-        prefix = longest_common_prefix(expression_paths)
-        name_cutoff_index = len(prefix)
-        expression_names = [ path[name_cutoff_index:] for path in expression_paths ]
-        
-        expression_dict, isoforms_dict = join_expression(expression_paths,
-                                                         fas_lib.get_config("protein_coding_ids_path"),
-                                                         ["ENSG00000155657"])
-        expression_dict = dict()
-        expression_dict["condition"] = name
-        expression_dict["replicates"] = expression_names
-        expression_dict["normalization"] = "FPKM"
-        expression_dict["prefix"] = prefix
-        
-        expression_dict["expression"] = dict()
+    expression_dict["expression"] = dict()
 
-        for gene_id in isoforms_dict.keys():
-            expression_dict["expression"][gene_id] = dict()
-            for prot_id in isoforms_dict[gene_id]:
-                for i, replicate in enumerate(expression_names):
-                    expression_dict["expression"][gene_id][replicate][prot_id] = expression_dict[prot_id][i]
+    for gene_id in isoforms_dict.keys():
+        expression_dict["expression"][gene_id] = dict()
+        for prot_id in isoforms_dict[gene_id]:
+            for i, replicate in enumerate(expression_names):
+                expression_dict["expression"][gene_id][replicate][prot_id] = expression_dict[prot_id][i]
         
-        expression_file_path = expression_path + "expression_" + name + ".json"
-        with open(expression_file_path, "w") as f:
-            json.dump(expression_dict, f,  indent=4)
+    expression_file_path = expression_path + "_".join(["expression", name, "ENSv" + release_num]) +  ".json"
+    with open(expression_file_path, "w") as f:
+        json.dump(expression_dict, f,  indent=4)
 
-        with open(result_config_path, "r") as f: 
-            result_config_dict = json.load(f)
+    with open(result_config_path, "r") as f: 
+        result_config_dict = json.load(f)
         
-        result_config_dict[name] = dict()
-        result_config_dict[name]["prefix"] = prefix
-        result_config_dict[name]["replicates"] = expression_names
-        result_config_dict[name]["normalization"] = "FPKM"
-        result_config_dict[name]["FAS_modes"] = []
-        result_config_dict[name]["species"] = fas_lib.get_config("species")
-        result_config_dict[name]["release"] = fas_lib.get_config("release")
-        result_config_dict[name]["expression_path"] = expression_file_path
-        result_config_dict[name]["movement_path"]["all"] = None
-        result_config_dict[name]["movement_path"]["lcr"] = None
-        result_config_dict[name]["movement_path"]["tmhmm"] = None
+    result_config_dict[name] = dict()
+    result_config_dict[name]["prefix"] = prefix
+    result_config_dict[name]["replicates"] = expression_names
+    result_config_dict[name]["normalization"] = "FPKM"
+    result_config_dict[name]["FAS_modes"] = []
+    result_config_dict[name]["species"] = fas_lib.get_config("species")
+    result_config_dict[name]["release"] = fas_lib.get_config("release")
+    result_config_dict[name]["lib_config"] = fas_lib.get_config("self_path")
+    result_config_dict[name]["expression_path"] = expression_file_path
+    result_config_dict[name]["movement_path"]["all"] = None
+    result_config_dict[name]["movement_path"]["lcr"] = None
+    result_config_dict[name]["movement_path"]["tmhmm"] = None
+    result_config_dict[name]["compared_with"] = []
 
-        with open(result_config_path, 'w') as f:
-            json.dump(result_config_dict, f,  indent=4)
+    with open(result_config_path, 'w') as f:
+        json.dump(result_config_dict, f,  indent=4)
 
 def generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm, flag_all):
     result_config_path = fas_lib.get_config("result_config")

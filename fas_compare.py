@@ -42,7 +42,7 @@ Move the generation of a sample comparison file part of the
 option from fas_handler.py to this
 """
 
-def extract_all_graph(fas_lib, path, exempt=["ENSG00000155657"]):
+def extract_all_graph(fas_lib, ):
     fas_graphs_dict = dict()
     gene_ids = fas_utility.load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
     gene_ids = [ gene_id for gene_id in gene_ids if gene_id not in exempt]
@@ -201,6 +201,10 @@ def main():
         if condition[abs(i)] in movement_dict["compared_with"]:
             raise Exception( condition[0] + " and " + condition[1] + " using FAS mode " + fas_mode + " were already compared.")
             sys.exit()
+    
+    total_expression_dict = 
+    
+    
             
         
     

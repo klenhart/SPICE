@@ -28,6 +28,8 @@ Created on Tue Oct 25 11:00:02 2022
 """
 
 import argparse
+import os
+import json
 
 import valves.library_class as library_class
 import valves.expression_extraction as ee
@@ -42,36 +44,64 @@ def parser_setup():
     Get paths and flags required to run.
 
     """  
-    
+
     #Setting up parser:
     parser = argparse.ArgumentParser()
-
+    
     parser.add_argument("-c", "--config", type=str,
-                        help="Path to a config file of a library. Is required for library creation.")
+                        help="Path to a config file of a FAS library.")
                         
-    parser.add_argument("-n", "--namepath", type=str,
-                        help="""Path to a textfile that contains the names of the expression filepath given in the argument --expressionpath.
-                        One name per row.""")
+    parser.add_argument("-n", "--name", type=str,
+                        help="""The name of the condition for which the expression shall be extracted.
+                        Output file will be named after this.""")
 
-    parser.add_argument("-e", "--expressionpath", type=str,
-                        help="""Path to a textfile that contains the path to the expression gtf files for which the movement shall be calculated. 
-                        One sample per row, though several paths can be written into one row seperated by a semicolon. Paths in the same row will be
-                        concatenated and considered as several replicates of one sample.""")
+    parser.add_argument("-e", "--expressionpath", nargs="+", action="append",
+                        help="""Path to the expression gtf files for which the expression shall be extracted into the results directory. 
+                        If given several paths, they will be considered several replicates of one coondition.""")
+                        
+    parser.add_argument("-r", "--resultsDir", type=str,
+                        help="""Parent directory of the results directory.""")
 
                         
     args = parser.parse_args()
     config_path = args.config
-    name_path = args.namepath
-    expression_path = args.expressionpath
+    name = args.name
+    result_path = args.resultsDir + "/result/"
+    expression_paths = args.expressionpath[0]
 
-    return config_path, name_path, expression_path
+    return config_path, name, expression_paths, result_path
 
 def main():
-    config_path, expression_path, name_path = parser_setup()
+    config_path, name, expression_paths, result_path = parser_setup()
     
     fas_lib = library_class.Library(config_path, False)
+    
+    if not os.path.exists(result_path):
+        os.makedirs(result_path)
+
+    movement_path = result_path + "movement/"
+    if not os.path.exists(movement_path):
+        os.makedirs(movement_path)
+        
+    expression_path = result_path + "expression/"
+    if not os.path.exists(expression_path):
+        os.makedirs(expression_path)
+
+    main_comparison_path = result_path + "main_comparison/"
+    if not os.path.exists(main_comparison_path):
+        os.makedirs(main_comparison_path)
+
+    result_config_path = result_path + "result_config.json"
+    if not os.path.isfile(result_config_path):
+        with open(result_config_path, 'w') as f:
+            json.dump(dict(), f,  indent=4)
+
     print("Expression extraction commencing...")
-    ee.generate_expression_file(fas_lib, expression_path, name_path)
+    ee.generate_expression_file(fas_lib, 
+                                result_config_path, 
+                                expression_paths, 
+                                expression_path, 
+                                name)
     
 if __name__ == "__main__":
     main()

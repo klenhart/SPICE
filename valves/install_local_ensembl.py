@@ -208,27 +208,6 @@ def make_folders_and_files(root_path):
         with open(lcr_path, "w") as fp:
             fp.write(LCR)
     
-    result_path = root_path + "result/"
-    if not os.path.exists(result_path):
-        os.makedirs(result_path)
-        
-    movement_path = root_path + "movement/"
-    if not os.path.exists(movement_path):
-        os.makedirs(movement_path)
-        
-    expression_path = root_path + "expression/"
-    if not os.path.exists(expression_path):
-        os.makedirs(expression_path)
-
-    main_comparison_path = root_path + "main_comparison/"
-    if not os.path.exists(main_comparison_path):
-        os.makedirs(main_comparison_path)
-
-    result_config_path = root_path + "result_config.json"
-    if not os.path.isfile(result_config_path):
-        with open(result_config_path, 'w') as f:
-            json.dump(dict(), f,  indent=4)
-    
     path_dict = dict()
     path_dict["fas_all_path"] = distance_master_path
     path_dict["fas_lcr_path"] = distance_master_lcr_path
@@ -247,11 +226,6 @@ def make_folders_and_files(root_path):
     path_dict["fas_buffer_lcr_path"] = fas_buffer_lcr_path
     path_dict["annotation_path"] = annotation_path
     path_dict["canonical_path"] = canonical_path
-    path_dict["result"] = result_path
-    path_dict["result_config"] = result_config_path
-    path_dict["main_comparison"] = main_comparison_path
-    path_dict["expression"] = expression_path
-    path_dict["movement"] = movement_path
     
     return path_dict
 

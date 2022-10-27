@@ -47,11 +47,14 @@ def parser_setup():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-c", "--config", type=str,
-                        help="Path to a config file of a library. Is required for library creation.")
+                        help="Path to a config file of a FAS library.")
+
+    parser.add_argument("-r", "--resultsDir", type=str,
+                        help="""Parent directory of the results directory.""")
                         
-    parser.add_argument("-n", "--namepath", type=str,
-                        help="""Path to a textfile that contains the names of the conditions already present in the results/expression directory
-                        of the library. Movement files will be calculated for these conditions.""")
+    parser.add_argument("-n", "--conditions", nargs="+", action="append",
+                        help="""Names of the conditions already present in the results/expression directory
+                        of the results. Movement files will be calculated for these conditions.""")
     
     parser.add_argument("-t", "--tmhmm", action="store_true",
                         help="tmhmm FAS mode shall be used for the movement calculation.")
@@ -65,19 +68,19 @@ def parser_setup():
                         
     args = parser.parse_args()
     config_path = args.config
-    name_path = args.namepath
+    conditions = args.conditions[0]
     flag_lcr = args.lcr
     flag_tmhmm = args.tmhmm
     flag_all = args.all
 
-    return config_path, name_path, flag_lcr, flag_tmhmm, flag_all
+    return config_path, conditions, flag_lcr, flag_tmhmm, flag_all
 
 def main():
     """
     Returns
     -------
     """
-    config_path, name_path, flag_lcr, flag_tmhmm, flag_all = parser_setup()
+    config_path, conditions, flag_lcr, flag_tmhmm, flag_all = parser_setup()
 
     fas_lib = library_class.Library(config_path, False)
     print("Movement calculation commencing...")
