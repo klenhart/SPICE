@@ -44,30 +44,41 @@ def extract_all_graph(fas_lib, movement_dict, exempt=["ENSG00000155657"]):
     gene_ids = [ gene_id for gene_id in gene_ids if gene_id not in exempt]
     for gene_id in gene_ids:
         fas_ring_dict[gene_id] = [movement_dict["movement"][gene_id]["prot_ids"],
-                                    movement_dict["movement"][gene_id]["mean_mov"],
-                                    movement_dict["movement"][gene_id]["min_mov"],
-                                    movement_dict["movement"][gene_id]["max_mov"],
-                                    movement_dict["movement"][gene_id]["plus_std_mov"],
-                                    movement_dict["movement"][gene_id]["minus_std_mov"]]
+                                  movement_dict["movement"][gene_id]["mean_mov"],
+                                  movement_dict["movement"][gene_id]["mean_rel_expr"],
+                                  movement_dict["movement"][gene_id]["min_mov"],
+                                  movement_dict["movement"][gene_id]["max_mov"],
+                                  movement_dict["movement"][gene_id]["plus_std_mov"],
+                                  movement_dict["movement"][gene_id]["minus_std_mov"]]
     return fas_ring_dict
 
 
-def generate_comparison(polygon_dict_list, path_list, fas_lib, name_list):
-    title = "x".join(name_list) + "/"
-    pictures_path = fas_lib.get_config("root_path") + "pictures/"
-    comparison_path = pictures_path + title
-    file_path = comparison_path + "polygonFAS_" + "x".join(name_list) + ".tsv"
+def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_dict, fas_lib, movement_dict_list, expression_dict_list, movement_paths, expression_paths):
+    title = "@".join(conditions) + "_" + fas_mode + "/"
+    comparison_path = result_config_dict["main_comparison_dir"] + title
+    file_path = comparison_path + "_".join("result", "@".join(conditions), fas_mode) + ".tsv"
+
+    fas_ring_dict1, fas_ring_dict2 = fas_ring_dict_list
+    header = "\n".join("!conditions " + conditions[0] + " " + conditions[1],
+                       "!FASmode " + fas_mode,
+                       "!ResultOrigin " + result_config_dict["result_dir"],
+                       "\t".join("gene_id",
+                                 "prot_id",
+                                 "mean_mov",
+                                 "min_mov",
+                                 "max_mov",
+                                 "plus_std_mov",
+                                 "minus_std_mov",
+                                 "rmsd",
+                                 "max_tsl"))
     
-    if not os.path.exists(pictures_path):
-        os.makedirs(pictures_path)
-    if not os.path.exists(comparison_path):
-        os.makedirs(comparison_path)
-    
-    polygon_dict1, polygon_dict2 = polygon_dict_list
-    output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\tmax_tsl\n"
-    for gene_name in polygon_dict1.keys():
-        polygon_list = [ polygon_dict1[gene_name], polygon_dict2[gene_name]]
-        polygon_dict = poly.prepare_polygon_pair_visual(polygon_list, name_list, gene_name)
+    for gene_id in fas_ring_dict1.keys():
+        ring_list = [ fas_ring_dict1[gene_id], fas_ring_dict2[gene_id]]
+        
+        fas_ring_dict = poly.prepare_ring_pair_visual(ring_list, gene_id, conditions)
+        
+        
+        # ALL BELOW THIS STILL NEEDS WORK
         
         max_tsl = fas_utility.find_max_tsl(fas_lib, polygon_dict["categories"])
         
@@ -208,18 +219,19 @@ def main():
     
     fas_ring_dict_list = [ extract_all_graph(fas_lib, movement_dict) for movement_dict in movement_dict_list ]
     
-
+    # STILL WORKING ON THIS BAD BOY
+    file_path = generate_comparison(fas_ring_dict_list,
+                                    conditions, fas_mode,
+                                    result_config_dict,
+                                    fas_lib,
+                                    movement_dict_list,
+                                    expression_dict_list,
+                                    movement_paths,
+                                    expression_paths)
     
     
-            
-     # FAS RING DICT IST FERTIG. JETZT NURNOCH DIE LETZTEN DREI ZEILEN MODIFIZIEREN UND DANN TESTEN.   
     
-        
-    
-    name_list = [ prefix + fas_utility.get_name(path) for path in path_list ]
-    file_path = generate_comparison(fas_graphs_dict_list, path_list, fas_lib, name_list)
-    sort_by_rmsd(fas_lib, file_path, flag_more_than_2=True)
-
+    sort_by_rmsd(fas_lib, file_path)
 
 if __name__ == "__main__":
     main()
