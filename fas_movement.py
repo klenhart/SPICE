@@ -54,10 +54,13 @@ def parser_setup():
                         of the library. Movement files will be calculated for these conditions.""")
     
     parser.add_argument("-t", "--tmhmm", action="store_true",
-                        help="""Only do the FAS runs using TMHMM and SignalP domains.""")
+                        help="tmhmm FAS mode shall be used for the movement calculation.")
 
     parser.add_argument("-l", "--lcr", action="store_true",
-                        help="""Only do the FAS runs using flPS and SEG domains.""")
+                        help="lcr FAS mode shall be used for the movement calculation.")
+
+    parser.add_argument("-a", "--all", type=str,
+                        help="all domain type FAS mode shall be used for the movement calculation.")
 
                         
     args = parser.parse_args()
@@ -65,19 +68,20 @@ def parser_setup():
     name_path = args.namepath
     flag_lcr = args.lcr
     flag_tmhmm = args.tmhmm
+    flag_all = args.all
 
-    return config_path, name_path, flag_lcr, flag_tmhmm
+    return config_path, name_path, flag_lcr, flag_tmhmm, flag_all
 
 def main():
     """
     Returns
     -------
     """
-    config_path, name_path, flag_lcr, flag_tmhmm = parser_setup()
+    config_path, name_path, flag_lcr, flag_tmhmm, flag_all = parser_setup()
 
     fas_lib = library_class.Library(config_path, False)
     print("Movement calculation commencing...")
-    ee.generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm)
+    ee.generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm, flag_all)
     
 if __name__ == "__main__":
     main()

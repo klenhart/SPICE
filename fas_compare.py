@@ -29,6 +29,8 @@ Created on Thu Aug 18 11:31:47 2022
 
 import argparse
 import os
+import json
+import sys
 
 import valves.fas_polygon as poly
 import valves.library_class as library_class
@@ -131,24 +133,79 @@ def parser_setup():
     parser.add_argument("-c", "--config", type=str,
                         help="Path to a config file of a library.")
 
-    parser.add_argument("-i", "--input", nargs="+", action="append",
-                        help="Paths to two fas_polygon files for which all comparisons shall be calculated.")
+    parser.add_argument("-s", "--conditions", nargs="+", action="append",
+                        help="""Names of the condition that shall be compared as represented in the result_config.json
+                        found in the result directory.""")
                         
-    parser.add_argument("-p", "--prefix", type=str,
-                        help="Prefix for the output file.")
+    parser.add_argument("-l", "--lcr", type=str,
+                        help="lcr FAS mode shall be used for the comparison.")
+
+    parser.add_argument("-t", "--tmhmm", type=str,
+                        help="tmhmm FAS mode shall be used for the comparison.")
+
+    parser.add_argument("-a", "--all", type=str,
+                        help="all domain type FAS mode shall be used for the comparison.")
     
     args = parser.parse_args()
     
     config_path = args.config
-    prefix = args.prefix
-    path_list = args.input[0]
+    flag_lcr = args.lcr
+    flag_tmhmm = args.tmhmm
+    flag_all = args.all
+    conditions = args.conditions[0]
 
-    return config_path, path_list, prefix
+    return config_path, conditions, flag_lcr, flag_tmhmm, flag_all
     
 def main():
-    config_path, path_list, prefix = parser_setup()
+    config_path, conditions, flag_lcr, flag_tmhmm, flag_all = parser_setup()
+
+    conditions = sorted(conditions)
+
+    if flag_lcr:
+        fas_mode = "lcr"
+    elif flag_tmhmm:
+        fas_mode = "tmhmm"
+    elif flag_all:
+        fas_mode = "all"
+
     fas_lib = library_class.Library(config_path, False)
-    path_list = sorted(path_list)
+    
+    result_config_path = fas_lib.get_config("result_config")
+    
+    with open(result_config_path, "r") as f: 
+        result_config_dict = json.load(f)
+    available_conditions = list(result_config_dict.keys())
+    movement_paths = []
+    expression_paths = []
+    
+    for condition in conditions: 
+        if condition not in available_conditions:
+            raise Exception("The condition " + condition + " is not available.")
+            sys.exit()
+        if fas_mode not in result_config_dict[condition]["FAS_modes"]:
+            raise Exception("The FAS mode " + fas_mode + " is not available for the condition " + condition + ".")
+            sys.exit()
+        movement_paths.append(result_config_dict[condition]["movement_path"][fas_mode])
+        expression_paths.append(result_config_dict[condition]["expression_path"])
+    
+    movement_dict_list = []
+    expression_dict_list = []
+    for path in movement_paths:
+        with open(path, "r") as f:
+            movement_dict_list.append(json.load(f))
+    for path in expression_paths:
+        with open(path, "r") as f:
+            expression_dict_list.append(json.load(f))
+    
+    for i, movement_dict in enumerate(movement_dict_list, start=-len(movement_dict_list)):
+        if condition[abs(i)] in movement_dict["compared_with"]:
+            raise Exception( condition[0] + " and " + condition[1] + " using FAS mode " + fas_mode + " were already compared.")
+            sys.exit()
+            
+        
+    
+        
+    
     fas_graphs_dict_list = [ extract_all_graph(fas_lib, path) for path in path_list ]
     name_list = [ prefix + fas_utility.get_name(path) for path in path_list ]
     file_path = generate_comparison(fas_graphs_dict_list, path_list, fas_lib, name_list)

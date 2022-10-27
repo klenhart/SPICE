@@ -167,14 +167,14 @@ def join_expression(expression_path_list, protein_coding_path, exempt_genes):
             isoforms_dict[gene_id] = [prot_id]
     return expression_dict, isoforms_dict
 
-def load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm):
+def load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm, flag_all):
     if flag_lcr:
         distance_master_name = "fas_lcr.json"
         distance_master_path = fas_lib.get_config("fas_lcr_path")
     elif flag_tmhmm:
         distance_master_name = "fas_tmhmm.json"
         distance_master_path = fas_lib.get_config("fas_tmhmm_path")
-    else:
+    elif flag_all:
         distance_master_name = "fas.json"
         distance_master_path = fas_lib.get_config("fas_all_path")
     if distance_master_name in os.listdir(fas_lib.get_config("root_path")):
@@ -233,6 +233,8 @@ def calculate_movement(fas_dist_matrix, expression_vector, gene_id, prot_ids):
 
 def calculate_relative_expression(expression_vector):
     total = sum(expression_vector)
+    if total == 0:
+        return expression_vector * 0
     return expression_vector / total
     
 
@@ -299,16 +301,16 @@ def generate_expression_file(fas_lib, expression_paths_path, name_path):
         with open(result_config_path, 'w') as f:
             json.dump(result_config_dict, f,  indent=4)
 
-def generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm):
+def generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm, flag_all):
     result_config_path = fas_lib.get_config("result_config")
     movement_path = fas_lib.get_config("movement")
-    fas_dist_matrix = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm)
+    fas_dist_matrix = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm, flag_all)
     
     if flag_lcr:
         fas_mode = "lcr"
     elif flag_tmhmm:
         fas_mode = "tmhmm"
-    else:
+    elif flag_all:
         fas_mode = "all"
      
     with open(name_path, "r") as f:
