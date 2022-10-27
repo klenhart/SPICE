@@ -259,9 +259,12 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
 
     for gene_id in isoforms_dict.keys():
         expression_dict["expression"][gene_id] = dict()
-        for prot_id in isoforms_dict[gene_id]:
-            for i, replicate in enumerate(expression_names):
+        for i, replicate in enumerate(expression_names):
+            expression_dict["expression"][gene_id][replicate]["total"] = 0
+            for prot_id in isoforms_dict[gene_id]:
                 expression_dict["expression"][gene_id][replicate][prot_id] = expression_dict[prot_id][i]
+                expression_dict["expression"][gene_id][replicate]["total"] += expression_dict[prot_id][i]
+            
         
     expression_file_path = expression_path + "_".join(["expression", name, "ENSv" + release_num]) +  ".json"
     with open(expression_file_path, "w") as f:
@@ -287,9 +290,7 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
     with open(result_config_path, 'w') as f:
         json.dump(result_config_dict, f,  indent=4)
 
-def generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm, flag_all):
-    result_config_path = fas_lib.get_config("result_config")
-    movement_path = fas_lib.get_config("movement")
+def generate_movement_file(fas_lib, result_config_path, conditions, flag_lcr, flag_tmhmm, flag_all):
     fas_dist_matrix = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm, flag_all)
     
     if flag_lcr:
@@ -298,31 +299,28 @@ def generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm, flag_all):
         fas_mode = "tmhmm"
     elif flag_all:
         fas_mode = "all"
-     
-    with open(name_path, "r") as f:
-        name_list = f.read()
-    name_list = name_list.split("\n")
     
     with open(result_config_path, "r") as f: 
         result_config_dict = json.load(f)
         
-    conditions = list(result_config_dict.keys())
+    available_conditions = list(result_config_dict["conditions"].keys())
     path_list = []
-    for name in name_list:
-        if name in conditions:
-            if fas_mode in result_config_dict[name]["FAS_modes"]:
+    for condition in conditions:
+        if condition in available_conditions:
+            if fas_mode in result_config_dict["conditions"][condition]["FAS_modes"]:
                 print("""Movement using FAS_""" + fas_mode, """distances has already been calculated.
-Check this file:""", result_config_dict[name]["movement_path"][fas_mode])
+Check this file:""", result_config_dict["conditions"][condition]["movement_path"][fas_mode])
             else:
-                path_list.append(result_config_dict[name]["expression_path"])
+                path_list.append(result_config_dict["conditions"][condition]["expression_path"])
         else:
-            print("No condition of the name", name, "processed yet. Will skip movement generation for this one.")
+            print("No condition of the name", condition, "processed yet. Will skip movement generation for this one.")
     
     for expression_path in path_list:
         with open(expression_path, "r") as f: 
             expression_dict = json.load(f)
         condition = expression_dict["condition"]
         replicates = expression_dict["replicates"]
+        release_num = expression_dict["release"]
         
         output_dict = dict()
 
@@ -375,10 +373,13 @@ Check this file:""", result_config_dict[name]["movement_path"][fas_mode])
             
             output_dict["movement"][gene_id] = gene_dict
 
-        result_config_dict[condition]["movement_path"][fas_mode] = movement_path + "_".join("movement", condition, fas_mode) + ".json"
-        result_config_dict[condition]["FAS_modes"].append(fas_mode)
+        result_config_dict["conditions"][condition]["movement_path"][fas_mode] = result_config_dict["movement_dir"] + "_".join("movement",
+                                                                                                                 condition,
+                                                                                                                 fas_mode,
+                                                                                                                 "ENSv" + release_num) + ".json"
+        result_config_dict["conditions"][condition]["FAS_modes"].append(fas_mode)
         
-        with open(result_config_dict[condition]["movement_path"][fas_mode], 'w') as f:
+        with open(result_config_dict["conditions"][condition]["movement_path"][fas_mode], 'w') as f:
             json.dump(output_dict, f,  indent=4)
         
         with open(result_config_path, 'w') as f:

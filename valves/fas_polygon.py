@@ -49,28 +49,6 @@ def scale_list(scale_factor, float_list):
         output_list.append(value * scale_factor)
     return output_list
 
-def extract_graph(path, gene_id):
-    with open(path, "r") as f:
-        fas_graph = f.read()
-    fas_graph = fas_graph.split("\n")
-    fas_graph = [ entry for entry in fas_graph if entry.startswith(gene_id)]
-    try:
-        fas_graph = fas_graph[0].split("\t")
-    
-        gene_id, isoform_vector, gene_fpkm = fas_graph
-    except:
-        print(fas_graph)
-        print(gene_id)
-        print(2.0 * "")
-    isoform_vector = isoform_vector.split(";")
-    isoform_vector = [ entry.split(":") for entry in isoform_vector ]
-    isoform_vector = [ [prot_id, float(sigma_expr), float(rel_expr)] for prot_id, sigma_expr, rel_expr in isoform_vector ]
-    prot_ids = [ prot_id for prot_id, sigma_expr, rel_expr in isoform_vector ]
-    sigma_exprs = [ sigma_expr for prot_id, sigma_expr, rel_expr in isoform_vector ]
-    rel_exprs = [ rel_expr for prot_id, sigma_expr, rel_expr in isoform_vector ]
-    return prot_ids, sigma_exprs, rel_exprs, float(gene_fpkm)
-
-
 
 def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, rmsd, filepath):
     fig = go.Figure()

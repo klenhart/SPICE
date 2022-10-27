@@ -93,6 +93,11 @@ def main():
 
     result_config_path = result_path + "result_config.json"
     if not os.path.isfile(result_config_path):
+        result_config_dict = dict()
+        result_config_dict["movement_dir"] = movement_path
+        result_config_dict["expression_dir"] = expression_path
+        result_config_dict["main_comparison_dir"] = main_comparison_path
+        result_config_dict["conditions"] = dict()
         with open(result_config_path, 'w') as f:
             json.dump(dict(), f,  indent=4)
 

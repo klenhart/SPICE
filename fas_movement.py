@@ -69,22 +69,24 @@ def parser_setup():
     args = parser.parse_args()
     config_path = args.config
     conditions = args.conditions[0]
+    result_config_path = args.resultDir
+    
     flag_lcr = args.lcr
     flag_tmhmm = args.tmhmm
     flag_all = args.all
 
-    return config_path, conditions, flag_lcr, flag_tmhmm, flag_all
+    return config_path, result_config_path, conditions, flag_lcr, flag_tmhmm, flag_all
 
 def main():
     """
     Returns
     -------
     """
-    config_path, conditions, flag_lcr, flag_tmhmm, flag_all = parser_setup()
+    config_path, result_config_path, conditions, flag_lcr, flag_tmhmm, flag_all = parser_setup()
 
     fas_lib = library_class.Library(config_path, False)
     print("Movement calculation commencing...")
-    ee.generate_movement_file(fas_lib, name_path, flag_lcr, flag_tmhmm, flag_all)
+    ee.generate_movement_file(fas_lib, result_config_path, conditions, flag_lcr, flag_tmhmm, flag_all)
     
 if __name__ == "__main__":
     main()

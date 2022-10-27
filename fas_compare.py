@@ -36,19 +36,20 @@ import valves.fas_polygon as poly
 import valves.library_class as library_class
 import valves.fas_utility as fas_utility
 
-"""
-Move the generation of a sample comparison file part of the
-"--visualize"
-option from fas_handler.py to this
-"""
 
-def extract_all_graph(fas_lib, ):
-    fas_graphs_dict = dict()
+def extract_all_graph(fas_lib, movement_dict, exempt=["ENSG00000155657"]):
+    # need protein ids and movement scores
+    fas_ring_dict = dict()
     gene_ids = fas_utility.load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
     gene_ids = [ gene_id for gene_id in gene_ids if gene_id not in exempt]
     for gene_id in gene_ids:
-        fas_graphs_dict[gene_id] = poly.extract_graph(path, gene_id)
-    return fas_graphs_dict
+        fas_ring_dict[gene_id] = [movement_dict["movement"][gene_id]["prot_ids"],
+                                    movement_dict["movement"][gene_id]["mean_mov"],
+                                    movement_dict["movement"][gene_id]["min_mov"],
+                                    movement_dict["movement"][gene_id]["max_mov"],
+                                    movement_dict["movement"][gene_id]["plus_std_mov"],
+                                    movement_dict["movement"][gene_id]["minus_std_mov"]]
+    return fas_ring_dict
 
 
 def generate_comparison(polygon_dict_list, path_list, fas_lib, name_list):
@@ -132,6 +133,9 @@ def parser_setup():
     
     parser.add_argument("-c", "--config", type=str,
                         help="Path to a config file of a library.")
+    
+    parser.add_argument("-r", "--resultsDir", type=str,
+                        help="""Parent directory of the results directory.""")
 
     parser.add_argument("-s", "--conditions", nargs="+", action="append",
                         help="""Names of the condition that shall be compared as represented in the result_config.json
@@ -182,11 +186,11 @@ def main():
         if condition not in available_conditions:
             raise Exception("The condition " + condition + " is not available.")
             sys.exit()
-        if fas_mode not in result_config_dict[condition]["FAS_modes"]:
+        if fas_mode not in result_config_dict["conditions"][condition]["FAS_modes"]:
             raise Exception("The FAS mode " + fas_mode + " is not available for the condition " + condition + ".")
             sys.exit()
-        movement_paths.append(result_config_dict[condition]["movement_path"][fas_mode])
-        expression_paths.append(result_config_dict[condition]["expression_path"])
+        movement_paths.append(result_config_dict["conditions"][condition]["movement_path"][fas_mode])
+        expression_paths.append(result_config_dict["conditions"][condition]["expression_path"])
     
     movement_dict_list = []
     expression_dict_list = []
@@ -202,15 +206,16 @@ def main():
             raise Exception( condition[0] + " and " + condition[1] + " using FAS mode " + fas_mode + " were already compared.")
             sys.exit()
     
-    total_expression_dict = 
+    fas_ring_dict_list = [ extract_all_graph(fas_lib, movement_dict) for movement_dict in movement_dict_list ]
+    
+
     
     
             
-        
+     # FAS RING DICT IST FERTIG. JETZT NURNOCH DIE LETZTEN DREI ZEILEN MODIFIZIEREN UND DANN TESTEN.   
     
         
     
-    fas_graphs_dict_list = [ extract_all_graph(fas_lib, path) for path in path_list ]
     name_list = [ prefix + fas_utility.get_name(path) for path in path_list ]
     file_path = generate_comparison(fas_graphs_dict_list, path_list, fas_lib, name_list)
     sort_by_rmsd(fas_lib, file_path, flag_more_than_2=True)
