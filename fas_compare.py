@@ -56,10 +56,10 @@ def extract_all_graph(fas_lib, movement_dict, exempt=["ENSG00000155657"]):
 def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_dict, fas_lib, movement_dict_list, expression_dict_list, movement_paths, expression_paths):
     title = "@".join(conditions) + "_" + fas_mode + "/"
     comparison_path = result_config_dict["main_comparison_dir"] + title
-    file_path = comparison_path + "_".join("result", "@".join(conditions), fas_mode) + ".tsv"
+    file_path = comparison_path + "_".join(["result", "@".join(conditions), fas_mode]) + ".tsv"
 
     fas_ring_dict1, fas_ring_dict2 = fas_ring_dict_list
-    header = "\n".join("!conditions " + conditions[0] + " " + conditions[1],
+    output = "\n".join("!conditions " + conditions[0] + " " + conditions[1],
                        "!FASmode " + fas_mode,
                        "!ResultOrigin " + result_config_dict["result_dir"],
                        "\t".join("gene_id",
@@ -76,54 +76,46 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         ring_list = [ fas_ring_dict1[gene_id], fas_ring_dict2[gene_id]]
         
         fas_ring_dict = poly.prepare_ring_pair_visual(ring_list, gene_id, conditions)
+        max_tsl = fas_utility.find_max_tsl(fas_lib, fas_ring_dict["categories"])
         
-        
-        # ALL BELOW THIS STILL NEEDS WORK
-        
-        max_tsl = fas_utility.find_max_tsl(fas_lib, polygon_dict["categories"])
-        
-        output_row_list = [polygon_dict["gene_id"],
-                           ";".join(polygon_dict["name_list"])]
-        unscaled_expr_list = []
-        scaled_expr_list = []
-        output_row_list.append(";".join(polygon_dict["categories"]))
-        unscaled_expr_list = [ ":".join([ str(value) for value in val_list]) for val_list in polygon_dict["unscaled_rel_expr"]]
-        scaled_expr_list = [ ":".join([ str(value) for value in val_list]) for val_list in polygon_dict["scaled_rel_expr"]]
-
-        output_row_list.append(";".join(unscaled_expr_list))
-        output_row_list.append(";".join(scaled_expr_list))
-        output_row_list.append(str(polygon_dict["unscaled_rmsd"]))
-        output_row_list.append(str(polygon_dict["scaled_rmsd"]))
-        output_row_list.append(max_tsl)
+        output_row_list = [ fas_ring_dict["gene_id"] ]
+        output_row_list.append( ";".join( fas_ring_dict["categories"] ) )
+        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["mean_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["min_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["max_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["plus_std_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["minus_std_movement"] ] ) )
+        output_row_list.append( fas_ring_dict["rmsd"] )
+        output_row_list.append( max_tsl )
 
         output_row = "\t".join(output_row_list)
         
-        output += output_row + "\n"
+        output += "\n" + output_row
     with open(file_path, "w") as f:
         f.write(output)
     return file_path
 
 def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
-    output = "gene_id\tsample_names\tprot_id\tunscaled_expression\tscaled_expression\tunscaled_rmsd\tscaled_rmsd\tmax_tsl\n"
+    output = "gene_id\tprot_id\trmsd\tmax_tsl\n"
     new_path = path[:-4] + "_sorted.tsv"
     with open(path, "r") as f:
         file = f.read()
         comparisons = file.split("\n")
-    comparisons = comparisons[1:]
+    comparisons = comparisons[4:]
     comparisons = [ comparison.split("\t") for comparison in comparisons ]
     new_comparisons = []
     for comparison in comparisons:
-        if len(comparison) == 8:
+        if len(comparison) == 9:
             new_comparisons.append(comparison)
     comparisons = new_comparisons
-    comparisons = [ comparison[:-3] + [float(comparison[-3]), float(comparison[-2]), int(comparison[-1])] for comparison in comparisons ]
+    comparisons = [ comparison[:2] + [float(comparison[-2]), int(comparison[-1])] for comparison in comparisons ]
     new_comparisons = []
     for comparison in comparisons:
-        if comparison[-3] < 1 and comparison[-3] > 0 and comparison[-3] != comparison[-2]:
+        if comparison[-2] < 1:
             new_comparisons.append(comparison)
     comparisons = new_comparisons
-    comparisons = sorted(comparisons, key = lambda x: (x[-1], -x[-3], -x[-2]))
-    comparisons = [ comparison[:-3] + [str(comparison[-3]), str(comparison[-2]), str(comparison[-1])] for comparison in comparisons ]
+    comparisons = sorted(comparisons, key = lambda x: (x[-1], -x[-2]))
+    comparisons = [ comparison[:2] + [str(comparison[-2]), str(comparison[-1])] for comparison in comparisons ]
     comparisons = [ "\t".join(comparison) for comparison in comparisons ]
     file = "\n".join(comparisons)
     file = output + file
@@ -219,7 +211,6 @@ def main():
     
     fas_ring_dict_list = [ extract_all_graph(fas_lib, movement_dict) for movement_dict in movement_dict_list ]
     
-    # STILL WORKING ON THIS BAD BOY
     file_path = generate_comparison(fas_ring_dict_list,
                                     conditions, fas_mode,
                                     result_config_dict,
@@ -228,8 +219,6 @@ def main():
                                     expression_dict_list,
                                     movement_paths,
                                     expression_paths)
-    
-    
     
     sort_by_rmsd(fas_lib, file_path)
 

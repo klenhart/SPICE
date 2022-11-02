@@ -235,7 +235,7 @@ def calculate_relative_expression(expression_vector):
     total = sum(expression_vector)
     if total == 0:
         return expression_vector * 0
-    return expression_vector / total
+    return round(expression_vector / total, 4)
     
 
 

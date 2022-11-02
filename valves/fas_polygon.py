@@ -38,7 +38,7 @@ def calc_rmsd(pair_of_lists):
         list_1, list_2 = pair_of_lists
         for i, _ in enumerate(list_1):
             difference_list.append((list_1[i] - list_2[i])**2)
-        return math.sqrt(sum(difference_list)/count)
+        return round(math.sqrt(sum(difference_list)/count), 4)
 
 def scale_list(scale_factor, float_list):
     output_list = []
