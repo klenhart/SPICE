@@ -130,6 +130,15 @@ def prepare_polygon_pair_visual(ring_list, gene_id, conditions):
 
     rmsd = calc_rmsd(final_mean_movs)
     
+    flag_1_in_2_std = True
+    flag_2_in_1_std = True
+    flag_in_std_list = [flag_1_in_2_std, flag_2_in_1_std]
+    
+    for i in range(2):
+        for k, value in enumerate(final_mean_movs[i]):
+            flag_in_std_list[i] = flag_in_std_list[i] and value > final_minus_std_movs[i-1][k] and value < final_plus_std_movs[i-1][k]
+            
+    
     output_dict = dict()
     output_dict["gene_id"] = gene_id
     output_dict["categories"] = categories
@@ -138,7 +147,13 @@ def prepare_polygon_pair_visual(ring_list, gene_id, conditions):
     output_dict["max_movement"] = final_max_movs
     output_dict["plus_std_movement"] = final_plus_std_movs
     output_dict["minus_std_movement"] = final_minus_std_movs
+    
+    output_dict["1_in_2_std"] = str(int(flag_1_in_2_std))
+    output_dict["2_in_1_std"] = str(int(flag_2_in_1_std))
+    output_dict["in_std_sum"] = int(flag_1_in_2_std) + int(flag_2_in_1_std)
+    
     output_dict["rmsd"] = rmsd
+    
     
     return output_dict
 

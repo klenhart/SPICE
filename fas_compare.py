@@ -69,6 +69,9 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
                                  "max_mov",
                                  "plus_std_mov",
                                  "minus_std_mov",
+                                 "1_in_2_std",
+                                 "2_in_1_std",
+                                 "in_std_sum",
                                  "rmsd",
                                  "max_tsl"))
     
@@ -85,6 +88,9 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["max_movement"] ] ) )
         output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["plus_std_movement"] ] ) )
         output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["minus_std_movement"] ] ) )
+        output_row_list.append( fas_ring_dict["1_in_2_std"] ) 
+        output_row_list.append( fas_ring_dict["2_in_1_std"] )
+        output_row_list.append( fas_ring_dict["in_std_sum"] )
         output_row_list.append( fas_ring_dict["rmsd"] )
         output_row_list.append( max_tsl )
 
@@ -96,25 +102,37 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
     return file_path
 
 def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
-    output = "gene_id\tprot_id\trmsd\tmax_tsl\n"
+    output = "gene_id\tprot_id\t1_in_2_std\t2_in_1_std\tin_std_sum\trmsd\tmax_tsl\n"
     new_path = path[:-4] + "_sorted.tsv"
     with open(path, "r") as f:
         file = f.read()
         comparisons = file.split("\n")
     comparisons = comparisons[4:]
+    output = "\n".join(comparisons[0],
+                       comparisons[1],
+                       comparisons[2],
+                       "\t".join("gene_id",
+                                 "prot_id",
+                                 "1_in_2_std",
+                                 "2_in_1_std",
+                                 "in_std_sum",
+                                 "rmsd",
+                                 "max_tsl"))
     comparisons = [ comparison.split("\t") for comparison in comparisons ]
     new_comparisons = []
     for comparison in comparisons:
-        if len(comparison) == 9:
+        if len(comparison) == 12:
             new_comparisons.append(comparison)
     comparisons = new_comparisons
-    comparisons = [ comparison[:2] + [float(comparison[-2]), int(comparison[-1])] for comparison in comparisons ]
+    comparisons = [ comparison[:2] + comparison[7:9] + [int(comparison[-3]),
+                                                        float(comparison[-2]),
+                                                        int(comparison[-1])] for comparison in comparisons ]
     new_comparisons = []
     for comparison in comparisons:
         if comparison[-2] < 1:
             new_comparisons.append(comparison)
     comparisons = new_comparisons
-    comparisons = sorted(comparisons, key = lambda x: (x[-1], -x[-2]))
+    comparisons = sorted(comparisons, key = lambda x: (x[-1], -x[-2], -x[3]))
     comparisons = [ comparison[:2] + [str(comparison[-2]), str(comparison[-1])] for comparison in comparisons ]
     comparisons = [ "\t".join(comparison) for comparison in comparisons ]
     file = "\n".join(comparisons)
