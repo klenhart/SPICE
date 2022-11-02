@@ -274,6 +274,7 @@ def install_local_ensembl(species, output_dir):
         fas_lib.set_config("url_name", url_name)
         fas_lib.set_config("assembly_default", assembly_default)
         fas_lib.set_config("taxon_id", taxon_id)
+        fas_lib.set_config("local_assembly_path", local_assembly_path[:-3])
     
         for key in path_dict.keys():
             fas_lib.set_config(key, path_dict[key])
