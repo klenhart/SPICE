@@ -56,7 +56,7 @@ def id_checker(gene_id, protein_id, transcript_id, biotype):
 def extract_protein_coding_ids(ensembl_path):
     gtf = load_gtf(ensembl_path)
     print("Extracting IDs of protein coding transcripts...")
-    protein_coding_ids = [ (gene_id, protein_id, transcript_id, 0 if tag == "basic" else tsl_dict[str(tsl)[0]]) for gene_id, 
+    protein_coding_ids = [ (gene_id, protein_id, transcript_id, "0" if tag == "basic" else tsl_dict[str(tsl)[0]]) for gene_id, 
                           protein_id,
                           transcript_id,
                           biotype,
