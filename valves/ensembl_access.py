@@ -119,12 +119,12 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
                                              ids_list[j][1],
                                              ids_list[j][2],
                                              entry[0],
-                                             entry[1] ) for j, entry in enumerate(id_seq_tuple_list) if len(entry[1]) <= 10 ]
+                                             entry[1] ) for j, entry in enumerate(id_seq_tuple_list) if len(entry[1]) <= 10 or "*" in entry[1]  ]
             id_seq_quintuple_list = [ ( ids_list[j][0],
                                    ids_list[j][1],
                                    ids_list[j][2],
                                    entry[0],
-                                   entry[1] ) for j, entry in enumerate(id_seq_tuple_list) if len(entry[1]) > 10 ]
+                                   entry[1] ) for j, entry in enumerate(id_seq_tuple_list) if len(entry[1]) > 10 and "*" not in entry[1] ]
             for j, id_seq_quintuple in enumerate(id_seq_quintuple_list):
                 gene_id, protein_id, transcript_id, query_id, seq = id_seq_quintuple
                 if query_id != protein_id:
