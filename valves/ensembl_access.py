@@ -39,7 +39,7 @@ from valves.fas_utility import make_request_data
 from valves.fas_utility import chunks
 from valves.fas_utility import load_gene_ids_txt
 from valves.fas_utility import tsv_to_tuple_list
-from valves.fas_utility import quintuple_list_to_tsv
+from valves.fas_utility import quadruple_list_to_tsv
 
 from valves.consensus_transcript import make_fasta_of_canonical_transcript_ids
 
@@ -115,9 +115,18 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
                     sys.exit()
             decoded = r.json()
             id_seq_tuple_list = [(entry["query"], entry["seq"]) for entry in decoded]
-            for j, id_seq_tuple in enumerate(id_seq_tuple_list):
-                gene_id, protein_id, transcript_id = ids_list[j]
-                query_id, seq = id_seq_tuple
+            untouchable_id_seq_quintuple_list = [ ( ids_list[j][0],
+                                             ids_list[j][1],
+                                             ids_list[j][2],
+                                             entry[0],
+                                             entry[1] ) for j, entry in enumerate(id_seq_tuple_list) if len(entry[1]) <= 10 ]
+            id_seq_quintuple_list = [ ( ids_list[j][0],
+                                   ids_list[j][1],
+                                   ids_list[j][2],
+                                   entry[0],
+                                   entry[1] ) for j, entry in enumerate(id_seq_tuple_list) if len(entry[1]) > 10 ]
+            for j, id_seq_quintuple in enumerate(id_seq_quintuple_list):
+                gene_id, protein_id, transcript_id, query_id, seq = id_seq_quintuple
                 if query_id != protein_id:
                     print("Incorrect pairing. Aborting!", query_id, protein_id)
                 header = gene_id + "|" + protein_id + "|" + fas_lib.get_config("taxon_id")
@@ -127,7 +136,15 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
                     fasta.write(">" + header + "\n" + seq + "\n")
                 fas_lib.increment_acquired_seq_count()
                 fas_lib.save_config()
-                
+            for j, id_seq_quintuple in enumerate(untouchable_id_seq_quintuple_list):
+                gene_id, protein_id, transcript_id, query_id, seq = id_seq_quintuple
+                if query_id != protein_id:
+                    print("Incorrect pairing. Aborting!", query_id, protein_id)
+                header = gene_id + "|" + protein_id + "|" + fas_lib.get_config("taxon_id")
+                with open(fas_lib.get_config("untouchables_path"), "a") as fasta:
+                    fasta.write(">" + header + "\n" + seq + "\n")     
+                fas_lib.increment_untouchable_count()
+                fas_lib.save_config()
         #Sequence collection should be done.
         fas_lib.set_config("flag_sequence_collection", "True")
         fas_lib.save_config()
@@ -236,7 +253,7 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
             protein_coding_ids = extract_protein_coding_ids(fas_lib.get_config("local_assembly_path"))
             fas_lib.set_config("total_seq_count", len(protein_coding_ids))
             with open(fas_lib.get_config("protein_coding_ids_path"), "w") as f:
-                f.write(quintuple_list_to_tsv(protein_coding_ids))
+                f.write(quadruple_list_to_tsv(protein_coding_ids))
             fas_lib.set_config("flag_protein_coding_genes", "True")
             fas_lib.save_config()
         

@@ -49,14 +49,14 @@ def load_gtf(ensembl_path):
     return reduced
 
 def id_checker(gene_id, protein_id, transcript_id, biotype):
-    flag_biotype = biotype in ("protein_coding", "protein_coding_LoF")
+    flag_biotype = biotype in ("protein_coding") # protein_coding_LoF cut out.
     flag_protein_id = str(protein_id).startswith("ENS") and (protein_id[3] == "P" or protein_id[6] == "P")
     return flag_biotype and flag_protein_id
 
 def extract_protein_coding_ids(ensembl_path):
     gtf = load_gtf(ensembl_path)
     print("Extracting IDs of protein coding transcripts...")
-    protein_coding_ids = [ (gene_id, protein_id, transcript_id, tsl_dict[str(tsl)[0]], tag) for gene_id, 
+    protein_coding_ids = [ (gene_id, protein_id, transcript_id, 0 if tag == "basic" else tsl_dict[str(tsl)[0]]) for gene_id, 
                           protein_id,
                           transcript_id,
                           biotype,

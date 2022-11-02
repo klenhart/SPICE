@@ -208,6 +208,11 @@ def make_folders_and_files(root_path):
         with open(lcr_path, "w") as fp:
             fp.write(LCR)
     
+    untouchables_path = root_path + "src/untouchables.fasta"
+    if not os.path.isfile(untouchables_path):
+        with open(untouchables_path, "w") as fp:
+            pass
+    
     path_dict = dict()
     path_dict["fas_all_path"] = distance_master_path
     path_dict["fas_lcr_path"] = distance_master_lcr_path
@@ -226,6 +231,7 @@ def make_folders_and_files(root_path):
     path_dict["fas_buffer_lcr_path"] = fas_buffer_lcr_path
     path_dict["annotation_path"] = annotation_path
     path_dict["canonical_path"] = canonical_path
+    path_dict["untouchables_path"] = untouchables_path
     
     return path_dict
 
@@ -268,6 +274,8 @@ def install_local_ensembl(species, output_dir):
         fas_lib = Library(None, True)
         fas_lib.set_config("self_path", config_path)
         fas_lib.set_config("pairings_tsv_json_path", pairings_tsv_json_path)
+        
+        fas_lib.set_config("library_path", library_path)
 
         fas_lib.set_config("species", species)
         fas_lib.set_config("release_num", release_num)

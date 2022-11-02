@@ -63,12 +63,14 @@ class Library:
         self.config["fas_buffer_lcr_path"] = None
         self.config["annotation_path"] = None
         self.config["canonical_path"] = None
+        self.config["untouchables_path"] = None
         
         #counts
         self.config["acquired_seq_count"] = "0"
         self.config["total_seq_count"] = "0"
         self.config["max_isoform_num"] = "0"
         self.config["gene_count"] = "0"
+        self.config["untouchable_count"] = "0"
         
         #flags
         self.config["flag_protein_coding_genes"] = "False"
@@ -88,6 +90,9 @@ class Library:
 
     def increment_acquired_seq_count(self):
         self.config["acquired_seq_count"] = str(int(self.config["acquired_seq_count"]) + 1)
+
+    def increment_untouchable_count(self):
+        self.config["untouchable_count"] = str(int(self.config["untouchable_count"]) + 1)
 
     def extract_config(self, config):
         for category, entry in config:
