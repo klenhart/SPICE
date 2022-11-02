@@ -242,11 +242,14 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
         
         # Remove the IDs that have already been loaded.
         progress_list = load_progress(fas_lib.get_config("phyloprofile_ids_path"))
+        print(progress_list)
         protein_coding_ids = [(gene_id,
                                protein_id,
                                transcript_id) for  gene_id,
                                                   protein_id,
-                                                  transcript_id in protein_coding_ids if (gene_id, protein_id) not in progress_list]
+                                                  transcript_id,
+                                                  tsl, 
+                                                  tag in protein_coding_ids if (gene_id, protein_id) not in progress_list]
         
         fas_lib = assemble_protein_seqs(protein_coding_ids, fas_lib)
         print("Checking phyloprofile pairing.")
