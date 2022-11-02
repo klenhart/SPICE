@@ -49,7 +49,7 @@ def load_gtf(ensembl_path):
     return reduced
 
 def id_checker(gene_id, protein_id, transcript_id, biotype):
-    flag_biotype = biotype in ("protein_coding") # protein_coding_LoF cut out.
+    flag_biotype = biotype == "protein_coding" # protein_coding_LoF cut out.
     flag_protein_id = str(protein_id).startswith("ENS") and (protein_id[3] == "P" or protein_id[6] == "P")
     return flag_biotype and flag_protein_id
 
