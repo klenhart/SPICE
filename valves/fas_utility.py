@@ -98,7 +98,7 @@ def tsv_to_tuple_list(path):
 
 def transcript_id_to_protein_id(transcript_ids, ids_path):
     ids_triple = tsv_to_tuple_list(ids_path)
-    return [protein_id for _, protein_id, transcript_id in ids_triple if transcript_id in transcript_ids]
+    return [protein_id for _, protein_id, transcript_id, _ in ids_triple if transcript_id in transcript_ids]
 
 
 
