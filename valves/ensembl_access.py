@@ -217,7 +217,7 @@ def count_max_isoforms(header_dict):
     return max_iso_count
             
 
-def ensembl_access(output_dir, species, flag_install_local, config_path):
+def ensembl_access(output_dir, species, flag_install_local, config_path, release_overwrite):
     """
     Returns
     -------
@@ -238,8 +238,7 @@ def ensembl_access(output_dir, species, flag_install_local, config_path):
   
     if flag_install_local:
         print("Local ensembl installation commencing...")
-        #install_local_ensembl(species, release_num, library_path, url_name, assembly_default)
-        install_local_ensembl(species, output_dir)
+        install_local_ensembl(species, output_dir, release_overwrite)
     else:
         fas_lib = Library(config_path, False)
         print("Library generation commencing.")

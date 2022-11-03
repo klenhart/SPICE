@@ -235,13 +235,16 @@ def make_folders_and_files(root_path):
     
     return path_dict
 
-def install_local_ensembl(species, output_dir):
+def install_local_ensembl(species, output_dir, release_overwrite):
         ping_ensembl()
         library_path = output_dir + "/FAS_library/"
         if not os.path.exists(library_path):
             os.makedirs(library_path)
             os.makedirs(library_path + "/annoTools/")
-        release_num = get_release()
+        if release_overwrite is None:
+            release_num = get_release()
+        else:
+            release_num = release_overwrite
         species, url_name, assembly_default = get_species_info(species)
         taxon_id = get_taxon_id(species)
         root_path = make_rootpath(library_path, species, release_num)

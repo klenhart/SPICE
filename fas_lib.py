@@ -56,6 +56,10 @@ def parser_setup():
                         information about the library without having to ping ensembl.
                         This will also download a local version of ensembl.""")
 
+    parser.add_argument("-v", "--overwriteRelease", type=str, default=None,
+                        help="""Overwrite the default of using the most recent ensembl release. Requires integer that is a ensembl release.""")                   
+    
+
     parser.add_argument("-c", "--config", type=str, default=None,
                         help="""Path to a config file of a library. Is required for sequence collection. 
                         Run the --local option to generate an initial config file.""")
@@ -63,18 +67,20 @@ def parser_setup():
                         
     args = parser.parse_args()
     config_path = args.config
+    release_overwrite = args.overwriteRelease
     output = args.output
     species = args.species
     flag_install_local = args.local
 
-    return output, species, flag_install_local, config_path
+    return output, species, flag_install_local, config_path, release_overwrite
 
 def main():
-    output_dir, species, flag_install_local, config_path = parser_setup()
+    output_dir, species, flag_install_local, config_path, release_overwrite = parser_setup()
     ensembl_access(output_dir,
                    species,
                    flag_install_local,
-                   config_path)
+                   config_path,
+                   release_overwrite)
     
 if __name__ == "__main__":
     main()
