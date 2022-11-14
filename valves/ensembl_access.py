@@ -123,7 +123,7 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
             for j, id_seq_tuple in enumerate(id_seq_tuple_list):
                 query_id, seq = id_seq_tuple
                 index = protein_ids.index(query_id)
-                protein_id = protein_ids[protein_ids.find(query_id)]
+                protein_id = protein_ids[index]
                 gene_id = ids_list[index][0]
                 header = gene_id + "|" + protein_id + "|" + fas_lib.get_config("taxon_id")
                 with open(fas_lib.get_config("phyloprofile_ids_path"), "a") as file:
@@ -134,8 +134,8 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
                 fas_lib.save_config()
             for j, id_seq_tuple in enumerate(untouchable_id_seq_tuple_list):
                 query_id, seq = id_seq_tuple
-                index = protein_ids.find(query_id)
-                protein_id = protein_ids[protein_ids.index(query_id)]
+                index = protein_ids.index(query_id)
+                protein_id = protein_ids[index]
                 gene_id = ids_list[index][0]
                 header = gene_id + "|" + protein_id + "|" + fas_lib.get_config("taxon_id")
                 with open(fas_lib.get_config("untouchables_path"), "a") as fasta:
