@@ -28,17 +28,8 @@ Created on Tue Aug  2 11:13:06 2022
 
 import plotly.graph_objects as go
 import math
+from valves.fas_utility import calc_rmsd
     
-def calc_rmsd(pair_of_lists):
-    if len(pair_of_lists[0]) == 0:
-        return 0
-    else:
-        count = len(pair_of_lists[0])
-        difference_list = []
-        list_1, list_2 = pair_of_lists
-        for i, _ in enumerate(list_1):
-            difference_list.append((list_1[i] - list_2[i])**2)
-        return round(math.sqrt(sum(difference_list)/count), 4)
 
 def scale_list(scale_factor, float_list):
     output_list = []
@@ -79,7 +70,7 @@ def make_graph(fas_lib, gene_id, sample_names, categories, sigma_list, rmsd, fil
     
 
 
-def prepare_polygon_pair_visual(ring_list, gene_id, conditions):
+def prepare_ring_pair_visual(ring_list, gene_id, conditions):
     protein_ids = []
     mean_movs = []
     mean_rel_exprs = []
@@ -87,8 +78,9 @@ def prepare_polygon_pair_visual(ring_list, gene_id, conditions):
     max_movs = []
     plus_std_movs = []
     minus_std_movs = []
+    itersample_rmsd = []
 
-    for prot_ids_list, mean_mov_list, mean_rel_expr_list, min_mov_list, max_mov_list, plus_std_mov_list, minus_std_mov_list in ring_list:
+    for prot_ids_list, mean_mov_list, mean_rel_expr_list, min_mov_list, max_mov_list, plus_std_mov_list, minus_std_mov_list, intersample_rmsd_mean in ring_list:
         protein_ids = prot_ids_list
         mean_movs.append(mean_mov_list)
         mean_rel_exprs.append(mean_rel_expr_list)
@@ -130,14 +122,14 @@ def prepare_polygon_pair_visual(ring_list, gene_id, conditions):
 
     rmsd = calc_rmsd(final_mean_movs)
     
-    flag_1_in_2_std = True
-    flag_2_in_1_std = True
-    flag_in_std_list = [flag_1_in_2_std, flag_2_in_1_std]
-    
-    for i in range(2):
-        for k, value in enumerate(final_mean_movs[i]):
-            flag_in_std_list[i] = flag_in_std_list[i] and value > final_minus_std_movs[i-1][k] and value < final_plus_std_movs[i-1][k]
-            
+    rmsd_max = calc_rmsd(final_max_movs)
+    rmsd_plus_std = calc_rmsd(final_plus_std_movs)
+
+    rmsd_max_smaller_1 = False if rmsd_max < itersample_rmsd[0] else True
+    rmsd_mean_plus_std_smaller_1 = False if rmsd_plus_std < itersample_rmsd[0] else True
+    rmsd_max_smaller_2 = False if rmsd_max < itersample_rmsd[1] else True
+    rmsd_mean_plus_std_smaller_2 = False if rmsd_plus_std < itersample_rmsd[1] else True
+       
     
     output_dict = dict()
     output_dict["gene_id"] = gene_id
@@ -148,12 +140,12 @@ def prepare_polygon_pair_visual(ring_list, gene_id, conditions):
     output_dict["plus_std_movement"] = final_plus_std_movs
     output_dict["minus_std_movement"] = final_minus_std_movs
     
-    output_dict["1_in_2_std"] = str(int(flag_1_in_2_std))
-    output_dict["2_in_1_std"] = str(int(flag_2_in_1_std))
-    output_dict["in_std_sum"] = int(flag_1_in_2_std) + int(flag_2_in_1_std)
-    
+    output_dict["rmsd_max_smaller_1"] = str(int(rmsd_max_smaller_1))
+    output_dict["rmsd_mean_plus_std_smaller_1"] = str(int(rmsd_mean_plus_std_smaller_1))
+    output_dict["rmsd_max_smaller_2"] = str(int(rmsd_max_smaller_2))
+    output_dict["rmsd_mean_plus_std_smaller_2"] = str(int(rmsd_mean_plus_std_smaller_2))
+        
     output_dict["rmsd"] = rmsd
-    
     
     return output_dict
 

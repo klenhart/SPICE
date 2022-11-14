@@ -34,6 +34,7 @@ import numpy as np
 
 from valves.fas_utility import tsv_to_tuple_list
 from valves.fas_utility import longest_common_prefix
+from valves.fas_utility import calc_rmsd
 
 
 def load_expression_gtf(expression_path, flag_filter_unknown=True, flag_remove_transcript_prefix=True):
@@ -254,7 +255,6 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
     expression_dict["replicates"] = expression_names
     expression_dict["normalization"] = "FPKM"
     expression_dict["prefix"] = prefix
-
     expression_dict["expression"] = dict()
 
     for gene_id in isoforms_dict.keys():
@@ -290,6 +290,23 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
     with open(result_config_path, 'w') as f:
         json.dump(result_config_dict, f,  indent=4)
 
+
+def intersample_rmsd_test(expr_matrix, prot_ids, gene_id, fas_dist_matrix):
+    movement_list = []
+    for row in expr_matrix:
+        movements, rel_expression = calculate_movement(fas_dist_matrix, row, gene_id, prot_ids)
+        movement_list.append(movements)
+
+    pairwise_rmsd_list = []
+    for i, row1 in enumerate(movement_list):
+        for j, row2 in enumerate(movement_list):
+            if i >= j :
+                break
+            else:
+                pairwise_rmsd_list.append(calc_rmsd([row1, row2]))
+    return sum(pairwise_rmsd_list) / len(pairwise_rmsd_list)
+
+
 def generate_movement_file(fas_lib, result_config_path, conditions, flag_lcr, flag_tmhmm, flag_all):
     fas_dist_matrix = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm, flag_all)
     
@@ -315,6 +332,7 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
         else:
             print("No condition of the name", condition, "processed yet. Will skip movement generation for this one.")
     
+    
     for expression_path in path_list:
         with open(expression_path, "r") as f: 
             expression_dict = json.load(f)
@@ -331,15 +349,21 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
         output_dict["movement"] = dict()
         output_dict["compared_with"] = []
         
+        # Go through all keys in the expression dict, which are gene_ids
         for gene_id in list(expression_dict["expression"].keys()):
-            expr_matrix = np.array([])
-            prot_ids = []
+            expr_matrix = np.array([]) # Each time initialize a matrix
+            # The protein IDs should be the same for every replicate
+            prot_ids = list(expression_dict["expression"][gene_id][replicates[0]].keys()) 
+            # For each replicate, which are arbitrary names.
             for replicate in replicates:
+                # Add an empty list to the arry (matrix row.)
                 expr_matrix = np.append(expr_matrix, [])
                 for prot_id in list(expression_dict["expression"][gene_id][replicate].keys()):
-                    prot_ids.append(prot_id)
                     expr_matrix[-1] = np.append(expr_matrix[-1], expression_dict["expression"][gene_id][replicate][prot_id])
             t_expr_matrix = np.transpose(expr_matrix)
+            
+            # Calculate the intersample RMSD here:
+            intersample_rmsd_mean = intersample_rmsd_test(expr_matrix, prot_ids, gene_id, fas_dist_matrix)  
             
             min_list = np.array([ min(entry) for entry in t_expr_matrix ])
             min_movement, min_relative_expression = calculate_movement(fas_dist_matrix, min_list, gene_id, prot_ids)
@@ -371,6 +395,7 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
             gene_dict["plus_std_rel_expr"] = plus_std_relative_expression
             gene_dict["minus_std_mov"] = plus_std_movement
             gene_dict["minus_std_rel_expr"] = plus_std_relative_expression
+            gene_dict["intersample_rmsd_mean"] = intersample_rmsd_mean
             
             output_dict["movement"][gene_id] = gene_dict
 

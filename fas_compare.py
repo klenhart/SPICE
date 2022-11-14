@@ -49,7 +49,8 @@ def extract_all_graph(fas_lib, movement_dict, exempt=["ENSG00000155657"]):
                                   movement_dict["movement"][gene_id]["min_mov"],
                                   movement_dict["movement"][gene_id]["max_mov"],
                                   movement_dict["movement"][gene_id]["plus_std_mov"],
-                                  movement_dict["movement"][gene_id]["minus_std_mov"]]
+                                  movement_dict["movement"][gene_id]["minus_std_mov"],
+                                  movement_dict["movement"][gene_id]["intersample_rmsd_mean"]]
     return fas_ring_dict
 
 
@@ -69,9 +70,10 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
                                  "max_mov",
                                  "plus_std_mov",
                                  "minus_std_mov",
-                                 "1_in_2_std",
-                                 "2_in_1_std",
-                                 "in_std_sum",
+                                 "1rmsd_smaller_max",
+                                 "1rmsd_smaller_mean_plus_std",
+                                 "2rmsd_smaller_max",
+                                 "2rmsd_smaller_mean_plus_std",
                                  "rmsd",
                                  "max_tsl"))
     
@@ -88,9 +90,10 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["max_movement"] ] ) )
         output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["plus_std_movement"] ] ) )
         output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["minus_std_movement"] ] ) )
-        output_row_list.append( fas_ring_dict["1_in_2_std"] ) 
-        output_row_list.append( fas_ring_dict["2_in_1_std"] )
-        output_row_list.append( fas_ring_dict["in_std_sum"] )
+        output_row_list.append( fas_ring_dict["1rmsd_smaller_max"] ) 
+        output_row_list.append( fas_ring_dict["1rmsd_smaller_mean_plus_std"] )
+        output_row_list.append( fas_ring_dict["2rmsd_smaller_max"] )
+        output_row_list.append( fas_ring_dict["2rmsd_smaller_mean_plus_std"] )
         output_row_list.append( fas_ring_dict["rmsd"] )
         output_row_list.append( max_tsl )
 
@@ -101,6 +104,7 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         f.write(output)
     return file_path
 
+"""// FOR NOW NOT NECESSARY ANYMORE SINCE JULIAN IS BUILDING THE GUI
 def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
     output = "gene_id\tprot_id\t1_in_2_std\t2_in_1_std\tin_std_sum\trmsd\tmax_tsl\n"
     new_path = path[:-4] + "_sorted.tsv"
@@ -139,7 +143,7 @@ def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
     file = output + file
     with open(new_path, "w") as f:
         f.write(file)
-
+"""
 
 def parser_setup():
     """
@@ -226,7 +230,7 @@ def main():
         if condition[abs(i)] in movement_dict["compared_with"]:
             raise Exception( condition[0] + " and " + condition[1] + " using FAS mode " + fas_mode + " were already compared.")
             sys.exit()
-    
+            
     fas_ring_dict_list = [ extract_all_graph(fas_lib, movement_dict) for movement_dict in movement_dict_list ]
     
     file_path = generate_comparison(fas_ring_dict_list,

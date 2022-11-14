@@ -33,6 +33,20 @@ Move all minor tools from all modules to this.
 
 import itertools
 import json
+import math
+
+
+def calc_rmsd(pair_of_lists):
+    if len(pair_of_lists[0]) == 0:
+        return 0
+    else:
+        count = len(pair_of_lists[0])
+        difference_list = []
+        list_1, list_2 = pair_of_lists
+        for i, _ in enumerate(list_1):
+            difference_list.append((list_1[i] - list_2[i])**2)
+        return round(math.sqrt(sum(difference_list)/count), 4)
+
 
 def tsv_collection_maker(header_dict, fas_lib):
     """
