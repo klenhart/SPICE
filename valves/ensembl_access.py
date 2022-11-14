@@ -106,6 +106,7 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
                 
         for i, request in enumerate(ensembl_requests):
             ids_list = request_chunks[i]
+            protein_ids = [ entry[1] for entry in ids_list ]
             for x in range(3):
                 r = requests.post(server, headers=headers, data=request)
                 if r.ok:
@@ -115,20 +116,15 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
                     sys.exit()
             decoded = r.json()
             id_seq_tuple_list = [(entry["query"], entry["seq"]) for entry in decoded]
-            untouchable_id_seq_quintuple_list = [ ( ids_list[j][0],
-                                             ids_list[j][1],
-                                             ids_list[j][2],
-                                             entry[0],
-                                             entry[1] ) for j, entry in enumerate(id_seq_tuple_list) if len(entry[1]) <= 10 or "*" in entry[1]  ]
-            id_seq_quintuple_list = [ ( ids_list[j][0],
-                                   ids_list[j][1],
-                                   ids_list[j][2],
-                                   entry[0],
-                                   entry[1] ) for j, entry in enumerate(id_seq_tuple_list) if len(entry[1]) > 10 and "*" not in entry[1] ]
-            for j, id_seq_quintuple in enumerate(id_seq_quintuple_list):
-                gene_id, protein_id, transcript_id, query_id, seq = id_seq_quintuple
-                if query_id != protein_id:
-                    print("Incorrect pairing. Aborting!", query_id, protein_id)
+            untouchable_id_seq_tuple_list = [ (entry[0],
+                                               entry[1] ) for entry in id_seq_tuple_list if len(entry[1]) <= 10 or "*" in entry[1]  ]
+            id_seq_tuple_list = [ ( entry[0],
+                                    entry[1] ) for  entry in id_seq_tuple_list if len(entry[1]) > 10 and "*" not in entry[1] ]
+            for j, id_seq_tuple in enumerate(id_seq_tuple_list):
+                query_id, seq = id_seq_tuple
+                index = protein_ids.index(query_id)
+                protein_id = protein_ids[protein_ids.find(query_id)]
+                gene_id = ids_list[index][0]
                 header = gene_id + "|" + protein_id + "|" + fas_lib.get_config("taxon_id")
                 with open(fas_lib.get_config("phyloprofile_ids_path"), "a") as file:
                     file.write(header + "\t" + "ncbi" + fas_lib.get_config("taxon_id") + "\n")
@@ -136,10 +132,11 @@ def assemble_protein_seqs(protein_coding_ids, fas_lib):
                     fasta.write(">" + header + "\n" + seq + "\n")
                 fas_lib.increment_acquired_seq_count()
                 fas_lib.save_config()
-            for j, id_seq_quintuple in enumerate(untouchable_id_seq_quintuple_list):
-                gene_id, protein_id, transcript_id, query_id, seq = id_seq_quintuple
-                if query_id != protein_id:
-                    print("Incorrect pairing. Aborting!", query_id, protein_id)
+            for j, id_seq_tuple in enumerate(untouchable_id_seq_tuple_list):
+                query_id, seq = id_seq_tuple
+                index = protein_ids.find(query_id)
+                protein_id = protein_ids[protein_ids.index(query_id)]
+                gene_id = ids_list[index][0]
                 header = gene_id + "|" + protein_id + "|" + fas_lib.get_config("taxon_id")
                 with open(fas_lib.get_config("untouchables_path"), "a") as fasta:
                     fasta.write(">" + header + "\n" + seq + "\n")     
