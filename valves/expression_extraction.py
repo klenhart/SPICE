@@ -61,14 +61,14 @@ def load_protein_coding_ids(path):
 
 def filter_protein_coding(expression_data, protein_coding_ids):
     # FIlter by protein coding
-    protein_coding_transcript_ids = [ transcript_id for gene_id, protein_id, transcript_id, tsl, tag in protein_coding_ids ]
+    protein_coding_transcript_ids = [ transcript_id for gene_id, protein_id, transcript_id, tsl in protein_coding_ids ]
     expression_data = [ [gene_id, transcript_id, fpkm] for gene_id, transcript_id, fpkm in expression_data if transcript_id in protein_coding_transcript_ids]
     return expression_data
 
 
 def fix_expression_ids( expression_data, protein_coding_ids):
     translate_trans_to_gene_dict = dict()
-    for gene_id, protein_id, transcript_id, tsl, tag in protein_coding_ids:
+    for gene_id, protein_id, transcript_id, tsl in protein_coding_ids:
         translate_trans_to_gene_dict[transcript_id] = (gene_id, protein_id)
     
     new_expression_data = []
