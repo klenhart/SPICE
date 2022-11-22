@@ -102,7 +102,6 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         output += "\n" + output_row
     with open(file_path, "w") as f:
         f.write(output)
-    return file_path
 
 """// FOR NOW NOT NECESSARY ANYMORE SINCE JULIAN IS BUILDING THE GUI
 def sort_by_rmsd(fas_lib, path, flag_more_than_2=True):
@@ -233,16 +232,14 @@ def main():
             
     fas_ring_dict_list = [ extract_all_graph(fas_lib, movement_dict) for movement_dict in movement_dict_list ]
     
-    file_path = generate_comparison(fas_ring_dict_list,
-                                    conditions, fas_mode,
-                                    result_config_dict,
-                                    fas_lib,
-                                    movement_dict_list,
-                                    expression_dict_list,
-                                    movement_paths,
-                                    expression_paths)
-    
-    sort_by_rmsd(fas_lib, file_path)
+    generate_comparison(fas_ring_dict_list,
+                        conditions, fas_mode,
+                        result_config_dict,
+                        fas_lib,
+                        movement_dict_list,
+                        expression_dict_list,
+                        movement_paths,
+                        expression_paths)
 
 if __name__ == "__main__":
     main()
