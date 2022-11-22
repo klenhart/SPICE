@@ -246,7 +246,7 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
     name_cutoff_index = len(prefix)
     expression_names = [ path[name_cutoff_index:] for path in expression_paths ]
         
-    expression_dict, isoforms_dict = join_expression(expression_paths,
+    expression_dict_join, isoforms_dict = join_expression(expression_paths,
                                                      fas_lib.get_config("protein_coding_ids_path"),
                                                      ["ENSG00000155657"])
     expression_dict = dict()
@@ -259,10 +259,11 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
     for gene_id in isoforms_dict.keys():
         expression_dict["expression"][gene_id] = dict()
         for i, replicate in enumerate(expression_names):
+            expression_dict["expression"][gene_id][replicate] = dict()["total"]
             expression_dict["expression"][gene_id][replicate]["total"] = 0
             for prot_id in isoforms_dict[gene_id]:
-                expression_dict["expression"][gene_id][replicate][prot_id] = expression_dict[prot_id][i]
-                expression_dict["expression"][gene_id][replicate]["total"] += expression_dict[prot_id][i]
+                expression_dict["expression"][gene_id][replicate][prot_id] = expression_dict_join[prot_id][i]
+                expression_dict["expression"][gene_id][replicate]["total"] += expression_dict_join[prot_id][i]
             
         
     expression_file_path = expression_path + "_".join(["expression", name, "ENSv" + release_num]) +  ".json"
