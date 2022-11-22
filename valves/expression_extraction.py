@@ -56,6 +56,7 @@ def load_expression_gtf(expression_path, flag_filter_unknown=True, flag_remove_t
 
 def load_protein_coding_ids(path):
     #fas_lib.get_config("protein_coding_ids_path")
+    print(path)
     protein_coding_ids = tsv_to_tuple_list(path)
     return protein_coding_ids
 
