@@ -65,7 +65,6 @@ def parser_setup():
                         
     args = parser.parse_args()
     config_path = args.config
-    print(config_path)
     name = args.name
     result_path = args.resultsDir + "/result/"
     expression_paths = args.expressionpath[0]
@@ -76,7 +75,6 @@ def main():
     config_path, name, expression_paths, result_path = parser_setup()
     
     fas_lib = library_class.Library(config_path, False)
-    print(fas_lib.get_config("protein_coding_ids_path"))
     
     if not os.path.exists(result_path):
         os.makedirs(result_path)
