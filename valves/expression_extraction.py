@@ -147,7 +147,7 @@ def join_expression(expression_path_list, protein_coding_path, exempt_genes):
     protein_coding_ids = [ entry for entry in protein_coding_ids if entry[0] not in exempt_genes ]
     expression_dict = dict()
     prot_to_gene_dict = dict()
-    for gene_id, prot_id, transcript_id, tsl, tag in protein_coding_ids:
+    for gene_id, prot_id, transcript_id, tsl in protein_coding_ids:
         expression_dict[prot_id] = []
         prot_to_gene_dict[prot_id] = gene_id
     # Extract all the expression from the gtf files and filter out everything unnecessary.
