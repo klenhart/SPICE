@@ -282,7 +282,7 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
     result_config_dict["conditions"][name]["normalization"] = "FPKM"
     result_config_dict["conditions"][name]["FAS_modes"] = []
     result_config_dict["conditions"][name]["species"] = fas_lib.get_config("species")
-    result_config_dict["conditions"][name]["release"] = fas_lib.get_config("release")
+    result_config_dict["conditions"][name]["release"] = fas_lib.get_config("release_num")
     result_config_dict["conditions"][name]["lib_config"] = fas_lib.get_config("self_path")
     result_config_dict["conditions"][name]["expression_path"] = expression_file_path
     result_config_dict["conditions"][name]["movement_path"]["all"] = None
