@@ -100,7 +100,7 @@ def main():
         result_config_dict["main_comparison_dir"] = main_comparison_path
         result_config_dict["conditions"] = dict()
         with open(result_config_path, 'w') as f:
-            json.dump(dict(), f,  indent=4)
+            json.dump(result_config_dict, f,  indent=4)
 
     print("Expression extraction commencing...")
     ee.generate_expression_file(fas_lib, 

@@ -263,6 +263,7 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
             expression_dict["expression"][gene_id][replicate]["total"] = 0
             for prot_id in isoforms_dict[gene_id]:
                 if (len(expression_dict_join[prot_id]) == 0):
+                    expression_dict["expression"][gene_id][replicate][prot_id] = 0
                     continue
                 expression_dict["expression"][gene_id][replicate][prot_id] = expression_dict_join[prot_id][i]
                 expression_dict["expression"][gene_id][replicate]["total"] += expression_dict_join[prot_id][i]
@@ -274,7 +275,7 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
 
     with open(result_config_path, "r") as f: 
         result_config_dict = json.load(f)
-        
+    
     result_config_dict["conditions"][name] = dict()
     result_config_dict["conditions"][name]["prefix"] = prefix
     result_config_dict["conditions"][name]["replicates"] = expression_names
