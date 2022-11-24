@@ -273,7 +273,7 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
     with open(expression_file_path, "w") as f:
         json.dump(expression_dict, f,  indent=4)
 
-    with open(result_config_path, "r+") as f: 
+    with open(result_config_path, "r") as f: 
         result_config_dict = json.load(f)
         result_config_dict["conditions"][name] = dict()
         result_config_dict["conditions"][name]["prefix"] = prefix
@@ -289,10 +289,11 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
         result_config_dict["conditions"][name]["movement_path"]["lcr"] = None
         result_config_dict["conditions"][name]["movement_path"]["tmhmm"] = None
         result_config_dict["conditions"][name]["compared_with"] = []
+    
+    with open(result_config_path, "w") as f: 
         json.dump(result_config_dict, f,  indent=4)
         print("secured", name)
-    
-
+        
 def intersample_rmsd_test(expr_matrix, prot_ids, gene_id, fas_dist_matrix):
     movement_list = []
     for row in expr_matrix:

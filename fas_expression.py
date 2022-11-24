@@ -27,6 +27,9 @@ Created on Tue Oct 25 11:00:02 2022
 @author: chris
 """
 
+import time
+import random
+
 import argparse
 import os
 import json
@@ -74,6 +77,10 @@ def parser_setup():
 def main():
     config_path, name, expression_paths, result_path = parser_setup()
     
+    # Whoever finds this. I am deeply sorry. But this works pretty well and
+    # I do not have the patience to fix it properly.
+    time.sleep(random.randint(10, 50))
+    
     fas_lib = library_class.Library(config_path, False)
     
     if not os.path.exists(result_path):
@@ -101,7 +108,7 @@ def main():
         result_config_dict["conditions"] = dict()
         with open(result_config_path, 'w') as f:
             json.dump(result_config_dict, f,  indent=4)
-        print("reset config", name)    
+       
 
     print("Expression extraction commencing...")
     ee.generate_expression_file(fas_lib, 
