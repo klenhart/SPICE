@@ -101,6 +101,7 @@ def main():
         result_config_dict["conditions"] = dict()
         with open(result_config_path, 'w') as f:
             json.dump(result_config_dict, f,  indent=4)
+        print("reset config", name)    
 
     print("Expression extraction commencing...")
     ee.generate_expression_file(fas_lib, 
