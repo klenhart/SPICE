@@ -154,10 +154,10 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
                                  "max_mov",
                                  "plus_std_mov",
                                  "minus_std_mov",
-                                 "1rmsd_smaller_max",
-                                 "1rmsd_smaller_mean_plus_std",
-                                 "2rmsd_smaller_max",
-                                 "2rmsd_smaller_mean_plus_std",
+                                 "rmsd_max_smaller_1",
+                                 "rmsd_mean_plus_std_smaller_1",
+                                 "rmsd_max_smaller_2",
+                                 "rmsd_mean_plus_std_smaller_2",
                                  "rmsd",
                                  "max_tsl"])])
     
@@ -174,10 +174,10 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["max_movement"] ] ) )
         output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["plus_std_movement"] ] ) )
         output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["minus_std_movement"] ] ) )
-        output_row_list.append( fas_ring_dict["1rmsd_smaller_max"] ) 
-        output_row_list.append( fas_ring_dict["1rmsd_smaller_mean_plus_std"] )
-        output_row_list.append( fas_ring_dict["2rmsd_smaller_max"] )
-        output_row_list.append( fas_ring_dict["2rmsd_smaller_mean_plus_std"] )
+        output_row_list.append( fas_ring_dict["rmsd_max_smaller_1"] ) 
+        output_row_list.append( fas_ring_dict["rmsd_mean_plus_std_smaller_1"] )
+        output_row_list.append( fas_ring_dict["rmsd_max_smaller_2"] )
+        output_row_list.append( fas_ring_dict["rmsd_mean_plus_std_smaller_2"] )
         output_row_list.append( fas_ring_dict["rmsd"] )
         output_row_list.append( str(max_tsl) )
 
