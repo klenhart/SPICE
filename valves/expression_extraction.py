@@ -221,10 +221,10 @@ def calculate_movement(fas_dist_matrix, expression_vector, gene_id, prot_ids):
     
     # Calculate the Sigma values.
     for seed_id in prot_ids:
-        if (seed_id in movement_dict.keys() and (seed_id in dist_matrix.keys()) and seed_id in relative_expression_dict.keys()):
+        if (seed_id in dist_matrix.keys()):
             movement_dict[seed_id] = 0
             for query_id in prot_ids:
-                if (query_id in dist_matrix[seed_id].keys() and query_id in relative_expression_dict.keys()):
+                if (query_id in dist_matrix[seed_id].keys()):
                     movement_dict[seed_id] += (dist_matrix[seed_id][query_id] * relative_expression_dict[query_id])
     
     movement_list = []
