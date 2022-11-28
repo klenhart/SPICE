@@ -354,16 +354,17 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
         
         # Go through all keys in the expression dict, which are gene_ids
         for gene_id in list(expression_dict["expression"].keys()):
-            expr_matrix = np.array([]) # Each time initialize a matrix
+            expr_matrix = [] # Each time initialize a matrix
             # The protein IDs should be the same for every replicate
             prot_ids = list(expression_dict["expression"][gene_id][replicates[0]].keys()) 
             # For each replicate, which are arbitrary names.
             for replicate in replicates:
                 # Add an empty list to the arry (matrix row.)
-                expr_matrix = np.append(expr_matrix, [])
+                expr_matrix.append([])
                 for prot_id in list(expression_dict["expression"][gene_id][replicate].keys()):
-                    expr_matrix[-1] = np.append(expr_matrix[-1], expression_dict["expression"][gene_id][replicate][prot_id])
-            t_expr_matrix = np.transpose(expr_matrix)
+                    expr_matrix[-1].append(expression_dict["expression"][gene_id][replicate][prot_id])
+            np_expr_matrix = np.array(expr_matrix)   
+            t_expr_matrix = np.transpose(np_expr_matrix)
             
             # Calculate the intersample RMSD here:
             intersample_rmsd_mean = intersample_rmsd_test(expr_matrix, prot_ids, gene_id, fas_dist_matrix)  
