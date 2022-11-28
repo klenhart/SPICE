@@ -305,7 +305,7 @@ def intersample_rmsd_test(expr_matrix, prot_ids, gene_id, fas_dist_matrix):
     pairwise_rmsd_list = []
     for i, row1 in enumerate(movement_list):
         for j, row2 in enumerate(movement_list):
-            if i >= j :
+            if j >= i :
                 break
             else:
                 pairwise_rmsd_list.append(calc_rmsd([row1, row2]))
