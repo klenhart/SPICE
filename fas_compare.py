@@ -169,11 +169,11 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         
         output_row_list = [ fas_ring_dict["gene_id"] ]
         output_row_list.append( ";".join( fas_ring_dict["categories"] ) )
-        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["mean_movement"] ] ) )
-        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["min_movement"] ] ) )
-        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["max_movement"] ] ) )
-        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["plus_std_movement"] ] ) )
-        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["minus_std_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(list(map(str, entry))) for entry in fas_ring_dict["mean_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(list(map(str, entry))) for entry in fas_ring_dict["min_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(list(map(str, entry))) for entry in fas_ring_dict["max_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(list(map(str, entry))) for entry in fas_ring_dict["plus_std_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(list(map(str, entry))) for entry in fas_ring_dict["minus_std_movement"] ] ) )
         output_row_list.append( fas_ring_dict["rmsd_max_smaller_1"] ) 
         output_row_list.append( fas_ring_dict["rmsd_mean_plus_std_smaller_1"] )
         output_row_list.append( fas_ring_dict["rmsd_max_smaller_2"] )
@@ -190,11 +190,11 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
     with open(file_path, "w") as f:
         f.write(output)
         
-    with open(result_config_dict["result_dir"] + "/result.config.json", "r") as f:
+    with open(result_config_dict["result_dir"] + "/result_config.json", "r") as f:
         result_dict = json.load(f)
     result_dict["conditions"][conditions[0]]["compared_with"].append(conditions[1])
     result_dict["conditions"][conditions[1]]["compared_with"].append(conditions[0])
-    with open(result_config_dict["result_dir"] + "/result.config.json", "w") as f:
+    with open(result_config_dict["result_dir"] + "/result_config.json", "w") as f:
         json.dump(result_dict, f, indent=4)
 
 def parser_setup():
