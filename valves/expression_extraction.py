@@ -221,8 +221,8 @@ def calculate_movement(fas_dist_matrix, expression_vector, gene_id, prot_ids):
     
     # Calculate the Sigma values.
     for seed_id in prot_ids:
+        movement_dict[seed_id] = 0
         if (seed_id in dist_matrix.keys()):
-            movement_dict[seed_id] = 0
             for query_id in prot_ids:
                 if (query_id in dist_matrix[seed_id].keys()):
                     movement_dict[seed_id] += (dist_matrix[seed_id][query_id] * relative_expression_dict[query_id])
@@ -368,7 +368,7 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
                 expr_matrix.append([])
                 for prot_id in list(expression_dict["expression"][gene_id][replicate].keys()):
                     expr_matrix[-1].append(expression_dict["expression"][gene_id][replicate][prot_id])
-            np_expr_matrix = np.array(expr_matrix)   
+            np_expr_matrix = np.array(expr_matrix)
             t_expr_matrix = np.transpose(np_expr_matrix)
             
             # Calculate the intersample RMSD here:
