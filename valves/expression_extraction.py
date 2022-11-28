@@ -341,7 +341,6 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
             expression_dict = json.load(f)
         condition = expression_dict["condition"]
         replicates = expression_dict["replicates"]
-        release_num = expression_dict["release"]
         
         output_dict = dict()
 
