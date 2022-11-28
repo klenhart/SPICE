@@ -169,17 +169,17 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         
         output_row_list = [ fas_ring_dict["gene_id"] ]
         output_row_list.append( ";".join( fas_ring_dict["categories"] ) )
-        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["mean_movement"] ] ) )
-        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["min_movement"] ] ) )
-        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["max_movement"] ] ) )
-        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["plus_std_movement"] ] ) )
-        output_row_list.append( ";".join( [ ":".join(entry) for entry in fas_ring_dict["minus_std_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["mean_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["min_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["max_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["plus_std_movement"] ] ) )
+        output_row_list.append( ";".join( [ ":".join(str(entry)) for entry in fas_ring_dict["minus_std_movement"] ] ) )
         output_row_list.append( fas_ring_dict["1rmsd_smaller_max"] ) 
         output_row_list.append( fas_ring_dict["1rmsd_smaller_mean_plus_std"] )
         output_row_list.append( fas_ring_dict["2rmsd_smaller_max"] )
         output_row_list.append( fas_ring_dict["2rmsd_smaller_mean_plus_std"] )
         output_row_list.append( fas_ring_dict["rmsd"] )
-        output_row_list.append( max_tsl )
+        output_row_list.append( str(max_tsl) )
 
         output_row = "\t".join(output_row_list)
         
