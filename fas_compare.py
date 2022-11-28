@@ -178,7 +178,7 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         output_row_list.append( fas_ring_dict["rmsd_mean_plus_std_smaller_1"] )
         output_row_list.append( fas_ring_dict["rmsd_max_smaller_2"] )
         output_row_list.append( fas_ring_dict["rmsd_mean_plus_std_smaller_2"] )
-        output_row_list.append( fas_ring_dict["rmsd"] )
+        output_row_list.append( str(fas_ring_dict["rmsd"]) )
         output_row_list.append( str(max_tsl) )
 
         output_row = "\t".join(output_row_list)
