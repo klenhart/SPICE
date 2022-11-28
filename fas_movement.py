@@ -69,7 +69,7 @@ def parser_setup():
     args = parser.parse_args()
     config_path = args.config
     condition = args.condition
-    result_config_path = args.resultsDir
+    result_config_path = args.resultsDir + "/result/result_config.json"
     
     flag_lcr = args.lcr
     flag_tmhmm = args.tmhmm
