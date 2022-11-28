@@ -356,7 +356,7 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
         for gene_id in list(expression_dict["expression"].keys()):
             expr_matrix = [] # Each time initialize a matrix
             # The protein IDs should be the same for every replicate
-            prot_ids = list(expression_dict["expression"][gene_id][replicates[0]].keys()) 
+            prot_ids = [ prot_id for prot_id  in list(expression_dict["expression"][gene_id][replicates[0]].keys()) if prot_id != "total" ]
             # For each replicate, which are arbitrary names.
             for replicate in replicates:
                 # Add an empty list to the arry (matrix row.)
