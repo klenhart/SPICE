@@ -359,54 +359,55 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
         
         # Go through all keys in the expression dict, which are gene_ids
         for gene_id in list(expression_dict["expression"].keys()):
-            expr_matrix = [] # Each time initialize a matrix
-            # The protein IDs should be the same for every replicate
-            prot_ids = [ prot_id for prot_id  in list(expression_dict["expression"][gene_id][replicates[0]].keys()) if prot_id != "total" ]
-            # For each replicate, which are arbitrary names.
-            for replicate in replicates:
-                # Add an empty list to the arry (matrix row.)
-                expr_matrix.append([])
-                for prot_id in list(expression_dict["expression"][gene_id][replicate].keys()):
-                    expr_matrix[-1].append(expression_dict["expression"][gene_id][replicate][prot_id])
-            np_expr_matrix = np.array(expr_matrix)
-            t_expr_matrix = np.transpose(np_expr_matrix)
-            
-            # Calculate the intersample RMSD here:
-            intersample_rmsd_mean = intersample_rmsd_test(np_expr_matrix, prot_ids, gene_id, fas_dist_matrix)  
-            
-            min_list = np.array([ min(entry) for entry in t_expr_matrix ])
-            min_movement, min_relative_expression = calculate_movement(fas_dist_matrix, min_list, gene_id, prot_ids)
-            
-            max_list = np.array([ max(entry) for entry in t_expr_matrix ])
-            max_movement, max_relative_expression = calculate_movement(fas_dist_matrix, max_list, gene_id, prot_ids)
-            
-            mean_list = np.array([ np.mean(entry) for entry in t_expr_matrix ])
-            mean_movement, mean_relative_expression = calculate_movement(fas_dist_matrix, mean_list, gene_id, prot_ids)
-            
-            standard_deviation_list = np.array([ np.std(entry) for entry in t_expr_matrix ])
-            standard_deviation_movement, standard_deviation_relative_expression = calculate_movement(fas_dist_matrix, standard_deviation_list, gene_id, prot_ids)
-            
-            plus_std_list = standard_deviation_list + mean_list
-            plus_std_movement, plus_std_relative_expression = calculate_movement(fas_dist_matrix, plus_std_list, gene_id, prot_ids)
-            
-            minus_std_list = standard_deviation_list - mean_list
-            minus_std_movement, minus_std_relative_expression = calculate_movement(fas_dist_matrix, minus_std_list, gene_id, prot_ids)
-            
-            gene_dict = dict()
-            gene_dict["prot_ids"] = prot_ids
-            gene_dict["min_mov"] = min_movement
-            gene_dict["min_rel_expr"] = min_relative_expression
-            gene_dict["max_mov"] = max_movement
-            gene_dict["max_rel_expr"] = max_relative_expression
-            gene_dict["mean_mov"] = mean_movement
-            gene_dict["mean_rel_expr"] = mean_relative_expression
-            gene_dict["plus_std_mov"] = plus_std_movement
-            gene_dict["plus_std_rel_expr"] = plus_std_relative_expression
-            gene_dict["minus_std_mov"] = plus_std_movement
-            gene_dict["minus_std_rel_expr"] = plus_std_relative_expression
-            gene_dict["intersample_rmsd_mean"] = intersample_rmsd_mean
-            
-            output_dict["movement"][gene_id] = gene_dict
+            if gene_id in fas_dist_matrix.keys():
+                expr_matrix = [] # Each time initialize a matrix
+                # The protein IDs should be the same for every replicate
+                prot_ids = [ prot_id for prot_id  in list(expression_dict["expression"][gene_id][replicates[0]].keys()) if prot_id != "total" ]
+                # For each replicate, which are arbitrary names.
+                for replicate in replicates:
+                    # Add an empty list to the arry (matrix row.)
+                    expr_matrix.append([])
+                    for prot_id in list(expression_dict["expression"][gene_id][replicate].keys()):
+                        expr_matrix[-1].append(expression_dict["expression"][gene_id][replicate][prot_id])
+                np_expr_matrix = np.array(expr_matrix)
+                t_expr_matrix = np.transpose(np_expr_matrix)
+                
+                # Calculate the intersample RMSD here:
+                intersample_rmsd_mean = intersample_rmsd_test(np_expr_matrix, prot_ids, gene_id, fas_dist_matrix)  
+                
+                min_list = np.array([ min(entry) for entry in t_expr_matrix ])
+                min_movement, min_relative_expression = calculate_movement(fas_dist_matrix, min_list, gene_id, prot_ids)
+                
+                max_list = np.array([ max(entry) for entry in t_expr_matrix ])
+                max_movement, max_relative_expression = calculate_movement(fas_dist_matrix, max_list, gene_id, prot_ids)
+                
+                mean_list = np.array([ np.mean(entry) for entry in t_expr_matrix ])
+                mean_movement, mean_relative_expression = calculate_movement(fas_dist_matrix, mean_list, gene_id, prot_ids)
+                
+                standard_deviation_list = np.array([ np.std(entry) for entry in t_expr_matrix ])
+                standard_deviation_movement, standard_deviation_relative_expression = calculate_movement(fas_dist_matrix, standard_deviation_list, gene_id, prot_ids)
+                
+                plus_std_list = standard_deviation_list + mean_list
+                plus_std_movement, plus_std_relative_expression = calculate_movement(fas_dist_matrix, plus_std_list, gene_id, prot_ids)
+                
+                minus_std_list = standard_deviation_list - mean_list
+                minus_std_movement, minus_std_relative_expression = calculate_movement(fas_dist_matrix, minus_std_list, gene_id, prot_ids)
+                
+                gene_dict = dict()
+                gene_dict["prot_ids"] = prot_ids
+                gene_dict["min_mov"] = min_movement
+                gene_dict["min_rel_expr"] = min_relative_expression
+                gene_dict["max_mov"] = max_movement
+                gene_dict["max_rel_expr"] = max_relative_expression
+                gene_dict["mean_mov"] = mean_movement
+                gene_dict["mean_rel_expr"] = mean_relative_expression
+                gene_dict["plus_std_mov"] = plus_std_movement
+                gene_dict["plus_std_rel_expr"] = plus_std_relative_expression
+                gene_dict["minus_std_mov"] = plus_std_movement
+                gene_dict["minus_std_rel_expr"] = plus_std_relative_expression
+                gene_dict["intersample_rmsd_mean"] = intersample_rmsd_mean
+                
+                output_dict["movement"][gene_id] = gene_dict
 
         with open(result_config_path, "r") as f: 
             result_config_dict = json.load(f)
