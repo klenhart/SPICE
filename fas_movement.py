@@ -27,6 +27,8 @@ Created on Thu Aug 18 11:30:47 2022
 @author: chrisbl
 """
 
+import time
+import random
 import argparse
 
 import valves.library_class as library_class
@@ -83,7 +85,7 @@ def main():
     -------
     """
     config_path, result_config_path, condition, flag_lcr, flag_tmhmm, flag_all = parser_setup()
-
+    time.sleep(random.randint(10, 50))
     fas_lib = library_class.Library(config_path, False)
     print("Movement calculation commencing...")
     ee.generate_movement_file(fas_lib, result_config_path, condition, flag_lcr, flag_tmhmm, flag_all)

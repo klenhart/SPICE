@@ -412,10 +412,10 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
         with open(result_config_path, "r") as f: 
             result_config_dict = json.load(f)
 
-        result_config_dict["conditions"][condition]["movement_path"][fas_mode] = result_config_dict["movement_dir"] + "_".join("movement",
+        result_config_dict["conditions"][condition]["movement_path"][fas_mode] = result_config_dict["movement_dir"] + "_".join(["movement",
                                                                                                                  condition,
                                                                                                                  fas_mode,
-                                                                                                                 "ENSv" + release_num) + ".json"
+                                                                                                                 "ENSv" + release_num]) + ".json"
         result_config_dict["conditions"][condition]["FAS_modes"].append(fas_mode)
         
         with open(result_config_dict["conditions"][condition]["movement_path"][fas_mode], 'w') as f:
