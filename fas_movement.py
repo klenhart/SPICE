@@ -62,7 +62,7 @@ def parser_setup():
     parser.add_argument("-l", "--lcr", action="store_true",
                         help="lcr FAS mode shall be used for the movement calculation.")
 
-    parser.add_argument("-a", "--all", type=str,
+    parser.add_argument("-a", "--all", action="store_true",
                         help="all domain type FAS mode shall be used for the movement calculation.")
 
                         
