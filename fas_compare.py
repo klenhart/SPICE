@@ -184,9 +184,18 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
         output_row = "\t".join(output_row_list)
         
         output += "\n" + output_row
+    
+    if not os.path.exists(comparison_path):
+        os.makedirs(comparison_path)    
     with open(file_path, "w") as f:
         f.write(output)
-
+        
+    with open(result_config_dict["result_dir"] + "/result.config.json", "r") as f:
+        result_dict = json.load(f)
+    result_dict["conditions"][conditions[0]]["compared_with"].append(conditions[1])
+    result_dict["conditions"][conditions[1]]["compared_with"].append(conditions[0])
+    with open(result_config_dict["result_dir"] + "/result.config.json", "w") as f:
+        json.dump(result_dict, f, indent=4)
 
 def parser_setup():
     """
