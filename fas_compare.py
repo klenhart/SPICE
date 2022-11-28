@@ -165,13 +165,13 @@ def parser_setup():
                         help="""Names of the condition that shall be compared as represented in the result_config.json
                         found in the result directory.""")
                         
-    parser.add_argument("-l", "--lcr", type=str,
+    parser.add_argument("-l", "--lcr", action="store_true",
                         help="lcr FAS mode shall be used for the comparison.")
 
-    parser.add_argument("-t", "--tmhmm", type=str,
+    parser.add_argument("-t", "--tmhmm", action="store_true",
                         help="tmhmm FAS mode shall be used for the comparison.")
 
-    parser.add_argument("-a", "--all", type=str,
+    parser.add_argument("-a", "--all", action="store_true",
                         help="all domain type FAS mode shall be used for the comparison.")
     
     args = parser.parse_args()
@@ -181,11 +181,12 @@ def parser_setup():
     flag_tmhmm = args.tmhmm
     flag_all = args.all
     conditions = args.conditions[0]
+    result_config_path = args.resultsDir + "/result/result_config.json"
 
-    return config_path, conditions, flag_lcr, flag_tmhmm, flag_all
+    return config_path, conditions, result_config_path, flag_lcr, flag_tmhmm, flag_all
     
 def main():
-    config_path, conditions, flag_lcr, flag_tmhmm, flag_all = parser_setup()
+    config_path, conditions, result_config_path, flag_lcr, flag_tmhmm, flag_all = parser_setup()
 
     conditions = sorted(conditions)
 
@@ -197,8 +198,6 @@ def main():
         fas_mode = "all"
 
     fas_lib = library_class.Library(config_path, False)
-    
-    result_config_path = fas_lib.get_config("result_config")
     
     with open(result_config_path, "r") as f: 
         result_config_dict = json.load(f)
