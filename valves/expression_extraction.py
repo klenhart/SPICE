@@ -230,7 +230,7 @@ def calculate_movement(fas_dist_matrix, expression_vector, gene_id, prot_ids):
     movement_list = []
     for prot_id in prot_ids:
         movement_list.append(movement_dict[prot_id])
-    return movement_list, rel_expressions
+    return movement_list, rel_expressions.tolist()
 
 
 def calculate_relative_expression(expression_vector):
