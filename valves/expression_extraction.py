@@ -177,8 +177,8 @@ def load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm, flag_all):
     elif flag_all:
         distance_master_name = "fas.json"
         distance_master_path = fas_lib.get_config("fas_all_path")
-    if distance_master_name in os.listdir(fas_lib.get_config("root_path")):
-        with open(fas_lib.get_config("root_path") + distance_master_name, "r") as f: 
+    if distance_master_name in os.listdir(fas_lib.get_config("root_path") + "/src/"):
+        with open(fas_lib.get_config("root_path") + "/src/" + distance_master_name, "r") as f: 
             dist_matrix_dict = json.load(f)
     else:
         with open(distance_master_path, "r") as f:
@@ -206,7 +206,7 @@ def load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm, flag_all):
                     dist_matrix_dict[gene_id][prot_id_2] = { prot_id_1 : fas_1}
                 else:
                     dist_matrix_dict[gene_id][prot_id_2][prot_id_1] = fas_1
-        with open(fas_lib.get_config("root_path") + distance_master_name, 'w') as f:
+        with open(fas_lib.get_config("root_path") + "/src/" + distance_master_name, 'w') as f:
             json.dump(dist_matrix_dict, f,  indent=4)
     return dist_matrix_dict
 
@@ -221,9 +221,11 @@ def calculate_movement(fas_dist_matrix, expression_vector, gene_id, prot_ids):
     
     # Calculate the Sigma values.
     for seed_id in prot_ids:
-        movement_dict[seed_id] = 0
-        for query_id in prot_ids:
-            movement_dict[seed_id] += (dist_matrix[seed_id][query_id] * relative_expression_dict[query_id])
+        if (seed_id in movement_dict.keys() and (seed_id in dist_matrix.keys()) and seed_id in relative_expression_dict.keys()):
+            movement_dict[seed_id] = 0
+            for query_id in prot_ids:
+                if (query_id in dist_matrix[seed_id].keys() and query_id in relative_expression_dict.keys()):
+                    movement_dict[seed_id] += (dist_matrix[seed_id][query_id] * relative_expression_dict[query_id])
     
     movement_list = []
     for prot_id in prot_ids:
