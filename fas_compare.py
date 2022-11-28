@@ -43,14 +43,15 @@ def extract_all_graph(fas_lib, movement_dict, exempt=["ENSG00000155657"]):
     gene_ids = fas_utility.load_gene_ids_txt(fas_lib.get_config("gene_ids_path"))
     gene_ids = [ gene_id for gene_id in gene_ids if gene_id not in exempt]
     for gene_id in gene_ids:
-        fas_ring_dict[gene_id] = [movement_dict["movement"][gene_id]["prot_ids"],
-                                  movement_dict["movement"][gene_id]["mean_mov"],
-                                  movement_dict["movement"][gene_id]["mean_rel_expr"],
-                                  movement_dict["movement"][gene_id]["min_mov"],
-                                  movement_dict["movement"][gene_id]["max_mov"],
-                                  movement_dict["movement"][gene_id]["plus_std_mov"],
-                                  movement_dict["movement"][gene_id]["minus_std_mov"],
-                                  movement_dict["movement"][gene_id]["intersample_rmsd_mean"]]
+        if (gene_id in movement_dict["movement"].keys()):
+            fas_ring_dict[gene_id] = [movement_dict["movement"][gene_id]["prot_ids"],
+                                      movement_dict["movement"][gene_id]["mean_mov"],
+                                      movement_dict["movement"][gene_id]["mean_rel_expr"],
+                                      movement_dict["movement"][gene_id]["min_mov"],
+                                      movement_dict["movement"][gene_id]["max_mov"],
+                                      movement_dict["movement"][gene_id]["plus_std_mov"],
+                                      movement_dict["movement"][gene_id]["minus_std_mov"],
+                                      movement_dict["movement"][gene_id]["intersample_rmsd_mean"]]
     return fas_ring_dict
 
 
