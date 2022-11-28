@@ -367,7 +367,7 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
                 for replicate in replicates:
                     # Add an empty list to the arry (matrix row.)
                     expr_matrix.append([])
-                    for prot_id in list(expression_dict["expression"][gene_id][replicate].keys()):
+                    for prot_id in [ prot_id for prot_id  in list(expression_dict["expression"][gene_id][replicate].keys()) if prot_id != "total" ]:
                         expr_matrix[-1].append(expression_dict["expression"][gene_id][replicate][prot_id])
                 np_expr_matrix = np.array(expr_matrix)
                 t_expr_matrix = np.transpose(np_expr_matrix)
