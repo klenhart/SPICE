@@ -78,7 +78,7 @@ def find_max_tsl(fas_lib, protein_id_list):
     if len(protein_id_list) == 0:
         return "7"
     tuple_list = tsv_to_tuple_list(fas_lib.get_config("protein_coding_ids_path"))
-    return str(max([int(entry[-2]) for entry in tuple_list if entry[1] in protein_id_list]))
+    return str(max([int(entry[-1]) for entry in tuple_list if entry[1] in protein_id_list]))
 
 def tuple_list_to_tsv(tuple_list):
     tsv = ""
