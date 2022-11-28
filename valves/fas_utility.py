@@ -63,11 +63,14 @@ def tsv_collection_maker(header_dict, fas_lib):
     """
     tsv_dict = dict()
     for gene_id in header_dict.keys():
-        tsv_dict[gene_id] = ""
         pairs = itertools.product(header_dict[gene_id], header_dict[gene_id])
         pairs = [pair for pair in pairs if pair[0] <= pair[1]]
-        for header_1, header_2 in pairs:
-            tsv_dict[gene_id] += header_1 + "\t" + header_2 + "\n"
+        if len(pairs) == 0:
+            pass
+        else:
+            tsv_dict[gene_id] = ""
+            for header_1, header_2 in pairs:
+                tsv_dict[gene_id] += header_1 + "\t" + header_2 + "\n"
     with open(fas_lib.get_config("pairings_tsv_json_path"), 'w') as fp:
         json.dump(tsv_dict, fp,  indent=4)
 

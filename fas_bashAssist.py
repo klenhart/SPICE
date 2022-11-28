@@ -31,6 +31,7 @@ Created on Thu Aug 18 11:31:05 2022
 import argparse
 import os
 import sys
+import json
 
 # self-made modules
 import valves.library_class as library_class
@@ -100,10 +101,11 @@ tmhmm_flag, partition_list=["all","special","inteli7"], mem_per_cpu="2"):
 
     """
     partitions = ",".join(partition_list)
+    with open(fas_lib.get_config("pairings_tsv_json_path"), "r") as c:
+        paired_genes = list(json.load(c).keys())
     with open(fas_lib.get_config("gene_ids_path"), "r") as f:
         gene_ids = f.read().split("\n")
-        if gene_ids[0] == "gene":
-            gene_ids = gene_ids[1:]
+        gene_ids = [ gene_id for gene_id in gene_ids if gene_id in paired_genes ]
         gene_count = len(gene_ids) - 1
     jobs_ranges = fas_utility.start_stop_range(gene_count, 1000)
     for i, entry in enumerate(jobs_ranges):
