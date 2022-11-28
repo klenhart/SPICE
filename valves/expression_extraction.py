@@ -307,7 +307,10 @@ def intersample_rmsd_test(expr_matrix, prot_ids, gene_id, fas_dist_matrix):
                 break
             else:
                 pairwise_rmsd_list.append(calc_rmsd([row1, row2]))
-    return sum(pairwise_rmsd_list) / len(pairwise_rmsd_list)
+    if (len(pairwise_rmsd_list) == 0):
+        return 0
+    else:
+        return sum(pairwise_rmsd_list) / len(pairwise_rmsd_list)
 
 
 def generate_movement_file(fas_lib, result_config_path, condition, flag_lcr, flag_tmhmm, flag_all):
