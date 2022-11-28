@@ -69,7 +69,7 @@ def parser_setup():
     args = parser.parse_args()
     config_path = args.config
     condition = args.condition
-    result_config_path = args.resultDir
+    result_config_path = args.resultsDir
     
     flag_lcr = args.lcr
     flag_tmhmm = args.tmhmm
