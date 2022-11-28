@@ -61,7 +61,7 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
     file_path = comparison_path + "_".join(["result", "@".join(conditions), fas_mode]) + ".tsv"
 
     fas_ring_dict1, fas_ring_dict2 = fas_ring_dict_list
-    output = "\n".join("!conditions " + conditions[0] + " " + conditions[1],
+    output = "\n".join(["!conditions " + conditions[0] + " " + conditions[1],
                        "!FASmode " + fas_mode,
                        "!ResultOrigin " + result_config_dict["result_dir"],
                        "\t".join("gene_id",
@@ -76,7 +76,7 @@ def generate_comparison(fas_ring_dict_list, conditions, fas_mode, result_config_
                                  "2rmsd_smaller_max",
                                  "2rmsd_smaller_mean_plus_std",
                                  "rmsd",
-                                 "max_tsl"))
+                                 "max_tsl")])
     
     for gene_id in fas_ring_dict1.keys():
         ring_list = [ fas_ring_dict1[gene_id], fas_ring_dict2[gene_id]]
