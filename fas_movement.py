@@ -52,9 +52,9 @@ def parser_setup():
     parser.add_argument("-r", "--resultsDir", type=str,
                         help="""Parent directory of the results directory.""")
                         
-    parser.add_argument("-n", "--conditions", nargs="+", action="append",
-                        help="""Names of the conditions already present in the results/expression directory
-                        of the results. Movement files will be calculated for these conditions.""")
+    parser.add_argument("-n", "--condition", type=str,
+                        help="""Name of a condition already present in the results/expression directory
+                        of the results. Movement file will be calculated for this condition.""")
     
     parser.add_argument("-t", "--tmhmm", action="store_true",
                         help="tmhmm FAS mode shall be used for the movement calculation.")
@@ -68,25 +68,25 @@ def parser_setup():
                         
     args = parser.parse_args()
     config_path = args.config
-    conditions = args.conditions[0]
+    condition = args.conditions
     result_config_path = args.resultDir
     
     flag_lcr = args.lcr
     flag_tmhmm = args.tmhmm
     flag_all = args.all
 
-    return config_path, result_config_path, conditions, flag_lcr, flag_tmhmm, flag_all
+    return config_path, result_config_path, condition, flag_lcr, flag_tmhmm, flag_all
 
 def main():
     """
     Returns
     -------
     """
-    config_path, result_config_path, conditions, flag_lcr, flag_tmhmm, flag_all = parser_setup()
+    config_path, result_config_path, condition, flag_lcr, flag_tmhmm, flag_all = parser_setup()
 
     fas_lib = library_class.Library(config_path, False)
     print("Movement calculation commencing...")
-    ee.generate_movement_file(fas_lib, result_config_path, conditions, flag_lcr, flag_tmhmm, flag_all)
+    ee.generate_movement_file(fas_lib, result_config_path, condition, flag_lcr, flag_tmhmm, flag_all)
     
 if __name__ == "__main__":
     main()

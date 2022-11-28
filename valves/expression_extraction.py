@@ -310,7 +310,7 @@ def intersample_rmsd_test(expr_matrix, prot_ids, gene_id, fas_dist_matrix):
     return sum(pairwise_rmsd_list) / len(pairwise_rmsd_list)
 
 
-def generate_movement_file(fas_lib, result_config_path, conditions, flag_lcr, flag_tmhmm, flag_all):
+def generate_movement_file(fas_lib, result_config_path, condition, flag_lcr, flag_tmhmm, flag_all):
     fas_dist_matrix = load_dist_matrix(fas_lib, flag_lcr, flag_tmhmm, flag_all)
     
     if flag_lcr:
@@ -324,19 +324,19 @@ def generate_movement_file(fas_lib, result_config_path, conditions, flag_lcr, fl
         result_config_dict = json.load(f)
         
     available_conditions = list(result_config_dict["conditions"].keys())
-    path_list = []
-    for condition in conditions:
-        if condition in available_conditions:
-            if fas_mode in result_config_dict["conditions"][condition]["FAS_modes"]:
-                print("""Movement using FAS_""" + fas_mode, """distances has already been calculated.
+    expression_path = ""
+    if condition in available_conditions:
+        if fas_mode in result_config_dict["conditions"][condition]["FAS_modes"]:
+            print("""Movement using FAS_""" + fas_mode, """distances has already been calculated.
 Check this file:""", result_config_dict["conditions"][condition]["movement_path"][fas_mode])
-            else:
-                path_list.append(result_config_dict["conditions"][condition]["expression_path"])
         else:
-            print("No condition of the name", condition, "processed yet. Will skip movement generation for this one.")
+            expression_path = result_config_dict["conditions"][condition]["expression_path"]
+    else:
+        print("No condition of the name", condition, "processed yet. Will skip movement generation for this one.")
     
-    
-    for expression_path in path_list:
+    if expression_path == "":
+        print("Aborting movement calculation for ", condition, "since no path found or movement already calculated.")
+    else:
         with open(expression_path, "r") as f: 
             expression_dict = json.load(f)
         condition = expression_dict["condition"]
