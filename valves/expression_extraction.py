@@ -367,7 +367,7 @@ Check this file:""", result_config_dict["conditions"][condition]["movement_path"
             t_expr_matrix = np.transpose(np_expr_matrix)
             
             # Calculate the intersample RMSD here:
-            intersample_rmsd_mean = intersample_rmsd_test(expr_matrix, prot_ids, gene_id, fas_dist_matrix)  
+            intersample_rmsd_mean = intersample_rmsd_test(np_expr_matrix, prot_ids, gene_id, fas_dist_matrix)  
             
             min_list = np.array([ min(entry) for entry in t_expr_matrix ])
             min_movement, min_relative_expression = calculate_movement(fas_dist_matrix, min_list, gene_id, prot_ids)
