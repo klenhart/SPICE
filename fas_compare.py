@@ -201,7 +201,7 @@ def main():
     
     with open(result_config_path, "r") as f: 
         result_config_dict = json.load(f)
-    available_conditions = list(result_config_dict.keys())
+    available_conditions = list(result_config_dict["conditions"].keys())
     movement_paths = []
     expression_paths = []
     
