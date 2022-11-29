@@ -264,7 +264,7 @@ def generate_expression_file(fas_lib, result_config_path, expression_paths, expr
             expression_dict["expression"][gene_id][replicate] = dict()
             expression_dict["expression"][gene_id][replicate]["total"] = 0
             for prot_id in isoforms_dict[gene_id]:
-                if (i > len(expression_dict_join[prot_id])):
+                if (i >= len(expression_dict_join[prot_id])):
                     expression_dict["expression"][gene_id][replicate][prot_id] = 0
                     continue
                 expression_dict["expression"][gene_id][replicate][prot_id] = expression_dict_join[prot_id][i]
