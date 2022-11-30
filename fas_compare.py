@@ -278,8 +278,8 @@ def main():
             expression_dict_list.append(json.load(f))
     
     for i, movement_dict in enumerate(movement_dict_list, start=-len(movement_dict_list)):
-        if condition[abs(i)] in movement_dict["compared_with"]:
-            raise Exception( condition[0] + " and " + condition[1] + " using FAS mode " + fas_mode + " were already compared.")
+        if conditions[abs(i)] in movement_dict["compared_with"]:
+            raise Exception( conditions[0] + " and " + conditions[1] + " using FAS mode " + fas_mode + " were already compared.")
             sys.exit()
             
     fas_ring_dict_list = [ extract_all_graph(fas_lib, movement_dict) for movement_dict in movement_dict_list ]
