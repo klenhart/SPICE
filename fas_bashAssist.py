@@ -64,7 +64,6 @@ gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{13}gene_ids{12}.txt")
 --out_name $gene \
 --tsv \
 --phyloprofile {9} \
---domain \
 --empty_as_1 \
 """
 
