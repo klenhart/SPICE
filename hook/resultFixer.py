@@ -95,4 +95,7 @@ def main():
         
         with open(dir_path + "/main_comparison/" + comparison + "/result_" + comparison + ".tsv", "w") as f:
             f.write(finished_new_result)
+            
+if __name__ == "__main__":
+    main()
     
