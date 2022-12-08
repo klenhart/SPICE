@@ -50,7 +50,7 @@ def main():
             not_expressed_flag = True
             replicate_list = list(expression_dict["expression"][gene].keys())
             for replicate in replicate_list:
-                if expression_dict["expression"][gene][replicate] != 0:
+                if expression_dict["expression"][gene][replicate]["total"] > 0:
                     not_expressed_flag = False
                     break
             if not_expressed_flag:
