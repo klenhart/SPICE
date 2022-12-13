@@ -35,17 +35,27 @@ from valves.library_class import Library
 def concat_FAS_output(fas_lib, flag_lcr, flag_tmhmm):
     if flag_lcr:
         distance_master_path = fas_lib.get_config("fas_lcr_path")
+        forward_domain_master_path = fas_lib.get_config("forward_domain_lcr_path")
+        reverse_domain_master_path = fas_lib.get_config("reverse_domain_lcr_path")
         fas_buffer_path = fas_lib.get_config("fas_buffer_lcr_path")
     elif flag_tmhmm:
         distance_master_path = fas_lib.get_config("fas_tmhmm_path")
+        forward_domain_master_path = fas_lib.get_config("forward_domain_tmhmm_path")
+        reverse_domain_master_path = fas_lib.get_config("reverse_domain_tmhmm_path")
         fas_buffer_path = fas_lib.get_config("fas_buffer_tmhmm_path")
     else:
         distance_master_path = fas_lib.get_config("fas_all_path")
+        forward_domain_master_path = fas_lib.get_config("forward_domain_all_path")
+        reverse_domain_master_path = fas_lib.get_config("reverse_domain_all_path")
         fas_buffer_path = fas_lib.get_config("fas_buffer_path")
     file_names = os.listdir(fas_buffer_path)
-    print(len(file_names))
-    print(fas_buffer_path)
-    for filename in file_names:
+    file_names_forward_domain = [ name for name in file_names if name.endswith("forward.domains") ]
+    file_names_reverse_domain = [ name for name in file_names if name.endswith("reverse.domains") ]
+    file_names_fas = [ name for name in file_names if name.endswith(".phyloprofile") ]
+    print("Forward Domain files: ", len(file_names_forward_domain))
+    print("Reverse Domain files: ", len(file_names_reverse_domain))
+    print("FAS files: ", len(file_names_fas))
+    for filename in file_names_fas:
         path = fas_buffer_path + filename
         with open(path, "r") as f_in:
             query = f_in.read().split("\n")
@@ -56,6 +66,26 @@ def concat_FAS_output(fas_lib, flag_lcr, flag_tmhmm):
             with open(distance_master_path, "a") as f_out:
                 f_out.write(query + "\n")
         os.remove(path)
+    for filename in file_names_forward_domain:
+        path = fas_buffer_path + filename
+        with open(path, "r") as f_in:
+            query = f_in.read().split("\n")
+            if len(query[-1]) == 0:
+                query = query[0:-1]
+            query = "\n".join(query)
+            with open(forward_domain_master_path, "a") as f_out:
+                f_out.write(query + "\n")
+        os.remove(path)
+    for filename in file_names_reverse_domain:
+        path = fas_buffer_path + filename
+        with open(path, "r") as f_in:
+            query = f_in.read().split("\n")
+            if len(query[-1]) == 0:
+                query = query[0:-1]
+            query = "\n".join(query)
+            with open(reverse_domain_master_path, "a") as f_out:
+                f_out.write(query + "\n")
+        os.remove(path)    
 
 def tsv_access(gene_id, fas_lib):
     """

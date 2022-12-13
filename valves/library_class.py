@@ -45,6 +45,12 @@ class Library:
         self.config["fas_all_path"] = None
         self.config["fas_lcr_path"] = None
         self.config["fas_tmhmm_path"] = None
+        self.config["forward_domain_all_path"] = None
+        self.config["forward_domain_lcr_path"] = None
+        self.config["forward_domain_tmhmm_path"] = None
+        self.config["reverse_domain_all_path"] = None
+        self.config["reverse_domain_lcr_path"] = None
+        self.config["reverse_domain_tmhmm_path"] = None
         self.config["lcr_path"] = None
         self.config["tmhmm_path"] = None
         self.config["library_path"] = None
