@@ -49,7 +49,7 @@ def concat_FAS_output(fas_lib, flag_lcr, flag_tmhmm):
         reverse_domain_master_path = fas_lib.get_config("reverse_domain_all_path")
         fas_buffer_path = fas_lib.get_config("fas_buffer_path")
 
-    tsv_path = fas_lib.get("tsv_buffer_path")
+    tsv_path = fas_lib.get_config("tsv_buffer_path")
     still_running_names = [ name[:-4] for name in os.listdir(tsv_path) ]
     file_names = [name for name in os.listdir(fas_buffer_path) if not (name in still_running_names)]
     file_names_forward_domain = [ name for name in file_names if name.endswith("forward.domains") ]
