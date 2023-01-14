@@ -5,12 +5,12 @@
 #
 # This file is part of main.
 #
-#  get_domain_importance is free software: you can redistribute it and/or modify
+#  Exon is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  get_domain_importance is distributed in the hope that it will be useful,
+#  Exon is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -21,37 +21,39 @@
 #######################################################################
 
 """
-Created on Wed Dec 21 10:03:16 2022
+Created on Wed Dec 21 10:33:00 2022
 
-@author: Christian Bluemel
+@author: chris
 """
 
-import Sequence
-
-import abc
-from typing import Type
 from typing import List
 
-class SequenceContainer(metaclass=abc.ABCMeta):
-    
-    @abc.abstractmethod
+
+class Exon:
+
     def __init__(self) -> None:
-        pass
-    
-    @abc.abstractmethod
-    def setExpression(self, expression : float) -> None:
-        pass
-    
-    @abc.abstractmethod
-    def addSequence(self, seq : Type[Sequence]) -> None:
-        pass
-    
-    @abc.abstractmethod
-    def getSequences(self) -> List[Type[Sequence]]:
-        pass
-    
-    @abc.abstractmethod
-    def getExpression(self) -> float:
-        pass
-        
-    
+        self.id: str = ""
+        self.begin: int = 0
+        self.end: int = 0
+
+    def set_id(self, id_exon: str) -> None:
+        """
+
+        :type id_exon: str
+        """
+        self.id = id_exon
+
+    def set_begin(self, begin: int) -> None:
+        self.begin = begin
+
+    def set_end(self, end: int) -> None:
+        self.end = end
+
+    def get_id(self) -> str:
+        return self.id
+
+    def get_begin(self) -> int:
+        return self.begin
+
+    def get_end(self) -> int:
+        return self.end

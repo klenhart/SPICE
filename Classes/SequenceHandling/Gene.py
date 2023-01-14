@@ -5,12 +5,12 @@
 #
 # This file is part of main.
 #
-#  get_domain_importance is free software: you can redistribute it and/or modify
+#  Gene is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  get_domain_importance is distributed in the hope that it will be useful,
+#  Gene is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -21,40 +21,40 @@
 #######################################################################
 
 """
-Created on Wed Dec 21 10:33:00 2022
+Created on Wed Dec 21 10:03:16 2022
 
-@author: chris
+@author: Christian Bluemel
 """
+
+from Classes.SequenceHandling import Protein
+
 
 from typing import Type
 from typing import List
 
 
-class Sequence():
+class Gene:
 
     def __init__(self) -> None:
+        self.expression_value: float
+        self.sequences: Type[Protein] = list()
+        self.expression_value: float = 0
+
+    def set_expression(self, expression: float) -> None:
         pass
 
-    def setID(self, seq : str) -> None:
+    def set_expression_value(self, expression: float) -> None:
+        """
+
+        :type expression: float
+        """
+        self.expression_value = expression
+
+    def add_sequence(self, seq: Type[Protein]) -> None:
         pass
 
-    def setSequence(self, seq : str) -> None:
+    def get_sequences(self) -> List[Type[Protein]]:
         pass
 
-    def setAnnotation(self, annotation : List[str]) -> None:
-        pass
-
-    def setExpression(self, expression : float) -> None:
-        pass
-
-    def getID(self) -> str:
-        pass
-
-    def getSequence(self) -> str:
-        pass
-
-    def getAnnotation(self) -> List[str]:
-        pass
-
-    def getExpression(self) -> float:
-        pass
+    def get_expression_value(self) -> float:
+        return self.expression_value
