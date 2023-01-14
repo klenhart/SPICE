@@ -35,27 +35,42 @@ from typing import List
 class Protein:
 
     def __init__(self) -> None:
-        self.id: str = ""
+        self.id_protein: str = ""
         self.id_gene: str = ""
+        self.id_transcript: str = ""
+        self.id_taxon: str = ""
         self.sequence: str = ""
         self.expression_value: float = 0
         self.annotation: List[str] = list()
         self.exons: List[Exon] = list()
 
-
-    def set_id(self, id: str) -> None:
+    def set_id(self, id_protein: str) -> None:
         """
 
-        :type id: str
+        :type id_protein: str
         """
-        self.id = id
+        self.id_protein = id_protein
 
-    def set_id_gene(self, id: str) -> None:
+    def set_id_taxon(self, id_taxon):
         """
 
-        :type id: str
+        :type id_taxon: str
         """
-        self.id_gene = id
+        self.id_taxon = id_taxon
+
+    def set_id_gene(self, id_protein: str) -> None:
+        """
+
+        :type id_protein: str
+        """
+        self.id_gene = id_protein
+
+    def set_id_transcript(self, id_transcript: str) -> None:
+        """
+
+        :type id_transcript: str
+        """
+        self.id_transcript = id_transcript
 
     def set_sequence(self, seq: str) -> None:
         """
@@ -81,11 +96,14 @@ class Protein:
     def add_exon(self, exon: Type[Exon]):
         self.exons.append(exon)
 
-    def get_id(self) -> str:
-        return self.id
+    def get_id_protein(self) -> str:
+        return self.id_protein
 
     def get_id_gene(self) -> str:
         return self.id_gene
+
+    def get_id_transcript(self) -> str:
+        return self.id_transcript
 
     def get_sequence(self) -> str:
         return self.sequence
