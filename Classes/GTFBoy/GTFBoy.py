@@ -5,12 +5,12 @@
 #
 # This file is part of main.
 #
-#  APIHandler is free software: you can redistribute it and/or modify
+#  GTFBoy is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  APIHandler is distributed in the hope that it will be useful,
+#  GTFBoy is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -21,12 +21,15 @@
 #######################################################################
 
 
-from typing import Type
-from typing import List
+class GTFBoy:
 
-
-class APIHandler:
-
-    def __init__(self) -> None:
+    def __init__(self):
         pass
 
+
+def main() -> None:
+    pass
+
+
+if __name__ == "__main__":
+    main()

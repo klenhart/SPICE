@@ -82,7 +82,7 @@ class Gene:
         return self.species
 
     @property
-    def to_fasta(self) -> str:
+    def fasta(self) -> str:
         proteins: List[Protein] = [transcript for transcript in self.transcripts if isinstance(transcript, Protein)]
         output: str = "\n".join([self.fasta_template.format(self.get_id_gene(),
                                                             protein.get_id_transcript(),
@@ -121,7 +121,7 @@ def main():
     gene.add_transcript(protein3)
     gene.add_transcript(transcript1)
 
-    print(gene.to_fasta)
+    print(gene.fasta)
 
 
 if __name__ == "__main__":
