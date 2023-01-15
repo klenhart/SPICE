@@ -30,11 +30,13 @@ class ReduxArgParse:
 
     def __init__(self,
                  parse_tags: List[str],
-                 parse_type: List[type],
+                 parse_types: List[type],
+                 parse_actions: List[str],
                  parse_nargs: List[str],
                  parse_help: List[str]) -> None:
         self.parse_tags: List[str] = parse_tags
-        self.parse_type: List[type] = parse_type
+        self.parse_types: List[type] = parse_types
+        self.parse_actions: List[str] = parse_actions  # store, append, store_true, store_false, count, help, version
         self.parse_nargs: List[str] = parse_nargs  # ? zero or 1, * zero or more, + one or more
         self.parse_help: List[str] = parse_help
         self.parser: argparse.ArgumentParser = argparse.ArgumentParser()
@@ -42,11 +44,18 @@ class ReduxArgParse:
     def generate_parser(self) -> None:
         for i in range(len(self.parse_tags)):
             shortcut_tag: str = "-" + self.parse_tags[i][2]
-            self.parser.add_argument(shortcut_tag,
-                                     self.parse_tags[i],
-                                     type=self.parse_type[i],
-                                     nargs=self.parse_nargs[i],
-                                     help=self.parse_help[i])
+            if self.parse_actions[i] in ["store_true", "store_false"]:
+                self.parser.add_argument(shortcut_tag,
+                                         self.parse_tags[i],
+                                         action=self.parse_actions[i],
+                                         help=self.parse_help[i])
+            else:
+                self.parser.add_argument(shortcut_tag,
+                                         self.parse_tags[i],
+                                         type=self.parse_types[i],
+                                         action=self.parse_actions[i],
+                                         nargs=self.parse_nargs[i],
+                                         help=self.parse_help[i])
 
     def execute(self) -> None:
         args: Any = self.parser.parse_args()
@@ -57,7 +66,11 @@ class ReduxArgParse:
 
 
 def main() -> None:
-    argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--output"], [str, str], ["?", "+"],  ["The input we want", "The output we want"])
+    argument_parser: ReduxArgParse = ReduxArgParse(["--flag", "--list", "--integer", "--multilist"],
+                                                   [None, str, int, str],
+                                                   ["store_true", "store", "store", "append"],
+                                                   [None, "*", "?", "*"],
+                                                   ["help1", "help2", "help3", "help4"])
     argument_parser.generate_parser()
     argument_parser.execute()
     print(argument_parser.get_args())
