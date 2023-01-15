@@ -20,29 +20,23 @@
 #
 #######################################################################
 
-"""
-Created on Wed Dec 21 10:03:16 2022
 
-@author: Christian Bluemel
-"""
+from typing import Type, List
 
-from Classes.SequenceHandling import Protein
-
-
-from typing import Type
-from typing import List
+from Classes.SequenceHandling.Transcript import Transcript
+from Classes.SequenceHandling.Protein import Protein
 
 
 class Gene:
 
-    fasta_template = ">{0}|{1}|{2}\n{3}\n"
+    fasta_template = ">{0}|{1}|{2}\n{3}"
 
     def __init__(self) -> None:
         self.id_gene: str = ""
         self.id_taxon: str = ""
         self.species: str = ""
         self.expression_value: float = 0
-        self.sequences: Type[Protein] = list()
+        self.transcripts: List[Transcript] = list()
 
     def set_id_gene(self, id_gene: str) -> None:
         self.id_gene = id_gene
@@ -57,13 +51,6 @@ class Gene:
     def set_species(self, species: str):
         self.species = species
 
-    def set_expression(self, expression: float) -> None:
-        """
-
-        :type expression: float
-        """
-        self.expression_value = expression
-
     def set_expression_value(self, expression: float) -> None:
         """
 
@@ -71,15 +58,16 @@ class Gene:
         """
         self.expression_value = expression
 
-    def add_sequence(self, seq: Type[Protein]) -> None:
+    # noinspection PyTypeChecker
+    def add_transcript(self, transcript: Type[Transcript]) -> None:
         """
 
-        :type seq: Protein
+        :type transcript: Transcript
         """
-        self.sequences.append(seq)
+        self.transcripts.append(transcript)
 
-    def get_sequences(self) -> List[Type[Protein]]:
-        return self.sequences
+    def get_transcripts(self) -> List[Transcript]:
+        return self.transcripts
 
     def get_expression_value(self) -> float:
         return self.expression_value
@@ -95,10 +83,46 @@ class Gene:
 
     @property
     def to_fasta(self) -> str:
-        output: str = ""
-        for protein in self.sequences:
-            output += self.fasta_template.format(self.get_id_gene(),
-                                                 protein.get_id_transcript(),
-                                                 protein.get_id_protein(),
-                                                 protein.get_sequence())
+        proteins: List[Protein] = [transcript for transcript in self.transcripts if isinstance(transcript, Protein)]
+        output: str = "\n".join([self.fasta_template.format(self.get_id_gene(),
+                                                            protein.get_id_transcript(),
+                                                            protein.get_id_protein(),
+                                                            protein.get_sequence()) for protein in proteins])
         return output
+
+
+def main():
+    gene = Gene()
+    gene.set_id_gene("standin_gene_id")
+    gene.set_species("human")
+    gene.set_expression_value(12.9)
+    gene.set_id_taxon("9606")
+
+    protein1: Protein = Protein()
+    protein1.set_id_protein("p1")
+    protein1.set_id_transcript("tp1")
+    protein1.set_sequence("AAA")
+
+    protein2: Protein = Protein()
+    protein2.set_id_protein("p2")
+    protein2.set_id_transcript("tp2")
+    protein2.set_sequence("CCC")
+
+    protein3: Protein = Protein()
+    protein3.set_id_protein("p3")
+    protein3.set_id_transcript("tp3")
+    protein3.set_sequence("LLL")
+
+    transcript1: Transcript = Transcript()
+    transcript1.set_id_transcript("t1")
+
+    gene.add_transcript(protein1)
+    gene.add_transcript(protein2)
+    gene.add_transcript(protein3)
+    gene.add_transcript(transcript1)
+
+    print(gene.to_fasta)
+
+
+if __name__ == "__main__":
+    main()
