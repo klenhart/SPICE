@@ -23,7 +23,6 @@
 
 from Classes.SequenceHandling import Exon
 
-from typing import Type
 from typing import List
 
 from Classes.SequenceHandling.Transcript import Transcript
@@ -39,12 +38,15 @@ class Protein(Transcript):
         self.annotation: List[str] = list()
         self.exons: List[Exon] = list()
 
-    def set_id_protein(self, id_protein: str) -> None:
+    def set_id(self, id_protein: str) -> None:
         """
 
         :type id_protein: str
         """
         self.id_protein = id_protein
+
+    def set_id_transcript(self, id_transcript: str):
+        self.id_transcript = id_transcript
 
     def set_sequence(self, seq: str) -> None:
         """
@@ -70,8 +72,11 @@ class Protein(Transcript):
     def add_exon(self, exon: Exon):
         self.exons.append(exon)
 
-    def get_id_protein(self) -> str:
+    def get_id(self) -> str:
         return self.id_protein
+
+    def get_id_transcript(self) -> str:
+        return self.id_transcript
 
     def get_sequence(self) -> str:
         return self.sequence
@@ -81,3 +86,8 @@ class Protein(Transcript):
 
     def get_expression_value(self) -> float:
         return self.expression_value
+
+    def __eq__(self, other):
+        if isinstance(other, Protein):
+            return self.get_id() == other.get_id()
+        return False

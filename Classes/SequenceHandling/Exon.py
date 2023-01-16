@@ -21,13 +21,10 @@
 #######################################################################
 
 
-from typing import List
-
-
 class Exon:
 
     def __init__(self) -> None:
-        self.id: str = ""
+        self.id_exon: str = ""
         self.begin: int = 0
         self.end: int = 0
 
@@ -36,7 +33,7 @@ class Exon:
 
         :type id_exon: str
         """
-        self.id = id_exon
+        self.id_exon = id_exon
 
     def set_begin(self, begin: int) -> None:
         self.begin = begin
@@ -45,10 +42,15 @@ class Exon:
         self.end = end
 
     def get_id(self) -> str:
-        return self.id
+        return self.id_exon
 
     def get_begin(self) -> int:
         return self.begin
 
     def get_end(self) -> int:
         return self.end
+
+    def __eq__(self, other):
+        if isinstance(other, Exon):
+            return self.get_id() == other.get_id()
+        return False

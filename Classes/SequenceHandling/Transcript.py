@@ -21,12 +21,6 @@
 #######################################################################
 
 
-from Classes.SequenceHandling import Exon
-
-from typing import Type
-from typing import List
-
-
 class Transcript:
 
     def __init__(self) -> None:
@@ -36,7 +30,7 @@ class Transcript:
         self.biotype: str = ""
         self.transcript_support_level: int = -1
 
-    def set_id_transcript(self, id_transcript: str) -> None:
+    def set_id(self, id_transcript: str) -> None:
         """
 
         :type id_transcript: str
@@ -63,7 +57,7 @@ class Transcript:
     def set_transcript_support_level(self, tsl: int):
         self.transcript_support_level = tsl
 
-    def get_id_transcript(self) -> str:
+    def get_id(self) -> str:
         return self.id_transcript
 
     def get_id_taxon(self) -> str:
@@ -77,3 +71,8 @@ class Transcript:
 
     def get_transcript_support_level(self) -> int:
         return self.transcript_support_level
+
+    def __eq__(self, other):
+        if isinstance(other, Transcript):
+            return self.get_id() == other.get_id()
+        return False
