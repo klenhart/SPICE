@@ -1,4 +1,5 @@
 #!/bin/env python
+from typing import Dict, Any
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -20,8 +21,10 @@
 #
 #######################################################################
 
+from Classes.SearchTree.AbstractSearchTreeEntry import AbstractSearchTreeEntry
 
-class Transcript:
+
+class Transcript(AbstractSearchTreeEntry):
 
     def __init__(self) -> None:
         self.id_transcript: str = ""
@@ -71,6 +74,23 @@ class Transcript:
 
     def get_transcript_support_level(self) -> int:
         return self.transcript_support_level
+
+    def from_dict(self, input_dict: Dict[str, Any]) -> None:
+        self.set_id(input_dict["_id"])
+        self.set_id_taxon(input_dict["taxon_id"])
+        self.set_id_gene(input_dict["gene_id"])
+        self.set_biotype(input_dict["biotype"])
+        self.set_transcript_support_level(input_dict["tsl"])
+
+    def to_dict(self) -> Dict[str, Any]:
+        output: Dict[str, Any] = dict()
+        output["_id"] = self.get_id()
+        output["type"] = "transcript"
+        output["gene_id"] = self.get_id_gene()
+        output["taxon_id"] = self.get_id_taxon()
+        output["biotype"] = self.get_biotype()
+        output["tsl"] = self.get_transcript_support_level()
+        return output
 
     def __eq__(self, other):
         if isinstance(other, Transcript):

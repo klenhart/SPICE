@@ -1,4 +1,5 @@
 #!/bin/env python
+from typing import Dict, Any
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -20,8 +21,10 @@
 #
 #######################################################################
 
+from Classes.SearchTree.AbstractSearchTreeEntry import AbstractSearchTreeEntry
 
-class Exon:
+
+class Exon(AbstractSearchTreeEntry):
 
     def __init__(self) -> None:
         self.id_exon: str = ""
@@ -49,6 +52,19 @@ class Exon:
 
     def get_end(self) -> int:
         return self.end
+
+    def from_dict(self, input_dict: Dict[str, Any]):
+        self.set_id(input_dict["_id"])
+        self.set_begin(input_dict["begin"])
+        self.set_end(input_dict["end"])
+
+    def to_dict(self) -> Dict[str, Any]:
+        output: Dict[str, Any] = dict()
+        output["_id"] = self.get_id()
+        output["type"] = "exon"
+        output["begin"] = self.get_begin()
+        output["end"] = self.get_end()
+        return output
 
     def __eq__(self, other):
         if isinstance(other, Exon):

@@ -21,11 +21,10 @@
 #######################################################################
 
 
-from Classes.SequenceHandling import Exon
-
-from typing import List
-
+from Classes.SequenceHandling.Exon import Exon
 from Classes.SequenceHandling.Transcript import Transcript
+
+from typing import List, Dict, Any
 
 
 class Protein(Transcript):
@@ -86,6 +85,42 @@ class Protein(Transcript):
 
     def get_expression_value(self) -> float:
         return self.expression_value
+
+    def get_exons(self) -> List[Exon]:
+        return self.exons
+
+    def from_dict(self, input_dict: Dict[str, Any]) -> None:
+        self.set_id(input_dict["_id"])
+        self.set_sequence(input_dict["sequence"])
+        self.set_id_transcript(input_dict["transcript_id"])
+        self.set_id_taxon(input_dict["taxon_id"])
+        self.set_id_gene(input_dict["gene_id"])
+        self.set_expression_value(input_dict["expression_value"])
+        self.set_annotation(input_dict["annotation"])
+        self.set_biotype(input_dict["biotype"])
+        self.set_transcript_support_level(input_dict["tsl"])
+        for exon_dict in input_dict["exons"]:
+            exon: Exon = Exon()
+            exon.from_dict(exon_dict)
+            self.add_exon(exon)
+
+    def to_dict(self) -> Dict[str, Any]:
+        output: Dict[str, Any] = dict()
+        output["_id"] = self.get_id()
+        output["type"] = "protein"
+        output["gene_id"] = self.get_id_gene()
+        output["transcript_id"] = self.get_id_transcript()
+        output["taxon_id"] = self.get_id_taxon()
+        output["sequence"] = self.get_sequence()
+        output["annotation"] = self.get_annotation()
+        output["expression_value"] = self.get_expression_value()
+        output["biotype"] = self.get_biotype()
+        output["tsl"] = self.get_transcript_support_level()
+        exon_list: List[Dict[str, Any]] = []
+        for exon in self.get_exons():
+            exon_list.append(exon.to_dict())
+        output["exons"] = exon_list
+        return output
 
     def __eq__(self, other):
         if isinstance(other, Protein):

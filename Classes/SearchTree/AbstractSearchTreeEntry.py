@@ -19,10 +19,19 @@
 
 from abc import ABC
 from abc import abstractmethod
+from typing import Dict, Any
 
 
 class AbstractSearchTreeEntry(ABC):
 
     @abstractmethod
-    def get_id(self):
+    def get_id(self) -> str:
+        pass
+
+    @abstractmethod
+    def to_dict(self) -> Dict[str, Any]:
+        pass
+
+    @abstractmethod
+    def from_dict(self, input_dict: Dict[str, Any]) -> None:
         pass

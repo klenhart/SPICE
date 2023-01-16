@@ -21,25 +21,30 @@
 #######################################################################
 
 
-from typing import Type, List
+from typing import List, Dict, Any
 
+from Classes.SearchTree.AbstractSearchTreeEntry import AbstractSearchTreeEntry
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.SequenceHandling.Protein import Protein
 
 
-class Gene:
+class Gene(AbstractSearchTreeEntry):
 
     fasta_template = ">{0}|{1}|{2}\n{3}"
 
     def __init__(self) -> None:
         self.id_gene: str = ""
         self.id_taxon: str = ""
+        self.biotype: str = ""
         self.species: str = ""
         self.expression_value: float = 0
         self.transcripts: List[Transcript] = list()
 
     def set_id(self, id_gene: str) -> None:
         self.id_gene = id_gene
+
+    def set_biotype(self, biotype: str) -> None:
+        self.biotype = biotype
 
     def set_id_taxon(self, id_taxon: str) -> None:
         """
@@ -58,8 +63,7 @@ class Gene:
         """
         self.expression_value = expression
 
-    # noinspection PyTypeChecker
-    def add_transcript(self, transcript: Type[Transcript]) -> None:
+    def add_transcript(self, transcript: Transcript) -> None:
         """
 
         :type transcript: Transcript
@@ -75,11 +79,46 @@ class Gene:
     def get_id(self) -> str:
         return self.id_gene
 
+    def get_biotype(self) -> str:
+        return self.biotype
+
     def get_id_taxon(self) -> str:
         return self.id_taxon
 
     def get_species(self) -> str:
         return self.species
+
+    def from_dict(self, input_dict: Dict[str, Any]) -> None:
+        self.set_id(input_dict["_id"])
+        self.set_id_taxon(input_dict["taxon_id"])
+        self.set_species(input_dict["species"])
+        self.set_expression_value(input_dict["expression_value"])
+        self.set_biotype(input_dict["biotype"])
+        self.set_expression_value(input_dict["expression_value"])
+        for transcript_dict in input_dict["transcripts"]:
+            if transcript_dict["type"] == "transcript":
+                transcript: Transcript = Transcript()
+                transcript.from_dict(transcript_dict)
+                self.add_transcript(transcript)
+            else:
+                protein: Protein = Protein()
+                protein.from_dict(transcript_dict)
+                self.add_transcript(protein)
+
+    def to_dict(self) -> Dict[str, Any]:
+        output: Dict[str, Any]
+        output: Dict[str, Any] = dict()
+        output["_id"] = self.get_id()
+        output["type"] = "gene"
+        output["taxon_id"] = self.get_id_taxon()
+        output["expression_value"] = self.get_expression_value()
+        output["biotype"] = self.get_biotype()
+        output["species"] = self.get_species()
+        transcript_list: List[Dict[str, Any]] = []
+        for transcript in self.get_transcripts():
+            transcript_list.append(transcript.to_dict())
+        output["transcripts"] = transcript_list
+        return output
 
     def __eq__(self, other):
         if isinstance(other, Gene):
