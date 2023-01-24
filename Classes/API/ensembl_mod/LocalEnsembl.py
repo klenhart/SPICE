@@ -29,7 +29,7 @@ from typing import Type
 from typing import List
 from urllib import request
 
-from Classes.API.ensemblMod.ensemblUtils import ping_ensembl, get_current_release, get_id_taxon, get_species_info
+from Classes.API.ensembl_mod.EnsemblUtils import ping_ensembl, get_current_release, get_id_taxon, get_species_info
 
 
 class LocalEnsembl:

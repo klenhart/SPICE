@@ -35,3 +35,7 @@ class AbstractSearchTreeEntry(ABC):
     @abstractmethod
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
         pass
+
+    @abstractmethod
+    def add_entry(self, entry_type: str, entry: Any) -> None:
+        pass

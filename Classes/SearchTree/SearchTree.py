@@ -17,7 +17,7 @@
 #
 #######################################################################
 
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
 
 from Classes.SearchTree.AbstractSearchTreeEntry import AbstractSearchTreeEntry
 
@@ -28,7 +28,7 @@ class SearchTree(AbstractSearchTreeEntry):
         self.leaf_flag: bool = leaf_flag
         self.key: str = key
         if self.leaf_flag:
-            self.entry: AbstractSearchTreeEntry = AbstractSearchTreeEntry()
+            self.entry: AbstractSearchTreeEntry
         else:
             self.children: Dict[str, SearchTree] = dict()
 
@@ -42,7 +42,7 @@ class SearchTree(AbstractSearchTreeEntry):
                 self.children[key] = SearchTree(key, True)
                 self.children[key].insert_entry(entry_pair[1])
         else:
-            entry_pair: Tuple[str, AbstractSearchTreeEntry] = (entry_pair[0][1:], entry_pair[1])
+            entry_pair: Tuple[str, Abstract_Search_Tree_Entry] = (entry_pair[0][1:], entry_pair[1])
             if entry_pair[0] not in self.children.keys():
                 self.children[key] = SearchTree(key)
                 self.children[key].pass_down_entry(entry_pair)
@@ -62,8 +62,31 @@ class SearchTree(AbstractSearchTreeEntry):
             for key in self.children.keys():
                 output += self.children[key].get_entry()
 
-    def find(self, find_id: str) -> AbstractSearchTreeEntry:  # TODO Finish this method next
+    def find(self, find_id: str, depth: int = 0) -> AbstractSearchTreeEntry:
         if self.leaf_flag:
             return self.entry
+        else:
+            try:
+                key: str = find_id[0]
+                find_id = find_id[1:]
+                return self.children[key].find(find_id, depth+1)
+            except KeyError:
+                if depth == 0:
+                    print(find_id, "is not a key in this SearchTree.")
 
-    # TODO Write method to flatten tree.
+    def flatten(self) -> List[AbstractSearchTreeEntry]:
+        if self.leaf_flag:
+            return [self.entry]
+        else:
+            flattened_tree: List[AbstractSearchTreeEntry] = []
+            for key in self.children.keys():
+                flattened_tree += self.children[key].flatten()
+
+    def to_dict(self) -> Dict[str, Any]:  # TODO Implement to_dict of SearchTree
+        pass
+
+    def from_dict(self, input_dict: Dict[str, Any]) -> None:  # TODO Implement from_dict of SearchTree
+        pass
+
+    def add_entry(self, entry_type: str, entry: Any) -> None:  # TODO Implement add_entry of SearchTree
+        pass

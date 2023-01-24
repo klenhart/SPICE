@@ -1,5 +1,4 @@
 #!/bin/env python
-from typing import Dict, Any
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -22,12 +21,21 @@ from typing import Dict, Any
 #######################################################################
 
 from Classes.SearchTree.AbstractSearchTreeEntry import AbstractSearchTreeEntry
+from Classes.GTFBoy.GTFBoy import GTFBoy
+
+from typing import Dict, Any, List
 
 
 class Transcript(AbstractSearchTreeEntry):
 
+    GTF_MASK: List[str] = ["seqname", "source", "feature",
+                           "start", "end", "score",
+                           "strand", "frame", "attribute"]
+
     def __init__(self) -> None:
         self.id_transcript: str = ""
+        self.name_transcript: str = ""
+        self.feature = "transcript"
         self.id_gene: str = ""
         self.id_taxon: str = ""
         self.biotype: str = ""
@@ -40,7 +48,10 @@ class Transcript(AbstractSearchTreeEntry):
         """
         self.id_transcript = id_transcript
 
-    def set_id_taxon(self, id_taxon):
+    def set_name(self, name_transcript: str) -> None:
+        self.name_transcript = name_transcript
+
+    def set_id_taxon(self, id_taxon) -> None:
         """
 
         :type id_taxon: str
@@ -54,6 +65,9 @@ class Transcript(AbstractSearchTreeEntry):
         """
         self.id_gene = id_protein
 
+    def set_feature(self, feature: str) -> None:
+        self.feature = feature
+
     def set_biotype(self, biotype: str) -> None:
         self.biotype = biotype
 
@@ -62,6 +76,12 @@ class Transcript(AbstractSearchTreeEntry):
 
     def get_id(self) -> str:
         return self.id_transcript
+
+    def get_name(self) -> str:
+        return self.name_transcript
+
+    def get_feature(self) -> str:
+        return self.feature
 
     def get_id_taxon(self) -> str:
         return self.id_taxon
@@ -77,7 +97,9 @@ class Transcript(AbstractSearchTreeEntry):
 
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
         self.set_id(input_dict["_id"])
+        self.set_name(input_dict["transcript_name"])
         self.set_id_taxon(input_dict["taxon_id"])
+        self.set_feature(input_dict["feature"])
         self.set_id_gene(input_dict["gene_id"])
         self.set_biotype(input_dict["biotype"])
         self.set_transcript_support_level(input_dict["tsl"])
@@ -85,12 +107,34 @@ class Transcript(AbstractSearchTreeEntry):
     def to_dict(self) -> Dict[str, Any]:
         output: Dict[str, Any] = dict()
         output["_id"] = self.get_id()
-        output["type"] = "transcript"
+        output["transcript_name"] = self.get_name()
+        output["feature"] = self.get_feature()
         output["gene_id"] = self.get_id_gene()
         output["taxon_id"] = self.get_id_taxon()
         output["biotype"] = self.get_biotype()
         output["tsl"] = self.get_transcript_support_level()
         return output
+
+    def from_gtf_line(self, gtf_split_line: List[str]) -> None:
+        for i in range(len(self.GTF_MASK)):
+            field_name: str = self.GTF_MASK[i]
+            entry: str = gtf_split_line[i]
+
+            if field_name == "feature":
+                self.set_feature(entry)
+            elif field_name == "attribute":
+                attribute_dict: Dict[str, str] = GTFBoy.build_attribute_dict(entry)
+                self.set_id(attribute_dict["transcript_id"])
+                try:
+                    self.set_name(attribute_dict["transcript_name"])
+                except KeyError:
+                    self.set_name(".")
+                self.set_biotype(attribute_dict["transcript_biotype"])
+                self.set_id_gene(attribute_dict["gene_id"])
+                self.set_transcript_support_level(int(attribute_dict["transcript_support_level"]))
+
+    def add_entry(self, entry_type: str, entry: Any) -> None:
+        pass  # Transcripts have no entries yet.
 
     def __eq__(self, other):
         if isinstance(other, Transcript):

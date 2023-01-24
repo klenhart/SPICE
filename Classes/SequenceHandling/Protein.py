@@ -23,6 +23,9 @@
 
 from Classes.SequenceHandling.Exon import Exon
 from Classes.SequenceHandling.Transcript import Transcript
+from Classes.SearchTree.SearchTree import SearchTree
+from Classes.SearchTree.SearchTree import AbstractSearchTreeEntry
+from Classes.GTFBoy.GTFBoy import GTFBoy
 
 from typing import List, Dict, Any
 
@@ -33,9 +36,10 @@ class Protein(Transcript):
         super().__init__()
         self.id_protein: str = ""
         self.sequence: str = ""
+        self.feature: str = "protein"
         self.expression_value: float = 0
         self.annotation: List[str] = list()
-        self.exons: List[Exon] = list()
+        # self.exons: SearchTree = SearchTree(self.get_id()) # TODO Exons will be integrated in the future.
 
     def set_id(self, id_protein: str) -> None:
         """
@@ -68,8 +72,8 @@ class Protein(Transcript):
         """
         self.expression_value = expression
 
-    def add_exon(self, exon: Exon):
-        self.exons.append(exon)
+    # def add_exon(self, exon: Exon): # TODO Exons will be integrated in the future
+    #     self.exons.insert_entry(exon)
 
     def get_id(self) -> str:
         return self.id_protein
@@ -86,12 +90,13 @@ class Protein(Transcript):
     def get_expression_value(self) -> float:
         return self.expression_value
 
-    def get_exons(self) -> List[Exon]:
-        return self.exons
+    # def get_exons(self) -> List[AbstractSearchTreeEntry]: # TODO Exons will be integrated in the future
+    #     return self.exons.flatten()
 
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
         self.set_id(input_dict["_id"])
         self.set_sequence(input_dict["sequence"])
+        self.set_feature(input_dict["feature"])
         self.set_id_transcript(input_dict["transcript_id"])
         self.set_id_taxon(input_dict["taxon_id"])
         self.set_id_gene(input_dict["gene_id"])
@@ -99,10 +104,10 @@ class Protein(Transcript):
         self.set_annotation(input_dict["annotation"])
         self.set_biotype(input_dict["biotype"])
         self.set_transcript_support_level(input_dict["tsl"])
-        for exon_dict in input_dict["exons"]:
-            exon: Exon = Exon()
-            exon.from_dict(exon_dict)
-            self.add_exon(exon)
+        # for exon_dict in input_dict["exons"]: # TODO Exons will be integrated in the future
+        #     exon: Exon = Exon()
+        #     exon.from_dict(exon_dict)
+        #     self.add_exon(exon)
 
     def to_dict(self) -> Dict[str, Any]:
         output: Dict[str, Any] = dict()
@@ -116,11 +121,33 @@ class Protein(Transcript):
         output["expression_value"] = self.get_expression_value()
         output["biotype"] = self.get_biotype()
         output["tsl"] = self.get_transcript_support_level()
-        exon_list: List[Dict[str, Any]] = []
-        for exon in self.get_exons():
-            exon_list.append(exon.to_dict())
-        output["exons"] = exon_list
+        # exon_list: List[Dict[str, Any]] = [] # TODO Exons will be integrated in the future.
+        # for exon in self.get_exons():
+        #     exon_list.append(exon.to_dict())
+        # output["exons"] = exon_list
         return output
+
+    def from_gtf_line(self, gtf_split_line: List[str]) -> None:
+        for i in range(len(self.GTF_MASK)):
+            field_name: str = self.GTF_MASK[i]
+            entry: str = gtf_split_line[i]
+            if field_name == "feature":
+                self.set_feature("protein")
+            elif field_name == "attribute":
+                attribute_dict: Dict[str, str] = GTFBoy.build_attribute_dict(entry)
+                self.set_id(attribute_dict["protein_id"])
+                try:
+                    self.set_name(attribute_dict["transcript_name"])
+                except KeyError:
+                    self.set_name(".")
+                self.set_biotype(attribute_dict["transcript_biotype"])
+                self.set_id_gene(attribute_dict["gene_id"])
+                self.set_id_transcript(attribute_dict["transcript_id"])
+                self.set_transcript_support_level(int(attribute_dict["transcript_support_level"]))
+
+    # def add_entry(self, entry_type: str, entry: Any) -> None: # TODO Exons will be integrated in the future
+    #     if entry_type == "exon":
+    #         self.add_exon(entry)
 
     def __eq__(self, other):
         if isinstance(other, Protein):

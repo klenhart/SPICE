@@ -24,7 +24,7 @@
 from typing import Type
 from typing import List
 
-from Classes.API.ensemblMod.LocalEnsembl import LocalEnsembl
+from Classes.API.ensembl_mod.LocalEnsembl import LocalEnsembl
 
 
 class RemoteEnsembl(LocalEnsembl):

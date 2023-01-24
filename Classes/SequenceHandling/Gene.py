@@ -24,24 +24,39 @@
 from typing import List, Dict, Any
 
 from Classes.SearchTree.AbstractSearchTreeEntry import AbstractSearchTreeEntry
+from Classes.SearchTree.SearchTree import SearchTree
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.SequenceHandling.Protein import Protein
+from Classes.GTFBoy.GTFBoy import GTFBoy
 
 
 class Gene(AbstractSearchTreeEntry):
+
+    GTF_MASK: List[str] = ["seqname", "source", "feature",
+                           "start", "end", "score",
+                           "strand", "frame", "attribute"]
 
     fasta_template = ">{0}|{1}|{2}\n{3}"
 
     def __init__(self) -> None:
         self.id_gene: str = ""
+        self.name_gene: str = ""
         self.id_taxon: str = ""
+        self.feature: str = "gene"
+        self.chromosome: str = ""
         self.biotype: str = ""
         self.species: str = ""
         self.expression_value: float = 0
-        self.transcripts: List[Transcript] = list()
+        self.transcripts: SearchTree = SearchTree(self.id_gene)
 
     def set_id(self, id_gene: str) -> None:
         self.id_gene = id_gene
+
+    def set_name(self, name_gene: str) -> None:
+        self.name_gene = name_gene
+
+    def set_feature(self, feature: str) -> None:
+        self.feature = feature
 
     def set_biotype(self, biotype: str) -> None:
         self.biotype = biotype
@@ -63,21 +78,30 @@ class Gene(AbstractSearchTreeEntry):
         """
         self.expression_value = expression
 
+    def set_chromosome(self, chromosome: str) -> None:
+        self.chromosome = chromosome
+
     def add_transcript(self, transcript: Transcript) -> None:
         """
 
         :type transcript: Transcript
         """
-        self.transcripts.append(transcript)
+        self.transcripts.insert_entry(transcript)
 
-    def get_transcripts(self) -> List[Transcript]:
-        return self.transcripts
+    def get_transcripts(self) -> List[AbstractSearchTreeEntry]:
+        return self.transcripts.flatten()
 
     def get_expression_value(self) -> float:
         return self.expression_value
 
     def get_id(self) -> str:
         return self.id_gene
+
+    def get_name(self) -> str:
+        return self.name_gene
+
+    def get_feature(self) -> str:
+        return self.feature
 
     def get_biotype(self) -> str:
         return self.biotype
@@ -88,15 +112,21 @@ class Gene(AbstractSearchTreeEntry):
     def get_species(self) -> str:
         return self.species
 
+    def get_chromosome(self) -> str:
+        return self.chromosome
+
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
         self.set_id(input_dict["_id"])
+        self.set_name(input_dict["name"])
+        self.set_feature(input_dict["feature"])
         self.set_id_taxon(input_dict["taxon_id"])
+        self.set_chromosome(input_dict["chromosome"])
         self.set_species(input_dict["species"])
         self.set_expression_value(input_dict["expression_value"])
         self.set_biotype(input_dict["biotype"])
         self.set_expression_value(input_dict["expression_value"])
         for transcript_dict in input_dict["transcripts"]:
-            if transcript_dict["type"] == "transcript":
+            if transcript_dict["feature"] == "transcript":
                 transcript: Transcript = Transcript()
                 transcript.from_dict(transcript_dict)
                 self.add_transcript(transcript)
@@ -109,9 +139,11 @@ class Gene(AbstractSearchTreeEntry):
         output: Dict[str, Any]
         output: Dict[str, Any] = dict()
         output["_id"] = self.get_id()
-        output["type"] = "gene"
+        output["name"] = self.get_name()
+        output["feature"] = self.get_feature()
         output["taxon_id"] = self.get_id_taxon()
         output["expression_value"] = self.get_expression_value()
+        output["chromosome"] = self.get_chromosome()
         output["biotype"] = self.get_biotype()
         output["species"] = self.get_species()
         transcript_list: List[Dict[str, Any]] = []
@@ -120,6 +152,30 @@ class Gene(AbstractSearchTreeEntry):
         output["transcripts"] = transcript_list
         return output
 
+    def from_gtf_line(self, gtf_split_line: List[str]):
+        for i in range(len(self.GTF_MASK)):
+            field_name: str = self.GTF_MASK[i]
+            entry: str = gtf_split_line[i]
+
+            if field_name == "seqname":
+                self.set_chromosome(entry)
+            elif field_name == "feature":
+                self.set_feature(entry)
+            elif field_name == "attribute":
+                attribute_dict: Dict[str, str] = GTFBoy.build_attribute_dict(entry)
+                self.set_id(attribute_dict["gene_id"])
+                try:
+                    self.set_name(attribute_dict["gene_name"])
+                except KeyError:
+                    self.set_name(".")
+                self.set_biotype(attribute_dict["gene_biotype"])
+
+    def add_entry(self, entry_type: str, entry: Any):
+        if entry_type == "transcript":
+            self.add_transcript(entry)
+        # elif entry_type == "exon": # TODO Exons will be integrated in the future
+        #     self.transcripts.find(entry.get_id_protein()).add_entry("exon", entry)
+
     def __eq__(self, other):
         if isinstance(other, Gene):
             return self.get_id() == other.get_id()
@@ -127,7 +183,8 @@ class Gene(AbstractSearchTreeEntry):
 
     @property
     def fasta(self) -> str:
-        proteins: List[Protein] = [transcript for transcript in self.transcripts if isinstance(transcript, Protein)]
+        proteins: List[Protein] = [transcript for transcript in self.get_transcripts() if isinstance(transcript,
+                                                                                                     Protein)]
         output: str = "\n".join([self.fasta_template.format(self.get_id(),
                                                             protein.get_id_transcript(),
                                                             protein.get_id(),
