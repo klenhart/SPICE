@@ -70,20 +70,28 @@ class LocalEnsembl:
                                                          self.release_num)
 
     def download(self) -> str:
-        with closing(request.urlopen(self.ftp_address)) as r:
-            with open(self.goal_directory + self.local_zipname, 'wb') as f:
-                shutil.copyfileobj(r, f)
+        if not self.is_downloaded():
+            with closing(request.urlopen(self.ftp_address)) as r:
+                with open(self.goal_directory + self.local_zipname, 'wb') as f:
+                    shutil.copyfileobj(r, f)
 
-        # Unpacking file
-        with gzip.open(self.goal_directory + self.local_zipname, 'rb') as f_in:
-            with open(self.goal_directory + self.local_filename, "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        os.remove(self.goal_directory + self.local_zipname)
-        return self.goal_directory + self.local_filename
+            # Unpacking file
+            with gzip.open(self.goal_directory + self.local_zipname, 'rb') as f_in:
+                with open(self.goal_directory + self.local_filename, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            os.remove(self.goal_directory + self.local_zipname)
+            return os.path.join(self.goal_directory, self.local_filename)
 
     @property
     def ping(self) -> bool:
         return ping_ensembl()
+
+    def is_downloaded(self) -> bool:
+        if os.path.isfile(os.path.join(self.goal_directory, self.local_filename)):
+            print("Ensembl file already downloaded.")
+            return True
+        else:
+            return False
 
 
 def main():

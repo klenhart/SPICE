@@ -47,7 +47,7 @@ class Gene(AbstractSearchTreeEntry):
         self.biotype: str = ""
         self.species: str = ""
         self.expression_value: float = 0
-        self.transcripts: SearchTree = SearchTree(self.id_gene)
+        self.transcripts: Dict[str, Transcript] = dict()
 
     def set_id(self, id_gene: str) -> None:
         self.id_gene = id_gene
@@ -86,10 +86,10 @@ class Gene(AbstractSearchTreeEntry):
 
         :type transcript: Transcript
         """
-        self.transcripts.insert_entry(transcript)
+        self.transcripts[transcript.get_id()] = transcript
 
-    def get_transcripts(self) -> List[AbstractSearchTreeEntry]:
-        return self.transcripts.flatten()
+    def get_transcripts(self) -> List[Transcript]:
+        return list(self.transcripts.values())
 
     def get_expression_value(self) -> float:
         return self.expression_value
@@ -125,7 +125,8 @@ class Gene(AbstractSearchTreeEntry):
         self.set_expression_value(input_dict["expression_value"])
         self.set_biotype(input_dict["biotype"])
         self.set_expression_value(input_dict["expression_value"])
-        for transcript_dict in input_dict["transcripts"]:
+        for key in input_dict["transcripts"].keys():
+            transcript_dict = input_dict["transcripts"][key]
             if transcript_dict["feature"] == "transcript":
                 transcript: Transcript = Transcript()
                 transcript.from_dict(transcript_dict)
@@ -146,10 +147,10 @@ class Gene(AbstractSearchTreeEntry):
         output["chromosome"] = self.get_chromosome()
         output["biotype"] = self.get_biotype()
         output["species"] = self.get_species()
-        transcript_list: List[Dict[str, Any]] = []
+        transcript_dict: Dict[str, Dict[str, Any]] = dict()
         for transcript in self.get_transcripts():
-            transcript_list.append(transcript.to_dict())
-        output["transcripts"] = transcript_list
+            transcript_dict[transcript.get_id()] = transcript.to_dict()
+        output["transcripts"] = transcript_dict
         return output
 
     def from_gtf_line(self, gtf_split_line: List[str]):

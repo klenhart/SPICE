@@ -20,12 +20,13 @@
 #
 #######################################################################
 
-from Classes.SearchTree.SearchTree import SearchTree
 from Classes.GTFBoy.GTFBoy import GTFBoy
 from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.SequenceHandling.Protein import Protein
-from Classes.SequenceHandling.Exon import Exon
+
+
+import json
 
 from typing import List, Dict, Any
 
@@ -53,7 +54,7 @@ class GeneAssembler:
                            "strand", "frame", "attribute"]
 
     def __init__(self, species: str, taxon_id: str):
-        self.gene_assembly: SearchTree = SearchTree(species + "_" + taxon_id)
+        self.gene_assembly: Dict[str, Gene] = dict()
         self.species: str = species
         self.taxon_id: str = taxon_id
         self.inclusion_filter_dict: Dict[str, List[str]] = dict()
@@ -61,8 +62,12 @@ class GeneAssembler:
     def update_inclusion_filter(self, key: str, possible_values: List[str]) -> None:
         self.inclusion_filter_dict.update({key: possible_values})
 
-    def save(self) -> None:  # TODO Next thing to do: Save the results by flattening the SearchTree and then jsonDump
-        pass
+    def save(self, output_path: str) -> None:
+        json_dict: Dict[str, Dict[str, Any]] = GeneAssembler.to_dict(self.gene_assembly)
+        print("Here")
+        print(json_dict)
+        with open(output_path, "w") as f:
+            json.dumps(json_dict, f, indent=4)
 
     def extract(self, gtf_path: str) -> None:
         """
@@ -96,7 +101,7 @@ class GeneAssembler:
                     gene.set_id_taxon(self.taxon_id)
                     gene.set_species(self.species)
                     # Insert the gene into the SearchTree instance
-                    self.gene_assembly.insert_entry(gene)
+                    self.gene_assembly[gene.get_id()] = gene
                 elif feature == "transcript":
                     # Do not extract transcripts that will have a protein counterpart in the GTF due to their biotype.
                     if GTFBoy.has_attribute_value("transcript_biotype", "protein_coding", split_line[8]):
@@ -108,8 +113,7 @@ class GeneAssembler:
                         transcript.from_gtf_line(split_line)
                         # Externally set the taxon id.
                         transcript.set_id_taxon(self.taxon_id)
-                    # Find the corresponding gene in the SearchTree instance and insert the transcript
-                    self.gene_assembly.find(transcript.get_id_gene()).add_entry("transcript", transcript)
+                    self.gene_assembly[transcript.get_id_gene()].add_transcript(transcript)
                 elif feature == "CDS":
                     # Make protein
                     protein: Protein = Protein()
@@ -117,8 +121,7 @@ class GeneAssembler:
                     protein.from_gtf_line(split_line)
                     # Externally set the taxon id.
                     protein.set_id_taxon(self.taxon_id)
-                    # Find the corresponding gene in the SearchTree instance and insert the transcript
-                    self.gene_assembly.find(protein.get_id_gene()).add_entry("transcript", protein)
+                    self.gene_assembly[protein.get_id_gene()].add_transcript(protein)
                 # elif feature == "exon": # TODO Integrate the use of Exons. For now it does not work since I intended
                 #                               exons to only be included in proteins, but some exons will not be part
                 #                               of proteins or be part of several
@@ -128,11 +131,19 @@ class GeneAssembler:
                 #    exon.from_gtf_line(split_line)
                 #    self.gene_assembly.find(exon.get_id_gene()).add_entry("exon", exon)
 
+    @staticmethod
+    def to_dict(gene_assembly: Dict[str, Gene]) -> Dict[str, Dict[str, Any]]:
+        json_dict: Dict[str, Dict[str, Any]] = dict()
+        for key in gene_assembly.keys():
+            json_dict[key] = gene_assembly[key].to_dict()
+        return json_dict
+
 
 def main() -> None:
     gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens", "9606")
     gene_assembler.update_inclusion_filter("gene_biotype", ["protein_coding"])
-    gene_assembler.extract("C:/Users/chris/Desktop/git/root/Homo_sapiens.GRCh38.107.gtf")
+    gene_assembler.extract("C:/Users/chris/Desktop/git/root/test.gtf")
+    gene_assembler.save("C:/Users/chris/Desktop/git/root/extract.json")
 
 
 if __name__ == "__main__":

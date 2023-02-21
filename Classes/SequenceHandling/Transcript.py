@@ -134,7 +134,8 @@ class Transcript(AbstractSearchTreeEntry):
                 self.set_transcript_support_level(int(attribute_dict["transcript_support_level"]))
 
     def add_entry(self, entry_type: str, entry: Any) -> None:
-        pass  # Transcripts have no entries yet.
+        pass
+
 
     def __eq__(self, other):
         if isinstance(other, Transcript):

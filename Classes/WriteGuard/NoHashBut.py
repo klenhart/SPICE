@@ -5,12 +5,12 @@
 #
 # This file is part of main.
 #
-#  RemoteEnsembl is free software: you can redistribute it and/or modify
+#  NoHashBut is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  RemoteEnsembl is distributed in the hope that it will be useful,
+#  NoHashBut is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -20,24 +20,14 @@
 #
 #######################################################################
 
+class NoHashBut:
 
-from typing import Type
-from typing import List
+    def __init__(self, word: str):
+        value: int = 0
+        for symbol in word:
+            value += ord(symbol)
+        self.represent = str(value)
 
-from Classes.API.ensembl_mod.LocalEnsembl import LocalEnsembl
-
-
-class RemoteEnsembl(LocalEnsembl):
-
-    def __init__(self, raw_species: str, goal_directory: str, release_num: str) -> None:
-        super().__init__(raw_species, goal_directory, release_num)
-
-
-def main():
-    remote_ensembl = RemoteEnsembl("human", "C:/Users/chris/Desktop/git/root/", "107")
-    print(remote_ensembl.ping)
-    remote_ensembl.download()
-
-
-if __name__ == "__main__":
-    main()
+    @property
+    def get_represent(self) -> str:
+        return self.represent

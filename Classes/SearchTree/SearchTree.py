@@ -42,7 +42,7 @@ class SearchTree(AbstractSearchTreeEntry):
                 self.children[key] = SearchTree(key, True)
                 self.children[key].insert_entry(entry_pair[1])
         else:
-            entry_pair: Tuple[str, Abstract_Search_Tree_Entry] = (entry_pair[0][1:], entry_pair[1])
+            entry_pair: Tuple[str, AbstractSearchTreeEntry] = (entry_pair[0][1:], entry_pair[1])
             if entry_pair[0] not in self.children.keys():
                 self.children[key] = SearchTree(key)
                 self.children[key].pass_down_entry(entry_pair)
@@ -82,11 +82,16 @@ class SearchTree(AbstractSearchTreeEntry):
             for key in self.children.keys():
                 flattened_tree += self.children[key].flatten()
 
-    def to_dict(self) -> Dict[str, Any]:  # TODO Implement to_dict of SearchTree
-        pass
+    def to_dict(self) -> Dict[str, Any]:
+        all_entries: List[AbstractSearchTreeEntry] = self.flatten()
+        output_dict: Dict[str, Dict[str, Any]] = dict()
+        for entry in all_entries:
+            output_dict[entry.get_id()] = entry.to_dict()
 
-    def from_dict(self, input_dict: Dict[str, Any]) -> None:  # TODO Implement from_dict of SearchTree
-        pass
+    def from_dict(self, input_dict: Dict[str, Any]) -> None:
+        self.children: Dict[str, SearchTree] = dict()
+        for key in input_dict.keys():
+            input_dict[key]
 
     def add_entry(self, entry_type: str, entry: Any) -> None:  # TODO Implement add_entry of SearchTree
         pass
