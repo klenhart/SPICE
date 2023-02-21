@@ -31,6 +31,8 @@ class GTFBoy:
 
     def __init__(self, gtf_path: str):
         self.gtf_path: str = gtf_path
+        with open(gtf_path) as f:
+            self.total_lines = len(f.readlines())
 
     def __iter__(self) -> Iterator[str]:
         with open(self.gtf_path, "r") as f:

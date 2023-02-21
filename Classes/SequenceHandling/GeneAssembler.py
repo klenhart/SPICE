@@ -25,10 +25,10 @@ from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.SequenceHandling.Protein import Protein
 
-
+from tqdm import tqdm
 import json
-
 from typing import List, Dict, Any
+
 
 class GeneAssembler:
     """
@@ -64,10 +64,8 @@ class GeneAssembler:
 
     def save(self, output_path: str) -> None:
         json_dict: Dict[str, Dict[str, Any]] = GeneAssembler.to_dict(self.gene_assembly)
-        print("Here")
-        print(json_dict)
         with open(output_path, "w") as f:
-            json.dumps(json_dict, f, indent=4)
+            json.dump(json_dict, f, indent=4)
 
     def extract(self, gtf_path: str) -> None:
         """
@@ -81,7 +79,7 @@ class GeneAssembler:
         gtf_boy: GTFBoy = GTFBoy(gtf_path)
 
         # Iterate over the GTFBoys GTF file.
-        for line in gtf_boy:
+        for line in tqdm(gtf_boy, ncols=100, total=gtf_boy.total_lines, desc="Extract GTF Progress"):
             # Skip the header.
             if line.startswith("#!"):
                 continue
@@ -122,14 +120,6 @@ class GeneAssembler:
                     # Externally set the taxon id.
                     protein.set_id_taxon(self.taxon_id)
                     self.gene_assembly[protein.get_id_gene()].add_transcript(protein)
-                # elif feature == "exon": # TODO Integrate the use of Exons. For now it does not work since I intended
-                #                               exons to only be included in proteins, but some exons will not be part
-                #                               of proteins or be part of several
-                #    # Make exon
-                #    exon: Exon = Exon()
-                #    # Use Exons method to construct itself from a split gtf line.
-                #    exon.from_gtf_line(split_line)
-                #    self.gene_assembly.find(exon.get_id_gene()).add_entry("exon", exon)
 
     @staticmethod
     def to_dict(gene_assembly: Dict[str, Gene]) -> Dict[str, Dict[str, Any]]:
@@ -142,7 +132,7 @@ class GeneAssembler:
 def main() -> None:
     gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens", "9606")
     gene_assembler.update_inclusion_filter("gene_biotype", ["protein_coding"])
-    gene_assembler.extract("C:/Users/chris/Desktop/git/root/test.gtf")
+    gene_assembler.extract("C:/Users/chris/Desktop/git/root/Homo_sapiens.GRCh38.107.gtf")
     gene_assembler.save("C:/Users/chris/Desktop/git/root/extract.json")
 
 
