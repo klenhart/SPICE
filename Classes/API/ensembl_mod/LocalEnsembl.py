@@ -25,8 +25,6 @@ import gzip
 import os
 import shutil
 from contextlib import closing
-from typing import Type
-from typing import List
 from urllib import request
 
 from Classes.API.ensembl_mod.EnsemblUtils import ping_ensembl, get_current_release, get_id_taxon, get_species_info
@@ -81,6 +79,11 @@ class LocalEnsembl:
                     shutil.copyfileobj(f_in, f_out)
             os.remove(self.goal_directory + self.local_zipname)
             return os.path.join(self.goal_directory, self.local_filename)
+
+    def remove(self) -> None:
+        if self.is_downloaded():
+            os.remove(os.path.join(self.goal_directory, self.local_filename))
+
 
     @property
     def ping(self) -> bool:

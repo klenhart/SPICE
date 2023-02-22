@@ -28,7 +28,7 @@ from Classes.SequenceHandling.Protein import Protein
 from Classes.GTFBoy.GTFBoy import GTFBoy
 
 
-class Gene():
+class Gene:
 
     GTF_MASK: List[str] = ["seqname", "source", "feature",
                            "start", "end", "score",
@@ -46,6 +46,8 @@ class Gene():
         self.species: str = ""
         self.expression_value: float = 0
         self.transcripts: Dict[str, Transcript] = dict()
+        self.sequences_complete_flag = False
+        self.check_sequence_status()
 
     def set_id(self, id_gene: str) -> None:
         self.id_gene = id_gene
@@ -85,9 +87,13 @@ class Gene():
         :type transcript: Transcript
         """
         self.transcripts[transcript.get_id()] = transcript
+        self.check_sequence_status()
 
     def get_transcripts(self) -> List[Transcript]:
         return list(self.transcripts.values())
+
+    def get_proteins(self) -> List[Protein]:
+        return [protein for protein in self.transcripts.values() if isinstance(protein, Protein)]
 
     def get_expression_value(self) -> float:
         return self.expression_value
@@ -112,6 +118,18 @@ class Gene():
 
     def get_chromosome(self) -> str:
         return self.chromosome
+
+    def is_sequence_complete(self) -> bool:
+        return self.sequences_complete_flag
+
+    def set_sequence_of_transcript(self, transcript_id: str, sequence: str) -> None:
+        protein: Protein = self.transcripts[transcript_id]
+        protein.set_sequence(sequence)
+        self.update_sequence_status()
+
+    def check_sequence_status(self) -> None:
+        self.sequences_complete_flag = all([len(protein.seq) > 0
+                                            for protein in self.get_transcripts() if isinstance(protein, Protein)])
 
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
         self.set_id(input_dict["_id"])
@@ -179,6 +197,27 @@ class Gene():
         if isinstance(other, Gene):
             return self.get_id() == other.get_id()
         return False
+
+    def __getitem__(self, item: str) -> Any:
+        key_list: List[str] = ["_id", "name", "feature",
+                               "taxon_id", "chromosome", "species",
+                               "expression_value", "biotype", "expression_value", "transcripts"]
+        if item in key_list:
+            return self.attributes[item]
+
+    @property
+    def attributes(self) -> Dict[str, Any]:
+        output_dict: Dict[str, Any] = {"_id": self.get_id(),
+                                       "name": self.get_name(),
+                                       "feature": self.get_feature(),
+                                       "taxon_id": self.get_id_taxon(),
+                                       "chromosome": self.get_chromosome,
+                                       "species": self.get_species(),
+                                       "expression_value": self.get_expression_value,
+                                       "biotype": self.get_biotype(),
+                                       "transcripts": self.get_transcripts(),
+                                       "proteins": self.get_proteins()}
+        return output_dict
 
     @property
     def fasta(self) -> str:

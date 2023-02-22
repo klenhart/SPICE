@@ -125,6 +125,19 @@ class GeneAssembler:
                     protein.set_id_taxon(self.taxon_id)
                     self.gene_assembly[protein.get_id_gene()].add_transcript(protein)
 
+    def get_genes(self, incomplete_flag: bool = False) -> List[Gene]:
+        output_list: List[Gene] = list()
+        if incomplete_flag:
+            for key in list(self.gene_assembly.keys()):
+                gene: Gene = self.gene_assembly[key]
+                if not gene.is_sequence_complete():
+                    output_list.append(gene)
+        else:
+            for key in list(self.gene_assembly.keys()):
+                gene: Gene = self.gene_assembly[key]
+                output_list.append(gene)
+        return output_list
+
     @staticmethod
     def to_dict(gene_assembly: Dict[str, Gene]) -> Dict[str, Dict[str, Any]]:
         json_dict: Dict[str, Dict[str, Any]] = dict()
