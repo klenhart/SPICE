@@ -23,14 +23,12 @@
 
 from typing import List, Dict, Any
 
-from Classes.SearchTree.AbstractSearchTreeEntry import AbstractSearchTreeEntry
-from Classes.SearchTree.SearchTree import SearchTree
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.SequenceHandling.Protein import Protein
 from Classes.GTFBoy.GTFBoy import GTFBoy
 
 
-class Gene(AbstractSearchTreeEntry):
+class Gene():
 
     GTF_MASK: List[str] = ["seqname", "source", "feature",
                            "start", "end", "score",

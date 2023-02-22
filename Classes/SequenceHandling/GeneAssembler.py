@@ -67,6 +67,10 @@ class GeneAssembler:
         with open(output_path, "w") as f:
             json.dump(json_dict, f, indent=4)
 
+    def load(self, input_path: str) -> None:
+        with open(input_path, "r") as f:
+            self.gene_assembly = GeneAssembler.from_dict(json.load(f))
+
     def extract(self, gtf_path: str) -> None:
         """
         Method that extracts all genes, proteins, transcripts and exons from a gtf file and sorts them into
@@ -127,6 +131,15 @@ class GeneAssembler:
         for key in gene_assembly.keys():
             json_dict[key] = gene_assembly[key].to_dict()
         return json_dict
+
+    @staticmethod
+    def from_dict(json_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Gene]:
+        output_dict: Dict[str, Gene] = dict()
+        for key in json_dict.keys():
+            new_gene: Gene = Gene()
+            new_gene.from_dict(json_dict[key])
+            output_dict[new_gene.get_id()] = new_gene
+        return output_dict
 
 
 def main() -> None:
