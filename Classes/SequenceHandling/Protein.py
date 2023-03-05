@@ -23,8 +23,6 @@
 
 from Classes.SequenceHandling.Exon import Exon
 from Classes.SequenceHandling.Transcript import Transcript
-from Classes.SearchTree.SearchTree import SearchTree
-from Classes.SearchTree.SearchTree import AbstractSearchTreeEntry
 from Classes.GTFBoy.GTFBoy import GTFBoy
 
 from typing import List, Dict, Any
@@ -37,9 +35,7 @@ class Protein(Transcript):
         self.id_protein: str = ""
         self.sequence: str = ""
         self.feature: str = "protein"
-        self.expression_value: float = 0
         self.annotation: List[str] = list()
-        # self.exons: SearchTree = SearchTree(self.get_id()) # TODO Exons will be integrated in the future.
 
     def set_id(self, id_protein: str) -> None:
         """
@@ -65,13 +61,6 @@ class Protein(Transcript):
         """
         self.annotation = annotation
 
-    def set_expression_value(self, expression: float) -> None:
-        """
-
-        :type expression: float
-        """
-        self.expression_value = expression
-
     # def add_exon(self, exon: Exon): # TODO Exons will be integrated in the future
     #     self.exons.insert_entry(exon)
 
@@ -87,9 +76,6 @@ class Protein(Transcript):
     def get_annotation(self) -> List[str]:
         return self.annotation
 
-    def get_expression_value(self) -> float:
-        return self.expression_value
-
     # def get_exons(self) -> List[AbstractSearchTreeEntry]: # TODO Exons will be integrated in the future
     #     return self.exons.flatten()
 
@@ -100,7 +86,6 @@ class Protein(Transcript):
         self.set_id_transcript(input_dict["transcript_id"])
         self.set_id_taxon(input_dict["taxon_id"])
         self.set_id_gene(input_dict["gene_id"])
-        self.set_expression_value(input_dict["expression_value"])
         self.set_annotation(input_dict["annotation"])
         self.set_biotype(input_dict["biotype"])
         self.set_transcript_support_level(input_dict["tsl"])
@@ -118,7 +103,6 @@ class Protein(Transcript):
         output["taxon_id"] = self.get_id_taxon()
         output["sequence"] = self.get_sequence()
         output["annotation"] = self.get_annotation()
-        output["expression_value"] = self.get_expression_value()
         output["biotype"] = self.get_biotype()
         output["tsl"] = self.get_transcript_support_level()
         # exon_list: List[Dict[str, Any]] = [] # TODO Exons will be integrated in the future.

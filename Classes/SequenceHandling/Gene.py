@@ -44,7 +44,6 @@ class Gene:
         self.chromosome: str = ""
         self.biotype: str = ""
         self.species: str = ""
-        self.expression_value: float = 0
         self.transcripts: Dict[str, Transcript] = dict()
         self.sequences_complete_flag = False
         self.check_sequence_status()
@@ -71,13 +70,6 @@ class Gene:
     def set_species(self, species: str):
         self.species = species
 
-    def set_expression_value(self, expression: float) -> None:
-        """
-
-        :type expression: float
-        """
-        self.expression_value = expression
-
     def set_chromosome(self, chromosome: str) -> None:
         self.chromosome = chromosome
 
@@ -94,9 +86,6 @@ class Gene:
 
     def get_proteins(self) -> List[Protein]:
         return [protein for protein in self.transcripts.values() if isinstance(protein, Protein)]
-
-    def get_expression_value(self) -> float:
-        return self.expression_value
 
     def get_id(self) -> str:
         return self.id_gene
@@ -138,9 +127,7 @@ class Gene:
         self.set_id_taxon(input_dict["taxon_id"])
         self.set_chromosome(input_dict["chromosome"])
         self.set_species(input_dict["species"])
-        self.set_expression_value(input_dict["expression_value"])
         self.set_biotype(input_dict["biotype"])
-        self.set_expression_value(input_dict["expression_value"])
         for key in input_dict["transcripts"].keys():
             transcript_dict = input_dict["transcripts"][key]
             if transcript_dict["feature"] == "transcript":
@@ -159,7 +146,6 @@ class Gene:
         output["name"] = self.get_name()
         output["feature"] = self.get_feature()
         output["taxon_id"] = self.get_id_taxon()
-        output["expression_value"] = self.get_expression_value()
         output["chromosome"] = self.get_chromosome()
         output["biotype"] = self.get_biotype()
         output["species"] = self.get_species()
@@ -200,8 +186,7 @@ class Gene:
 
     def __getitem__(self, item: str) -> Any:
         key_list: List[str] = ["_id", "name", "feature",
-                               "taxon_id", "chromosome", "species",
-                               "expression_value", "biotype", "expression_value", "transcripts"]
+                               "taxon_id", "chromosome", "species", "biotype", "transcripts"]
         if item in key_list:
             return self.attributes[item]
 
@@ -213,7 +198,6 @@ class Gene:
                                        "taxon_id": self.get_id_taxon(),
                                        "chromosome": self.get_chromosome,
                                        "species": self.get_species(),
-                                       "expression_value": self.get_expression_value,
                                        "biotype": self.get_biotype(),
                                        "transcripts": self.get_transcripts(),
                                        "proteins": self.get_proteins()}
@@ -234,7 +218,6 @@ def main():
     gene = Gene()
     gene.set_id("standin_gene_id")
     gene.set_species("human")
-    gene.set_expression_value(12.9)
     gene.set_id_taxon("9606")
 
     protein1: Protein = Protein()
