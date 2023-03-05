@@ -38,7 +38,7 @@ class Transcript():
         self.id_gene: str = ""
         self.id_taxon: str = ""
         self.biotype: str = ""
-        self.transcript_support_level: int = -1
+        self.transcript_support_level: int = 6
 
     def set_id(self, id_transcript: str) -> None:
         """
@@ -134,7 +134,6 @@ class Transcript():
 
     def add_entry(self, entry_type: str, entry: Any) -> None:
         pass
-
 
     def __eq__(self, other):
         if isinstance(other, Transcript):

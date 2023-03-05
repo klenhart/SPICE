@@ -35,7 +35,6 @@ class Protein(Transcript):
         self.id_protein: str = ""
         self.sequence: str = ""
         self.feature: str = "protein"
-        self.annotation: List[str] = list()
 
     def set_id(self, id_protein: str) -> None:
         """
@@ -54,13 +53,6 @@ class Protein(Transcript):
         """
         self.sequence = seq
 
-    def set_annotation(self, annotation: List[str]) -> None:
-        """
-
-        :type annotation: List[str]
-        """
-        self.annotation = annotation
-
     # def add_exon(self, exon: Exon): # TODO Exons will be integrated in the future
     #     self.exons.insert_entry(exon)
 
@@ -73,9 +65,6 @@ class Protein(Transcript):
     def get_sequence(self) -> str:
         return self.sequence
 
-    def get_annotation(self) -> List[str]:
-        return self.annotation
-
     # def get_exons(self) -> List[AbstractSearchTreeEntry]: # TODO Exons will be integrated in the future
     #     return self.exons.flatten()
 
@@ -86,7 +75,6 @@ class Protein(Transcript):
         self.set_id_transcript(input_dict["transcript_id"])
         self.set_id_taxon(input_dict["taxon_id"])
         self.set_id_gene(input_dict["gene_id"])
-        self.set_annotation(input_dict["annotation"])
         self.set_biotype(input_dict["biotype"])
         self.set_transcript_support_level(input_dict["tsl"])
         # for exon_dict in input_dict["exons"]: # TODO Exons will be integrated in the future
@@ -97,12 +85,11 @@ class Protein(Transcript):
     def to_dict(self) -> Dict[str, Any]:
         output: Dict[str, Any] = dict()
         output["_id"] = self.get_id()
-        output["type"] = "protein"
+        output["feature"] = self.get_feature()
         output["gene_id"] = self.get_id_gene()
         output["transcript_id"] = self.get_id_transcript()
         output["taxon_id"] = self.get_id_taxon()
         output["sequence"] = self.get_sequence()
-        output["annotation"] = self.get_annotation()
         output["biotype"] = self.get_biotype()
         output["tsl"] = self.get_transcript_support_level()
         # exon_list: List[Dict[str, Any]] = [] # TODO Exons will be integrated in the future.

@@ -20,13 +20,12 @@
 #
 #######################################################################
 
-from Classes.SearchTree.AbstractSearchTreeEntry import AbstractSearchTreeEntry
 from Classes.GTFBoy.GTFBoy import GTFBoy
 
 from typing import Dict, Any, List
 
 
-class Exon(AbstractSearchTreeEntry):
+class Exon():
 
     GTF_MASK: List[str] = ["seqname", "source", "feature",
                            "start", "end", "score",

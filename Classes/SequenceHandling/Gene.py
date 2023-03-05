@@ -114,10 +114,10 @@ class Gene:
     def set_sequence_of_transcript(self, transcript_id: str, sequence: str) -> None:
         protein: Protein = self.transcripts[transcript_id]
         protein.set_sequence(sequence)
-        self.update_sequence_status()
+        self.check_sequence_status()
 
     def check_sequence_status(self) -> None:
-        self.sequences_complete_flag = all([len(protein.seq) > 0
+        self.sequences_complete_flag = all([len(protein.get_sequence()) > 0
                                             for protein in self.get_transcripts() if isinstance(protein, Protein)])
 
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
