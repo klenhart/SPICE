@@ -21,7 +21,10 @@
 #######################################################################
 
 import json
-from typing import List, Dict, Any
+import numpy as np
+from typing import List, Dict, Any, Tuple
+
+from tqdm import tqdm
 
 from Classes.FASHandling.FASGene import FASGene
 from Classes.SequenceHandling.Gene import Gene
@@ -54,13 +57,84 @@ class FASGeneAssembler(GeneAssembler):
                 gene.integrate_fas_dist_matrix(distance_matrix)
                 self.gene_assembly[gene_id] = gene
 
-    def cleanse_genes_without_fas(self):
+    def get_fas_grouped_by_tsl(self):
+        fas_values_grouped_by_tsl: List[List[float]] = [[], [], [], [], [], []]
+        for gene_id in tqdm(self.gene_assembly.keys(),
+                            ncols=100,
+                            total=len(self.gene_assembly.keys()),
+                            desc="Collecting FAS data grouped by TSL"):
+            gene: FASGene = self.gene_assembly[gene_id]
+            tsl_id_grouping_dict: Dict[str, List[str]] = {"0": [], "1": [], "2": [],
+                                                          "3": [], "4": [], "5": [],
+                                                          "6": [], "no_prot": []}
+            for transcript in gene.get_transcripts():
+                if transcript.get_biotype() != "protein_coding":
+                    tsl_id_grouping_dict["no_prot"].append(transcript.get_id())
+                else:
+                    tsl_id_grouping_dict[str(transcript.get_transcript_support_level())].append(transcript.get_id())
+
+            for i, tsl_list in enumerate([["0", "1"], ["2"], ["3"], ["4"], ["5"], ["6"]]):
+                for tsl in tsl_list:
+                    for transcript_id in tsl_id_grouping_dict[tsl]:
+                        dist_row = gene.fas_distance_matrix_dict[transcript_id]
+                        for key_id in dist_row.keys():
+                            if key_id not in tsl_id_grouping_dict["no_prot"]:
+                                fas_values_grouped_by_tsl[i].append(dist_row[key_id])
+        return fas_values_grouped_by_tsl
+
+    def get_protein_coding_transcript_counts(self) -> List[List[int]]:
+        count_dict: Dict[int, int] = dict()
+        for gene_id in tqdm(self.gene_assembly.keys(),
+                            ncols=100,
+                            total=len(self.gene_assembly.keys()),
+                            desc="Collecting FAS data grouped by TSL"):
+            gene: FASGene = self.gene_assembly[gene_id]
+            count: int = len(gene.get_transcripts())
+            if count in count_dict.keys():
+                count_dict[count] += 1
+            else:
+                count_dict[count] = 1
+
+        count_list: List[int] = list(count_dict.items())
+        count_list.sort()
+
+        output_list: List[List[int]] = [[], []]
+        for key, value in count_list:
+            output_list[0].append(key)
+            output_list[1].append(value)
+        return output_list
+
+    def get_all_fas_values(self, threshold: int = 7) -> List[float]:
+        fas_values: List[float] = []
+        for gene_id in tqdm(self.gene_assembly.keys(),
+                            ncols=100,
+                            total=len(self.gene_assembly.keys()),
+                            desc="Collecting FAS scores"):
+            gene: FASGene = self.gene_assembly[gene_id]
+            block_list: List[str] = []
+            prot_list: List[str] = []
+            for transcript in gene.get_transcripts():
+                if transcript.get_biotype() != "protein_coding":
+                    block_list.append(transcript.get_id())
+                elif transcript.get_transcript_support_level() >= threshold:
+                    block_list.append(transcript.get_id())
+                else:
+                    prot_list.append(transcript.get_id())
+
+            for protein_id in prot_list:
+                dist_row = gene.fas_distance_matrix_dict[protein_id]
+                for key_id in dist_row.keys():
+                    if key_id not in block_list and key_id != protein_id:
+                        fas_values.append(dist_row[key_id])
+        return fas_values
+
+    def cleanse_genes_without_fas(self) -> None:
         for gene_id in self.gene_assembly.keys():
             gene: FASGene = self.gene_assembly[gene_id]
             gene.clear_transcripts_without_fas()
             self.gene_assembly[gene_id] = gene
 
-    def clear_empty_genes(self):
+    def clear_empty_genes(self) -> None:
         gene_list: List[Gene] = self.get_genes()
         for gene in gene_list:
             if len(gene.get_transcripts()) == 0:
@@ -84,7 +158,7 @@ class FASGeneAssembler(GeneAssembler):
 
 
 def main():
-    fas_gene_assembler = FASGeneAssembler("human", "107")
+    fas_gene_assembler = FASGeneAssembler("human", "NCBI9606")
     # fas_gene_assembler.load("C:/Users/chris/Desktop/git/root/extract.json")
     # fas_gene_assembler.integrate_fas_distance_matrix_dict("C:/Users/chris/Desktop/stats/old_fas.json")
     # fas_gene_assembler.cleanse_genes_without_fas()

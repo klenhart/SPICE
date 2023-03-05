@@ -48,7 +48,10 @@ setup(
         'itertools',
         'plotly',
         'pathlib',
-        'tqdm'
+        'tqdm',
+        'numpy',
+        'matplotlib',
+        'scipy'
     ],
     entry_points={
         'console_scripts': ["gt.run = grand-trumpet.fas_lib:main",
