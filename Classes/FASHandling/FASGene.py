@@ -80,17 +80,6 @@ class FASGene(Gene):
         self.check_sequence_status()
         self.check_fas_status()
 
-    def clear_transcripts_without_fas(self):
-        transcript_list: List[Transcript] = self.get_transcripts()
-        for transcript in transcript_list:
-            if transcript.get_id() not in self.fas_distance_matrix_dict.keys():
-                self.remove_transcript(transcript.get_id(), False)
-                continue
-            dist_matrix_row: Dict[str, float] = self.fas_distance_matrix_dict[transcript.get_id()]
-            values: List[float] = list(dist_matrix_row.values())
-            if all([value in [0, -1, 1] for value in values]) and len(values) > 1:
-                self.remove_transcript(transcript.get_id())
-
     def to_dict(self) -> Dict[str, Any]:
         output: Dict[str, Any]
         output: Dict[str, Any] = dict()

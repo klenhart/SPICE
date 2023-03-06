@@ -1,5 +1,6 @@
 #!/bin/env python
-from typing import List
+import os.path
+from typing import List, Type
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -45,73 +46,152 @@ class FASPlot:
         # Show the plot
         plt.show()
 
-    def generate_transcript_count_barplot(self):
-        data: List[List[int]] = self.fas_gene_assembler.get_protein_coding_transcript_counts()
+    def generate_transcript_count_barplot(self) -> None:
+        data_4: List[List[int]] = self.fas_gene_assembler.get_protein_coding_transcript_counts(5)
+        data_6: List[List[int]] = self.fas_gene_assembler.get_protein_coding_transcript_counts()
 
-        labels = data[0][:25]
-        values = data[1][:25]
+        labels_4 = data_4[0][:25]
+        values_4 = data_4[1][:25]
+
+        labels_6 = data_6[0][:25]
+        values_6 = data_6[1][:25]
 
         fig, ax = plt.subplots()
 
-        ax.set_xticks(np.linspace(0, 25, 11))
-        ax.set_yticks(np.linspace(0, 6000, 20))
+        ax.bar(labels_4, values_4, color="red", align='center', width=0.9,
+               label="with TSL <= 5")
+        ax.bar(labels_6, values_6, color="blue", align='center', width=0.6,
+               label="all protein coding")
 
-        ax.bar(labels, values)
+        ax.legend()
 
         ax.set_xlabel('Transcript Count')
         ax.set_ylabel('Gene Count')
         ax.set_title('Distribution of transcript counts among given genes.')
 
-        # Show the plot
-        plt.show()
+        plt.savefig(os.path.join(self.output_dir, "transcript_count_bars.png"))
+        plt.clf()
 
-    def generate_fas_score_density_plot(self):
-        data_0 = self.fas_gene_assembler.get_all_fas_values(1)
-        data_1 = self.fas_gene_assembler.get_all_fas_values(2)
-        data_2 = self.fas_gene_assembler.get_all_fas_values(3)
-        data_3 = self.fas_gene_assembler.get_all_fas_values(4)
-        data_4 = self.fas_gene_assembler.get_all_fas_values(5)
-        data_5 = self.fas_gene_assembler.get_all_fas_values(6)
-        data_6 = self.fas_gene_assembler.get_all_fas_values()
+    def generate_transcript_count_nmd_barplot(self) -> None:
+        data_6: List[List[int]] = self.fas_gene_assembler.get_protein_coding_transcript_counts(7, False)
+        data_6_nmd: List[List[int]] = self.fas_gene_assembler.get_protein_coding_transcript_counts(7, True)
 
-        kde0 = gaussian_kde(data_0)
-        kde1 = gaussian_kde(data_1)
-        kde2 = gaussian_kde(data_2)
-        kde3 = gaussian_kde(data_3)
-        kde4 = gaussian_kde(data_4)
-        kde5 = gaussian_kde(data_5)
-        kde6 = gaussian_kde(data_6)
+        labels_6 = data_6[0][:25]
+        values_6 = data_6[1][:25]
 
-        x_grid = np.linspace(0, 1, 100)
+        labels_6_nmd = data_6_nmd[0][:25]
+        values_6_nmd = data_6_nmd[1][:25]
+
         fig, ax = plt.subplots()
 
-        ax.plot(x_grid, kde0(x_grid), label="Only Gencode Basic")
-        ax.plot(x_grid, kde1(x_grid), label="TSL >= 1")
-        ax.plot(x_grid, kde2(x_grid), label="TSL >= 2")
-        ax.plot(x_grid, kde3(x_grid), label="TSL >= 3")
-        ax.plot(x_grid, kde4(x_grid), label="TSL >= 4")
-        ax.plot(x_grid, kde5(x_grid), label="TSL >= 5")
-        ax.plot(x_grid, kde6(x_grid), label="All transcripts")
+        ax.bar(labels_6, values_6, color="red", align='center', width=0.9,
+               label="only protein coding")
+        ax.bar(labels_6_nmd, values_6_nmd, color="blue", align='center', width=0.6,
+               label="protein coding and NMD")
 
         ax.legend()
 
-        ax.set_yticks(list(range(0, 14)))
-        ax.set_xlabel('FAS score')
-        ax.set_ylabel('Density')
-        ax.set_title('FAS Score Density Plot')
+        ax.set_xlabel('Transcript Count')
+        ax.set_ylabel('Gene Count')
+        ax.set_title('Distribution of transcript counts among given genes.')
 
-        ax.grid(True)
+        plt.savefig(os.path.join(self.output_dir, "transcript_count_nmd_bars.png"))
+        plt.clf()
 
-        # Show the plot
-        plt.show()
+    def generate_fas_score_histogram(self) -> None:
+        data_4 = self.fas_gene_assembler.get_all_fas_values(5)
+        data_6 = self.fas_gene_assembler.get_all_fas_values()
+
+        plt.grid(True)
+
+        plt.hist(data_6,
+                 bins=[0.0, 0.05, 0.1, 0.15, 0.2, 0.25,
+                       0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
+                       0.6, 0.65, 0.7, 0.75, 0.8, 0.85,
+                       0.9, 0.95, 1.0, 1.05],
+                 align='left',
+                 rwidth=0.8,
+                 color='red',
+                 label="all protein coding")
+
+        plt.hist(data_4,
+                 bins=[0.0, 0.05, 0.1, 0.15, 0.2, 0.25,
+                       0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
+                       0.6, 0.65, 0.7, 0.75, 0.8, 0.85,
+                       0.9, 0.95, 1.0, 1.05],
+                 align='left',
+                 rwidth=0.8,
+                 color='blue',
+                 label="with TSL <= 5")
+
+        plt.legend()
+        plt.xlabel('FAS score')
+        plt.ylabel('Frequency')
+        plt.title('FAS Score Histogram')
+
+        plt.savefig(os.path.join(self.output_dir, "fas_score_hist.png"))
+        plt.clf()
+
+    def generate_fas_score_nmd_histogram(self) -> None:
+        data_6 = self.fas_gene_assembler.get_all_fas_values(7, False)
+        data_6_nmd = self.fas_gene_assembler.get_all_fas_values(7, True)
+
+        plt.grid(True)
+
+        plt.hist(data_6_nmd,
+                 bins=[0.0, 0.05, 0.1, 0.15, 0.2, 0.25,
+                       0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
+                       0.6, 0.65, 0.7, 0.75, 0.8, 0.85,
+                       0.9, 0.95, 1.0, 1.05],
+                 align='left',
+                 rwidth=0.9,
+                 color='blue',
+                 label="protein coding and nmd")
+
+        plt.hist(data_6,
+                 bins=[0.0, 0.05, 0.1, 0.15, 0.2, 0.25,
+                       0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
+                       0.6, 0.65, 0.7, 0.75, 0.8, 0.85,
+                       0.9, 0.95, 1.0, 1.05],
+                 align='left',
+                 rwidth=0.6,
+                 color='red',
+                 label="only protein coding")
+
+        plt.yticks([500000, 1000000, 1500000])
+
+        plt.legend()
+
+        plt.xlabel('FAS score')
+        plt.ylabel('Frequency')
+        plt.title('FAS Score (with nonsense mediated decay transcripts) Histogram')
+
+        plt.savefig(os.path.join(self.output_dir, "fas_score_nmd_hist.png"))
+        plt.clf()
+
+    def generate_nonsense_mediated_decay_pieplot(self) -> None:
+        sizes: List[int] = self.fas_gene_assembler.get_nonsense_mediated_decay_gene_ratio()
+
+        fig, ax = plt.subplots()
+        labels = ['with NMD', 'without NMD']
+        colors = ['green', 'red']
+
+        ax.pie(sizes, labels=labels, colors=colors, autopct='%.1f%%')
+        ax.set_title('Ratio of genes with nonsense-mediated decay to genes without')
+
+        plt.savefig(os.path.join(self.output_dir, "nmd_ratio_pie.png"))
+        plt.clf()
 
 
 def main():
     fas_gene_assembler = FASGeneAssembler("human", "NCBI9606")
-    fas_gene_assembler.load("C:/Users/chris/Desktop/git/root/extract_with_fas_no_empty_genes.json")
-    fas_plot = FASPlot(fas_gene_assembler)
-    #fas_plot.generate_transcript_count_barplot()
-    fas_plot.generate_fas_score_density_plot()
+    fas_gene_assembler.load("C:/Users/chris/Desktop/git/root/extract_without_fas.json")
+    fas_plot = FASPlot(fas_gene_assembler, "C:/Users/chris/Desktop/AKE/ProgReps/11")
+    fas_plot.generate_transcript_count_barplot()
+    fas_plot.generate_fas_score_histogram()
+    fas_plot.generate_nonsense_mediated_decay_pieplot()
+    fas_plot.generate_fas_score_nmd_histogram()
+    fas_plot.generate_transcript_count_nmd_barplot()
 
 
 if __name__ == "__main__":

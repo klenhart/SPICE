@@ -82,14 +82,21 @@ class FASGeneAssembler(GeneAssembler):
                                 fas_values_grouped_by_tsl[i].append(dist_row[key_id])
         return fas_values_grouped_by_tsl
 
-    def get_protein_coding_transcript_counts(self) -> List[List[int]]:
+    def get_protein_coding_transcript_counts(self, threshold: int = 7,
+                                             include_nmd_flag: bool = False) -> List[List[int]]:
+        if include_nmd_flag:
+            possible_biotypes: List[str] = ["nonsense_mediated_decay", "protein_coding"]
+        else:
+            possible_biotypes: List[str] = ["protein_coding"]
         count_dict: Dict[int, int] = dict()
         for gene_id in tqdm(self.gene_assembly.keys(),
                             ncols=100,
                             total=len(self.gene_assembly.keys()),
-                            desc="Collecting FAS data grouped by TSL"):
+                            desc="Counting splicing variants for each gene"):
             gene: FASGene = self.gene_assembly[gene_id]
-            count: int = len(gene.get_transcripts())
+            count: int = len([1 for transcript in gene.get_transcripts()
+                              if transcript.get_transcript_support_level() < threshold and
+                              transcript.get_biotype() in possible_biotypes])
             if count in count_dict.keys():
                 count_dict[count] += 1
             else:
@@ -104,35 +111,50 @@ class FASGeneAssembler(GeneAssembler):
             output_list[1].append(value)
         return output_list
 
-    def get_all_fas_values(self, threshold: int = 7) -> List[float]:
+    def get_all_fas_values(self, threshold: int = 7, include_nmd_flag: bool = False) -> List[float]:
+        if include_nmd_flag:
+            possible_biotypes: List[str] = ["nonsense_mediated_decay", "protein_coding"]
+        else:
+            possible_biotypes: List[str] = ["protein_coding"]
         fas_values: List[float] = []
         for gene_id in tqdm(self.gene_assembly.keys(),
                             ncols=100,
                             total=len(self.gene_assembly.keys()),
                             desc="Collecting FAS scores"):
             gene: FASGene = self.gene_assembly[gene_id]
-            block_list: List[str] = []
-            prot_list: List[str] = []
-            for transcript in gene.get_transcripts():
-                if transcript.get_biotype() != "protein_coding":
-                    block_list.append(transcript.get_id())
-                elif transcript.get_transcript_support_level() >= threshold:
-                    block_list.append(transcript.get_id())
-                else:
-                    prot_list.append(transcript.get_id())
 
-            for protein_id in prot_list:
-                dist_row = gene.fas_distance_matrix_dict[protein_id]
-                for key_id in dist_row.keys():
-                    if key_id not in block_list and key_id != protein_id:
-                        fas_values.append(dist_row[key_id])
+            for protein_id in gene.fas_distance_matrix_dict.keys():
+                protein_biotype: str = gene.transcripts[protein_id].get_biotype()
+                protein_tsl: int = gene.transcripts[protein_id].get_transcript_support_level()
+                if protein_tsl < threshold and protein_biotype in possible_biotypes:
+                    dist_row = gene.fas_distance_matrix_dict[protein_id]
+                    for key_id in dist_row.keys():
+                        biotype: str = gene.transcripts[key_id].get_biotype()
+                        tsl: int = gene.transcripts[key_id].get_transcript_support_level()
+                        is_self: bool = key_id == protein_id
+                        has_fas: bool = dist_row[key_id] != -1.0
+                        if tsl < threshold and biotype in possible_biotypes and has_fas and not is_self:
+                            fas_values.append(dist_row[key_id])
         return fas_values
 
-    def cleanse_genes_without_fas(self) -> None:
-        for gene_id in self.gene_assembly.keys():
+    def get_nonsense_mediated_decay_gene_ratio(self) -> List[int]:
+        gene_count_list: List[int] = [0, 0]
+        for gene_id in tqdm(self.gene_assembly.keys(),
+                            ncols=100,
+                            total=len(self.gene_assembly.keys()),
+                            desc="Collecting NMD ratio"):
             gene: FASGene = self.gene_assembly[gene_id]
-            gene.clear_transcripts_without_fas()
-            self.gene_assembly[gene_id] = gene
+            is_nmd_flag: bool = False
+            for transcript in gene.get_transcripts():
+                if transcript.get_biotype() == "nonsense_mediated_decay":
+                    is_nmd_flag = True
+                    break
+            if is_nmd_flag:
+                gene_count_list[0] += 1
+            else:
+                gene_count_list[1] += 1
+
+        return gene_count_list
 
     def clear_empty_genes(self) -> None:
         gene_list: List[Gene] = self.get_genes()
@@ -159,14 +181,10 @@ class FASGeneAssembler(GeneAssembler):
 
 def main():
     fas_gene_assembler = FASGeneAssembler("human", "NCBI9606")
-    # fas_gene_assembler.load("C:/Users/chris/Desktop/git/root/extract.json")
-    # fas_gene_assembler.integrate_fas_distance_matrix_dict("C:/Users/chris/Desktop/stats/old_fas.json")
-    # fas_gene_assembler.cleanse_genes_without_fas()
-    # fas_gene_assembler.save("C:/Users/chris/Desktop/git/root/extract_with_fas.json")
-
-    fas_gene_assembler.load("C:/Users/chris/Desktop/git/root/extract_with_fas.json")
+    fas_gene_assembler.load("C:/Users/chris/Desktop/git/root/extract.json")
+    fas_gene_assembler.integrate_fas_distance_matrix_dict("C:/Users/chris/Desktop/stats/old_fas.json")
     fas_gene_assembler.clear_empty_genes()
-    fas_gene_assembler.save("C:/Users/chris/Desktop/git/root/extract_with_fas_no_empty_genes.json")
+    fas_gene_assembler.save("C:/Users/chris/Desktop/git/root/extract_without_fas.json")
 
 
 if __name__ == "__main__":
