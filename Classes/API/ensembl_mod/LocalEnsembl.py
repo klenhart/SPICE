@@ -67,23 +67,28 @@ class LocalEnsembl:
                                                          self.assembly_default_species_name,
                                                          self.release_num)
 
+    def get_species_name(self) -> str:
+        return self.species_name
+
+    def get_taxon_id(self) -> str:
+        return self.taxon_id
+
     def download(self) -> str:
         if not self.is_downloaded():
             with closing(request.urlopen(self.ftp_address)) as r:
-                with open(self.goal_directory + self.local_zipname, 'wb') as f:
+                with open(os.path.join(self.goal_directory, self.local_zipname), 'wb') as f:
                     shutil.copyfileobj(r, f)
 
             # Unpacking file
-            with gzip.open(self.goal_directory + self.local_zipname, 'rb') as f_in:
-                with open(self.goal_directory + self.local_filename, "wb") as f_out:
+            with gzip.open(os.path.join(self.goal_directory, self.local_zipname), 'rb') as f_in:
+                with open(os.path.join(self.goal_directory, self.local_filename), "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
-            os.remove(self.goal_directory + self.local_zipname)
-            return os.path.join(self.goal_directory, self.local_filename)
+            os.remove(os.path.join(self.goal_directory, self.local_zipname))
+        return os.path.join(self.goal_directory, self.local_filename)
 
     def remove(self) -> None:
         if self.is_downloaded():
             os.remove(os.path.join(self.goal_directory, self.local_filename))
-
 
     @property
     def ping(self) -> bool:

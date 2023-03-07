@@ -96,9 +96,6 @@ class GTFBoy:
                 if full_dict[key] not in values:
                     flag = False
                     break
-            else:
-                flag = False
-                break
         return flag
 
 
@@ -109,7 +106,7 @@ def main() -> None:
         if "\texon\t" in line or "\tgene\t" in line or "\tCDS\t":
             print(line)
         index += 1
-        if index == 100:
+        if index == 1000:
             break
 
 
