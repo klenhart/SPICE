@@ -43,8 +43,6 @@ def main():
     argument_parser.execute()
     argument_dict: Dict[str, Any] = argument_parser.get_args()
 
-    argument_dict["outdir"] = argument_dict["outdir"].replace("\\", "/")
-
     ####################################################################
 
     # Acquire the local ensembl file.
@@ -56,8 +54,11 @@ def main():
 
     # Build the library directory system
     library_name: str = "fade_lib_" + local_ensembl.get_species_name() + "_" + argument_dict["release"]
-    path_dict: Dict[str, str] = {"root": os.path.join(argument_dict["outdir"], library_name),
-                                 "info": os.path.join(argument_dict["outdir"], library_name, "info.tsv"),
+    path_dict: Dict[str, str] = {"root": os.path.join(argument_dict["outdir"],
+                                                      library_name),
+                                 "info": os.path.join(argument_dict["outdir"],
+                                                      library_name,
+                                                      "info.tsv"),
                                  "fas_data": os.path.join(argument_dict["outdir"],
                                                           library_name,
                                                           "fas_data"),
@@ -90,6 +91,9 @@ def main():
     gene_assembler.update_inclusion_filter("transcript_biotype", ["protein_coding", "nonsense_mediated_decay"])
     gene_assembler.extract(gtf_path)
     gene_assembler.save(path_dict["transcript_json"])
+
+    # Delete the file after successful extraction.
+    local_ensembl.remove()
 
     ####################################################################
 

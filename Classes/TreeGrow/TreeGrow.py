@@ -1,5 +1,5 @@
 #!/bin/env python
-
+import os
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
@@ -40,7 +40,7 @@ class TreeGrow:
 
     def put_path_json(self) -> None:
         if "root" in self.paths_dict.keys():
-            with open(self.paths_dict["root"] + "paths.json", "w") as json_file:
+            with open(os.path.join(self.paths_dict["root"], "paths.json"), "w") as json_file:
                 json.dump(self.paths_dict, json_file, indent=4)
 
 
