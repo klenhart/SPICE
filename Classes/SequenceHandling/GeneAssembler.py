@@ -138,6 +138,24 @@ class GeneAssembler:
                 output_list.append(gene)
         return output_list
 
+    def clear_empty_genes(self) -> None:
+        gene_list: List[Gene] = self.get_genes()
+        for gene in gene_list:
+            if len(gene.get_transcripts()) == 0:
+                del self.gene_assembly[gene.get_id()]
+
+    def get_gene_count(self) -> int:
+        return len(self.gene_assembly.keys())
+
+    def get_transcript_count(self, incomplete_flag: bool = False) -> int:
+        return sum([gene.get_transcript_count(incomplete_flag) for gene in self.get_genes()])
+
+    def get_protein_count(self, incomplete_flag: bool = False) -> int:
+        return sum([gene.get_protein_count(incomplete_flag) for gene in self.get_genes()])
+
+    def get_collected_sequences_count(self) -> int:
+        return self.get_protein_count(True)
+
     @staticmethod
     def to_dict(gene_assembly: Dict[str, Gene]) -> Dict[str, Dict[str, Any]]:
         json_dict: Dict[str, Dict[str, Any]] = dict()

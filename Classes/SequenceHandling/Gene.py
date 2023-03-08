@@ -81,11 +81,18 @@ class Gene:
         self.transcripts[transcript.get_id()] = transcript
         self.check_sequence_status()
 
-    def get_transcripts(self) -> List[Transcript]:
-        return list(self.transcripts.values())
+    def get_transcripts(self, incomplete_flag: bool = False) -> List[Transcript]:
+        if incomplete_flag:
+            return [transcript for transcript in list(self.transcripts.values()) if transcript.has_sequence()]
+        else:
+            return list(self.transcripts.values())
 
-    def get_proteins(self) -> List[Protein]:
-        return [protein for protein in self.transcripts.values() if isinstance(protein, Protein)]
+    def get_proteins(self, incomplete_flag: bool = False) -> List[Protein]:
+        if incomplete_flag:
+            return [protein for protein in self.transcripts.values() if
+                    isinstance(protein, Protein) and protein.has_sequence()]
+        else:
+            return [protein for protein in self.transcripts.values() if isinstance(protein, Protein)]
 
     def get_id(self) -> str:
         return self.id_gene
@@ -178,6 +185,12 @@ class Gene:
             self.add_transcript(entry)
         # elif entry_type == "exon": # TODO Exons will be integrated in the future
         #     self.transcripts.find(entry.get_id_protein()).add_entry("exon", entry)
+
+    def get_transcript_count(self, incomplete_flag: bool = False) -> int:
+        return len(self.get_transcripts(incomplete_flag))
+
+    def get_protein_count(self, incomplete_flag: bool = False) -> int:
+        return len(self.get_proteins(incomplete_flag))
 
     def __eq__(self, other):
         if isinstance(other, Gene):

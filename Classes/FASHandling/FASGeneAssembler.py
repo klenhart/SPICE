@@ -156,12 +156,6 @@ class FASGeneAssembler(GeneAssembler):
 
         return gene_count_list
 
-    def clear_empty_genes(self) -> None:
-        gene_list: List[Gene] = self.get_genes()
-        for gene in gene_list:
-            if len(gene.get_transcripts()) == 0:
-                del self.gene_assembly[gene.get_id()]
-
     @staticmethod
     def from_dict(json_dict: Dict[str, Dict[str, Any]]) -> Dict[str, FASGene]:
         output_dict: Dict[str, FASGene] = dict()

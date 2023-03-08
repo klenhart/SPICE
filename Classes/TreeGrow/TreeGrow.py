@@ -29,6 +29,8 @@ import json
 class TreeGrow:
     def __init__(self, paths_dict: Dict[str, str]) -> None:
         self.paths_dict: Dict[str, str] = paths_dict
+        if "root" in self.paths_dict.keys():
+            self.paths_dict["self"] = os.path.join(self.paths_dict["root"], "paths.json")
 
     def create_folders(self) -> None:
         for path in self.paths_dict.values():

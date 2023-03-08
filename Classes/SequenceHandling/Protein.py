@@ -76,6 +76,7 @@ class Protein(Transcript):
         self.set_id_taxon(input_dict["taxon_id"])
         self.set_id_gene(input_dict["gene_id"])
         self.set_biotype(input_dict["biotype"])
+        self.set_tags(input_dict["tags"])
         self.set_transcript_support_level(input_dict["tsl"])
         # for exon_dict in input_dict["exons"]: # TODO Exons will be integrated in the future
         #     exon: Exon = Exon()
@@ -91,6 +92,7 @@ class Protein(Transcript):
         output["taxon_id"] = self.get_id_taxon()
         output["sequence"] = self.get_sequence()
         output["biotype"] = self.get_biotype()
+        output["tags"] = self.get_tags()
         output["tsl"] = self.get_transcript_support_level()
         # exon_list: List[Dict[str, Any]] = [] # TODO Exons will be integrated in the future.
         # for exon in self.get_exons():
@@ -107,6 +109,7 @@ class Protein(Transcript):
             elif field_name == "attribute":
                 attribute_dict: Dict[str, str] = GTFBoy.build_attribute_dict(entry)
                 self.set_id(attribute_dict["protein_id"])
+                self.set_tags(attribute_dict["tag"].split(";"))
                 try:
                     self.set_name(attribute_dict["transcript_name"])
                 except KeyError:

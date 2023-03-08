@@ -65,12 +65,10 @@ class GTFBoy:
                     attribute_dict["transcript_support_level"] = pair[1][0]
             else:
                 attribute_dict[pair[0]] = pair[1]
-        tag_string = "; ".join(tag_list)
+        tag_string = ";".join(tag_list)
         attribute_dict["tag"] = tag_string
         if "transcript_support_level" not in attribute_dict.keys():
             attribute_dict["transcript_support_level"] = "6"
-        if "basic" in attribute_dict["tag"]:
-            attribute_dict["transcript_support_level"] = "0"
         return attribute_dict
 
     @staticmethod

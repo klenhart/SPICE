@@ -26,6 +26,8 @@ import sys
 from typing import Dict, List, Tuple
 from typing import Any
 
+from tqdm import tqdm
+
 from requests import Response
 
 

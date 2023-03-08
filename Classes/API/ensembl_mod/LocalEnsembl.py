@@ -75,6 +75,7 @@ class LocalEnsembl:
 
     def download(self) -> str:
         if not self.is_downloaded():
+            print("Downloading " + self.ftp_address + ".")
             with closing(request.urlopen(self.ftp_address)) as r:
                 with open(os.path.join(self.goal_directory, self.local_zipname), 'wb') as f:
                     shutil.copyfileobj(r, f)
@@ -84,7 +85,12 @@ class LocalEnsembl:
                 with open(os.path.join(self.goal_directory, self.local_filename), "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
             os.remove(os.path.join(self.goal_directory, self.local_zipname))
+        else:
+            print("Ensembl file already downloaded. (" + os.path.join(self.goal_directory, self.local_filename) + ")")
         return os.path.join(self.goal_directory, self.local_filename)
+
+    def get_release_num(self) -> str:
+        return self.release_num
 
     def remove(self) -> None:
         if self.is_downloaded():
@@ -96,7 +102,6 @@ class LocalEnsembl:
 
     def is_downloaded(self) -> bool:
         if os.path.isfile(os.path.join(self.goal_directory, self.local_filename)):
-            print("Ensembl file already downloaded.")
             return True
         else:
             return False

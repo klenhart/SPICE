@@ -51,7 +51,8 @@ setup(
         'tqdm',
         'numpy',
         'matplotlib',
-        'scipy'
+        'scipy',
+        'yaml'
     ],
     entry_points={
         'console_scripts': ["gt.run = grand-trumpet.fas_lib:main",

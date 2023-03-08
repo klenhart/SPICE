@@ -39,6 +39,16 @@ class Transcript():
         self.id_taxon: str = ""
         self.biotype: str = ""
         self.transcript_support_level: int = 6
+        self.tags = list()
+
+    def has_sequence(self) -> bool:
+        if self.feature == "transcript":
+            return True
+        else:
+            return len(self.get_sequence()) > 0
+
+    def set_tags(self, tag_list: List[str]):
+        self.tags = tag_list
 
     def set_id(self, id_transcript: str) -> None:
         """
@@ -94,6 +104,15 @@ class Transcript():
     def get_transcript_support_level(self) -> int:
         return self.transcript_support_level
 
+    def get_tags(self) -> List[str]:
+        return self.tags
+
+    def has_tag(self, tag: str) -> bool:
+        return tag in self.tags
+
+    def get_sequence(self):
+        return ""
+
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
         self.set_id(input_dict["_id"])
         self.set_name(input_dict["transcript_name"])
@@ -101,6 +120,7 @@ class Transcript():
         self.set_feature(input_dict["feature"])
         self.set_id_gene(input_dict["gene_id"])
         self.set_biotype(input_dict["biotype"])
+        self.set_tags((input_dict["tags"]))
         self.set_transcript_support_level(input_dict["tsl"])
 
     def to_dict(self) -> Dict[str, Any]:
@@ -111,6 +131,7 @@ class Transcript():
         output["gene_id"] = self.get_id_gene()
         output["taxon_id"] = self.get_id_taxon()
         output["biotype"] = self.get_biotype()
+        output["tags"] = self.get_tags()
         output["tsl"] = self.get_transcript_support_level()
         return output
 
