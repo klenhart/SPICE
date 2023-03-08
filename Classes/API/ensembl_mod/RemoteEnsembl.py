@@ -21,22 +21,44 @@
 #######################################################################
 
 
-from typing import Type
-from typing import List
+from typing import Type, List, Dict, Any
+from time import sleep
 
-from Classes.API.ensembl_mod.LocalEnsembl import LocalEnsembl
+import requests
+import sys
+
+from Classes.API.ensembl_mod.EnsemblUtils import chunks, make_request_data
+from Classes.SequenceHandling.Protein import Protein
 
 
-class RemoteEnsembl(LocalEnsembl):
+class RemoteEnsembl:
 
-    def __init__(self, raw_species: str, goal_directory: str, release_num: str) -> None:
-        super().__init__(raw_species, goal_directory, release_num)
+    @staticmethod
+    def collect_sequences(self, proteins: List[Protein]) -> Dict[str, str]:
+        request_chunks: List[List[str]] = list(chunks([protein.get_id() for protein in proteins], 50))
+        ensembl_requests: List[str] = list()
+
+        for chunk in request_chunks:
+            ensembl_requests.append(make_request_data(chunk))
+
+        server: str = "https://rest.ensembl.org/sequence/id"
+        headers: Dict[str, str] = {"Content-Type": "application/json", "Accept": "application/json"}
+
+        for i, request in enumerate(ensembl_requests):
+            for x in range(10):
+                r = requests.post(server, headers=headers, data=request)
+                if r.ok:
+                    break
+                elif x >= 9:
+                    r.raise_for_status()
+                    sys.exit()
+                sleep(0.05)
+            decoded: Any = r.json()
+            print(decoded)
 
 
 def main():
-    remote_ensembl = RemoteEnsembl("human", "C:/Users/chris/Desktop/git/root/", "107")
-    print(remote_ensembl.ping)
-    remote_ensembl.download()
+    pass
 
 
 if __name__ == "__main__":

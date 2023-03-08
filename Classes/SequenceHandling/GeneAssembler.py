@@ -115,7 +115,7 @@ class GeneAssembler:
                         transcript.from_gtf_line(split_line)
                         # Externally set the taxon id.
                         transcript.set_id_taxon(self.taxon_id)
-                    self.gene_assembly[transcript.get_id_gene()].add_transcript(transcript)
+                    self.gene_assembly[transcript.get_id_gene()].add_transcript(transcript, True)
                 elif feature == "CDS":
                     # Make protein
                     protein: Protein = Protein()
@@ -123,11 +123,11 @@ class GeneAssembler:
                     protein.from_gtf_line(split_line)
                     # Externally set the taxon id.
                     protein.set_id_taxon(self.taxon_id)
-                    self.gene_assembly[protein.get_id_gene()].add_transcript(protein)
+                    self.gene_assembly[protein.get_id_gene()].add_transcript(protein, True)
 
-    def get_genes(self, incomplete_flag: bool = False) -> List[Gene]:
+    def get_genes(self, no_sequence_flag: bool = False) -> List[Gene]:
         output_list: List[Gene] = list()
-        if incomplete_flag:
+        if no_sequence_flag:
             for key in list(self.gene_assembly.keys()):
                 gene: Gene = self.gene_assembly[key]
                 if not gene.is_sequence_complete():
@@ -147,14 +147,25 @@ class GeneAssembler:
     def get_gene_count(self) -> int:
         return len(self.gene_assembly.keys())
 
-    def get_transcript_count(self, incomplete_flag: bool = False) -> int:
-        return sum([gene.get_transcript_count(incomplete_flag) for gene in self.get_genes()])
+    def get_transcript_count(self, no_sequence_flag: bool = False) -> int:
+        return sum([gene.get_transcript_count(no_sequence_flag) for gene in self.get_genes()])
 
-    def get_protein_count(self, incomplete_flag: bool = False) -> int:
-        return sum([gene.get_protein_count(incomplete_flag) for gene in self.get_genes()])
+    def get_protein_count(self,
+                          no_sequence_flag: bool = False,
+                          no_annotation_flag: bool = False,
+                          no_fas_flag: bool = False) -> int:
+        return sum([gene.get_protein_count(no_sequence_flag,
+                                           no_annotation_flag,
+                                           no_fas_flag) for gene in self.get_genes()])
 
     def get_collected_sequences_count(self) -> int:
         return self.get_protein_count(True)
+
+    def get_annotated_sequences_count(self) -> int:
+        return self.get_protein_count(False, True)
+
+    def get_fas_scored_count(self) -> int:
+        return self.get_protein_count(False, False, True)
 
     @staticmethod
     def to_dict(gene_assembly: Dict[str, Gene]) -> Dict[str, Dict[str, Any]]:

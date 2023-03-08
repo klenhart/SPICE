@@ -20,11 +20,11 @@
 #
 #######################################################################
 
-import threading
 import os
 import time
 import errno
-from NoHashBut import NoHashBut
+
+from Classes.WriteGuard.NoHashBut import NoHashBut
 
 
 class WriteGuard:

@@ -25,7 +25,7 @@ from Classes.GTFBoy.GTFBoy import GTFBoy
 from typing import Dict, Any, List
 
 
-class Transcript():
+class Transcript:
 
     GTF_MASK: List[str] = ["seqname", "source", "feature",
                            "start", "end", "score",

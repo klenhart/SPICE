@@ -22,15 +22,21 @@
 
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.API.ensembl_mod.LocalEnsembl import LocalEnsembl
+from Classes.API.ensembl_mod.RemoteEnsembl import RemoteEnsembl
+from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
+from Classes.SequenceHandling.Protein import Protein
 from Classes.TreeGrow.TreeGrow import TreeGrow
+from Classes.WriteGuard.WriteGuard import WriteGuard
 
-from typing import Dict, Any
+from typing import Dict, Any, List
+from tqdm import tqdm
+from datetime import date
+
 import os.path
 import shutil
 import yaml
 import json
-from datetime import date
 
 
 def main():
@@ -73,7 +79,7 @@ def main():
         print("Library \"" + os.path.join(argument_dict["outdir"], library_name) + "\" already exists.")
         print("Loading existing library.")
 
-        with open(os.path.join(argument_dict["outdir"], library_name, "paths.json") , "r") as f:
+        with open(os.path.join(argument_dict["outdir"], library_name, "paths.json"), "r") as f:
             path_dict: Dict[str, str] = json.load(f)
         gene_assembler.load(path_dict["transcript_json"])
 
@@ -141,12 +147,37 @@ def main():
                                  "gene_count": gene_assembler.get_gene_count(),
                                  "transcript_count": gene_assembler.get_transcript_count(),
                                  "protein_count": gene_assembler.get_protein_count(),
-                                 "collected_sequences_count": gene_assembler.get_collected_sequences_count()
+                                 "collected_sequences_count": gene_assembler.get_collected_sequences_count(),
+                                 "annotated_sequences_count": gene_assembler.get_annotated_sequences_count(),
+                                 "fas_scored_sequences_count": gene_assembler.get_fas_scored_count()
                                  }
+
+    library_info: Dict[str, Any] = info_dict["library_info"]
+    sequence_collection_flag: bool = library_info["protein_count"] == library_info["collected_sequences_count"]
+    annotation_flag: bool = library_info["protein_count"] == library_info["annotated_sequences_count"]
+    fas_flag: bool = library_info["protein_count"] == library_info["fas_scored_sequences_count"]
+
+    info_dict["status"] = {"01_id_collection": True,
+                           "02_sequence_collection": sequence_collection_flag,
+                           "03_annotated_sequences": annotation_flag,
+                           "04_fas_scored_sequences": fas_flag
+                           }
+
     with open(path_dict["info"], "w") as f:
         yaml.dump(info_dict, f)
 
     ####################################################################
+
+    # Collect sequences.
+    with WriteGuard(path_dict["transcript_json"], path_dict["transcript_data"]):
+        # Collect the sequences for each incomplete gene.
+        incomplete_gene_list: List[Gene] = gene_assembler.get_genes(True)
+
+        for gene in tqdm(incomplete_gene_list, ncols=100,
+                         total=len(incomplete_gene_list), desc="Sequence collection progress:"):
+            incomplete_proteins_list: List[Protein] = gene.get_proteins(True)
+            RemoteEnsembl.collect_sequences(incomplete_proteins_list)
+            break
 
 
 if __name__ == "__main__":

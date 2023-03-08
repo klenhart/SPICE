@@ -46,7 +46,10 @@ class Gene:
         self.species: str = ""
         self.transcripts: Dict[str, Transcript] = dict()
         self.sequences_complete_flag = False
+        self.fas_complete_flag = False
+        self.fas_dict: Dict[str, Dict[str, float]] = dict()
         self.check_sequence_status()
+        self.check_fas_status()
 
     def set_id(self, id_gene: str) -> None:
         self.id_gene = id_gene
@@ -73,24 +76,51 @@ class Gene:
     def set_chromosome(self, chromosome: str) -> None:
         self.chromosome = chromosome
 
-    def add_transcript(self, transcript: Transcript) -> None:
+    def add_transcript(self, transcript: Transcript, initial_add: bool = False) -> None:
         """
-
+        :param initial_add: True if this transcript is being newly added to the gene or if it comes from an old load.
         :type transcript: Transcript
         """
         self.transcripts[transcript.get_id()] = transcript
-        self.check_sequence_status()
 
-    def get_transcripts(self, incomplete_flag: bool = False) -> List[Transcript]:
-        if incomplete_flag:
+        if transcript.get_biotype() in ["protein_coding", "nonsense_mediated_decay"] and initial_add:
+            if transcript.get_id() not in self.fas_dict.keys():
+                self.fas_dict[transcript.get_id()] = dict()
+                for transcript_id in self.fas_dict.keys():
+                    if transcript_id == transcript.get_id():
+                        self.fas_dict[transcript.get_id()][transcript_id] = 1.0
+                    elif transcript.get_biotype() == "nonsense_mediated_decay":
+                        self.fas_dict[transcript.get_id()][transcript_id] = 0.0
+                        self.fas_dict[transcript_id][transcript.get_id()] = 0.0
+                    else:
+                        self.fas_dict[transcript.get_id()][transcript_id] = -1.0
+                        self.fas_dict[transcript_id][transcript.get_id()] = -1.0
+
+        self.check_sequence_status()
+        self.check_fas_status()
+
+    def get_transcripts(self, no_sequence_flag: bool = False) -> List[Transcript]:
+        if no_sequence_flag:
             return [transcript for transcript in list(self.transcripts.values()) if transcript.has_sequence()]
         else:
             return list(self.transcripts.values())
 
-    def get_proteins(self, incomplete_flag: bool = False) -> List[Protein]:
-        if incomplete_flag:
+    def get_proteins(self,
+                     no_sequence_flag: bool = False,
+                     no_annotation_flag: bool = False,
+                     no_fas_flag: bool = False) -> List[Protein]:
+        if no_sequence_flag:
             return [protein for protein in self.transcripts.values() if
-                    isinstance(protein, Protein) and protein.has_sequence()]
+                    isinstance(protein, Protein) and not protein.has_sequence()]
+        elif no_annotation_flag:
+            return [protein for protein in self.transcripts.values() if
+                    isinstance(protein, Protein) and not protein.has_annotation()]
+        elif no_fas_flag:
+            output_list: List[Protein] = list()
+            for protein_id in self.fas_dict.keys():
+                if -1 in self.fas_dict[protein_id].values():
+                    output_list.append(self.transcripts[protein_id])
+            return output_list
         else:
             return [protein for protein in self.transcripts.values() if isinstance(protein, Protein)]
 
@@ -115,8 +145,14 @@ class Gene:
     def get_chromosome(self) -> str:
         return self.chromosome
 
+    def get_fas_dict(self) -> Dict[str, Dict[str, float]]:
+        return self.fas_dict
+
     def is_sequence_complete(self) -> bool:
         return self.sequences_complete_flag
+
+    def set_fas_dict(self, fas_dict: Dict[str, Dict[str, float]]):
+        self.fas_dict = fas_dict
 
     def set_sequence_of_transcript(self, transcript_id: str, sequence: str) -> None:
         protein: Protein = self.transcripts[transcript_id]
@@ -125,7 +161,10 @@ class Gene:
 
     def check_sequence_status(self) -> None:
         self.sequences_complete_flag = all([len(protein.get_sequence()) > 0
-                                            for protein in self.get_transcripts() if isinstance(protein, Protein)])
+                                            for protein in self.get_proteins() if isinstance(protein, Protein)])
+
+    def check_fas_status(self) -> None:
+        self.fas_complete_flag = all([-1 not in list(row_dict.values()) for row_dict in self.get_fas_dict().values()])
 
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
         self.set_id(input_dict["_id"])
@@ -135,6 +174,7 @@ class Gene:
         self.set_chromosome(input_dict["chromosome"])
         self.set_species(input_dict["species"])
         self.set_biotype(input_dict["biotype"])
+        self.set_fas_dict(input_dict["fas_dict"])
         for key in input_dict["transcripts"].keys():
             transcript_dict = input_dict["transcripts"][key]
             if transcript_dict["feature"] == "transcript":
@@ -154,8 +194,9 @@ class Gene:
         output["feature"] = self.get_feature()
         output["taxon_id"] = self.get_id_taxon()
         output["chromosome"] = self.get_chromosome()
-        output["biotype"] = self.get_biotype()
         output["species"] = self.get_species()
+        output["biotype"] = self.get_biotype()
+        output["fas_dict"] = self.get_fas_dict()
         transcript_dict: Dict[str, Dict[str, Any]] = dict()
         for transcript in self.get_transcripts():
             transcript_dict[transcript.get_id()] = transcript.to_dict()
@@ -183,14 +224,15 @@ class Gene:
     def add_entry(self, entry_type: str, entry: Any):
         if entry_type == "transcript":
             self.add_transcript(entry)
-        # elif entry_type == "exon": # TODO Exons will be integrated in the future
-        #     self.transcripts.find(entry.get_id_protein()).add_entry("exon", entry)
 
-    def get_transcript_count(self, incomplete_flag: bool = False) -> int:
-        return len(self.get_transcripts(incomplete_flag))
+    def get_transcript_count(self, no_sequence_flag: bool = False) -> int:
+        return len(self.get_transcripts(no_sequence_flag))
 
-    def get_protein_count(self, incomplete_flag: bool = False) -> int:
-        return len(self.get_proteins(incomplete_flag))
+    def get_protein_count(self,
+                          no_sequence_flag: bool = False,
+                          no_annotation_flag: bool = False,
+                          no_fas_flag: bool =  False) -> int:
+        return len(self.get_proteins(no_sequence_flag, no_annotation_flag, no_fas_flag))
 
     def __eq__(self, other):
         if isinstance(other, Gene):

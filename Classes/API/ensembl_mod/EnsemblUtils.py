@@ -31,6 +31,21 @@ from tqdm import tqdm
 from requests import Response
 
 
+def chunks(lst: List[str], n: int) -> List[List[str]]:
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
+def make_request_data(id_list: List[str]) -> str:
+    request_data: str = '{ "ids" : ['
+    for entry in id_list:
+        request_data += '"' + entry + '", '
+    request_data = request_data[:-2]
+    request_data += ' ] }'
+    return request_data
+
+
 def ping_ensembl() -> bool:
     """
 
