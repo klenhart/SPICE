@@ -157,7 +157,7 @@ class GeneAssembler:
     def clear_empty_genes(self) -> None:
         gene_list: List[Gene] = self.get_genes()
         for gene in gene_list:
-            if len(gene.get_transcripts()) == 0:
+            if len(gene.get_proteins()) == 0:
                 del self.gene_assembly[gene.get_id()]
 
     def get_gene_count(self) -> int:

@@ -39,7 +39,7 @@ import shutil
 import json
 
 
-def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
+def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]) -> None:
     incomplete_gene_list: List[Gene] = gene_assembler.get_genes(True)
     progress_count: int = 0
     for gene in tqdm(incomplete_gene_list, ncols=100,
@@ -55,6 +55,7 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
                     gene.delete_transcript(protein.get_id())
                     library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
                     library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
+
                     library_info.save()
                 break
             else:
@@ -65,7 +66,10 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
             library_info.save()
     gene_assembler.clear_empty_genes()
     gene_assembler.save(path_dict["transcript_json"])
+    info: Dict[str, Any] = library_info["info"]
     library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
+    sequence_collection_flag: bool = info["protein_count"] == info["collected_sequences_count"]
+    library_info["status"]["02_sequence_collection"] = sequence_collection_flag
     library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
     library_info.save()
 
@@ -203,6 +207,13 @@ def main():
             collect_sequences(gene_assembler, library_info, path_dict)
     else:
         print("Sequences already collected.")
+
+    ####################################################################
+
+    # TODO Generate FASTA, calculate all annotation.
+    # TODO Calculate annotation (requires FAS location)
+    # TODO Filter proteins with less than 10 aminoacids.
+    # TODO Generate Pairings for each gene.
 
 
 if __name__ == "__main__":
