@@ -25,6 +25,7 @@ from Classes.API.ensembl_mod.LocalEnsembl import LocalEnsembl
 from Classes.API.ensembl_mod.RemoteEnsembl import RemoteEnsembl
 from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
+from Classes.SequenceHandling.LibraryInfo import LibraryInfo
 from Classes.SequenceHandling.Protein import Protein
 from Classes.TreeGrow.TreeGrow import TreeGrow
 from Classes.WriteGuard.WriteGuard import WriteGuard
@@ -35,8 +36,38 @@ from datetime import date
 
 import os.path
 import shutil
-import yaml
 import json
+
+
+def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
+    incomplete_gene_list: List[Gene] = gene_assembler.get_genes(True)
+    progress_count: int = 0
+    for gene in tqdm(incomplete_gene_list, ncols=100,
+                     total=len(incomplete_gene_list), desc="Sequence collection progress:"):
+
+        progress_count += 1
+        incomplete_proteins_list: List[Protein] = gene.get_proteins(True)
+        results: List[Dict[str, str]] = RemoteEnsembl.collect_sequences(incomplete_proteins_list)
+        for result in results:
+            if "error" in result.keys():
+                for protein in incomplete_proteins_list:
+                    print("\n", protein.get_id(), " is depreciated. Removing from library.")
+                    gene.delete_transcript(protein.get_id())
+                    library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
+                    library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
+                    library_info.save()
+                break
+            else:
+                gene.set_sequence_of_transcript(result["query"], result["seq"])
+        if progress_count % 250 == 0:
+            gene_assembler.save(path_dict["transcript_json"])
+            library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
+            library_info.save()
+    gene_assembler.clear_empty_genes()
+    gene_assembler.save(path_dict["transcript_json"])
+    library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
+    library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
+    library_info.save()
 
 
 def main():
@@ -136,48 +167,42 @@ def main():
 
     print("Saving info.yaml at " + path_dict["info"])
 
+    library_info: LibraryInfo = LibraryInfo(path_dict["info"])
+
     # Save base info
-    info_dict: Dict[str, Any] = dict()
-    info_dict["fade_version"] = "0.1"
-    info_dict["date"] = str(date.today())
-    info_dict["commandline_args"] = argument_dict
-    info_dict["library_info"] = {"species": local_ensembl.get_species_name(),
-                                 "taxon_id": local_ensembl.get_taxon_id(),
-                                 "release": local_ensembl.get_release_num(),
-                                 "gene_count": gene_assembler.get_gene_count(),
-                                 "transcript_count": gene_assembler.get_transcript_count(),
-                                 "protein_count": gene_assembler.get_protein_count(),
-                                 "collected_sequences_count": gene_assembler.get_collected_sequences_count(),
-                                 "annotated_sequences_count": gene_assembler.get_annotated_sequences_count(),
-                                 "fas_scored_sequences_count": gene_assembler.get_fas_scored_count()
-                                 }
+    library_info["fade_version"] = "0.1"
+    library_info["date"] = str(date.today())
+    library_info["commandline_args"] = argument_dict
+    library_info["info"] = {"species": local_ensembl.get_species_name(),
+                            "taxon_id": local_ensembl.get_taxon_id(),
+                            "release": local_ensembl.get_release_num(),
+                            "gene_count": gene_assembler.get_gene_count(),
+                            "transcript_count": gene_assembler.get_transcript_count(),
+                            "protein_count": gene_assembler.get_protein_count(),
+                            "collected_sequences_count": gene_assembler.get_collected_sequences_count(),
+                            "fas_scored_sequences_count": gene_assembler.get_fas_scored_count()
+                            }
 
-    library_info: Dict[str, Any] = info_dict["library_info"]
-    sequence_collection_flag: bool = library_info["protein_count"] == library_info["collected_sequences_count"]
-    annotation_flag: bool = library_info["protein_count"] == library_info["annotated_sequences_count"]
-    fas_flag: bool = library_info["protein_count"] == library_info["fas_scored_sequences_count"]
+    library_status: Dict[str, Any] = library_info["info"]
+    sequence_collection_flag: bool = library_status["protein_count"] == library_status["collected_sequences_count"]
+    fas_flag: bool = library_status["protein_count"] == library_status["fas_scored_sequences_count"]
 
-    info_dict["status"] = {"01_id_collection": True,
-                           "02_sequence_collection": sequence_collection_flag,
-                           "03_annotated_sequences": annotation_flag,
-                           "04_fas_scored_sequences": fas_flag
-                           }
-
-    with open(path_dict["info"], "w") as f:
-        yaml.dump(info_dict, f)
+    library_info["status"] = {"01_id_collection": True,
+                              "02_sequence_collection": sequence_collection_flag,
+                              "03_annotated_sequences": False,
+                              "04_fas_scored_sequences": fas_flag
+                              }
 
     ####################################################################
 
-    # Collect sequences.
-    with WriteGuard(path_dict["transcript_json"], path_dict["transcript_data"]):
-        # Collect the sequences for each incomplete gene.
-        incomplete_gene_list: List[Gene] = gene_assembler.get_genes(True)
-
-        for gene in tqdm(incomplete_gene_list, ncols=100,
-                         total=len(incomplete_gene_list), desc="Sequence collection progress:"):
-            incomplete_proteins_list: List[Protein] = gene.get_proteins(True)
-            RemoteEnsembl.collect_sequences(incomplete_proteins_list)
-            break
+    if not library_info["status"]["02_sequence_collection"]:
+        # Collect sequences.
+        with WriteGuard(path_dict["transcript_json"], path_dict["transcript_data"]):
+            # Collect the sequences for each incomplete gene.
+            collect_sequences(gene_assembler, library_info, path_dict)
+            collect_sequences(gene_assembler, library_info, path_dict)
+    else:
+        print("Sequences already collected.")
 
 
 if __name__ == "__main__":

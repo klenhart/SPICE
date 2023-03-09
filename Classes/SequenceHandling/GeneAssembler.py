@@ -43,7 +43,7 @@ class GeneAssembler:
     score - A floating point value.
     strand - defined as + (forward) or - (reverse).
     frame - One of '0', '1' or '2'. '0' indicates that the first base of the feature is the first base of a codon, '1'
-     that the second base is the first base of a codon, and so on..
+     that the second base is the first base of a codon, and so on.
     attribute - A semicolon-separated list of tag-value pairs, providing additional information about each feature.
 
     Source: https://www.ensembl.org/info/website/upload/gff.html
@@ -117,25 +117,41 @@ class GeneAssembler:
                         transcript.set_id_taxon(self.taxon_id)
                     self.gene_assembly[transcript.get_id_gene()].add_transcript(transcript, True)
                 elif feature == "CDS":
-                    # Make protein
-                    protein: Protein = Protein()
-                    # Use Proteins method to construct itself from a split gtf line.
-                    protein.from_gtf_line(split_line)
-                    # Externally set the taxon id.
-                    protein.set_id_taxon(self.taxon_id)
-                    self.gene_assembly[protein.get_id_gene()].add_transcript(protein, True)
+                    # Do not extract transcripts that will have a protein counterpart in the GTF due to their biotype.
+                    if GTFBoy.has_attribute_value("transcript_biotype", "nonsense_mediated_decay", split_line[8]):
+                        continue
+                    else:
+                        # Make protein
+                        protein: Protein = Protein()
+                        # Use Proteins method to construct itself from a split gtf line.
+                        protein.from_gtf_line(split_line)
+                        # Externally set the taxon id.
+                        protein.set_id_taxon(self.taxon_id)
+                        self.gene_assembly[protein.get_id_gene()].add_transcript(protein, True)
 
-    def get_genes(self, no_sequence_flag: bool = False) -> List[Gene]:
+    def get_genes(self, no_sequence_flag: bool = False, no_fas_flag: bool = False) -> List[Gene]:
         output_list: List[Gene] = list()
         if no_sequence_flag:
             for key in list(self.gene_assembly.keys()):
                 gene: Gene = self.gene_assembly[key]
                 if not gene.is_sequence_complete():
                     output_list.append(gene)
+        elif no_fas_flag:
+            for key in list(self.gene_assembly.keys()):
+                gene: Gene = self.gene_assembly[key]
+                if len(gene.get_proteins(False, True)) > 0:
+                    output_list.append(gene)
         else:
             for key in list(self.gene_assembly.keys()):
                 gene: Gene = self.gene_assembly[key]
                 output_list.append(gene)
+        return output_list
+
+    def get_transcripts(self) -> List[Transcript]:
+        output_list: List[Transcript] = list()
+        for key in self.gene_assembly.keys():
+            gene: Gene = self.gene_assembly[key]
+            output_list += gene.get_transcripts()
         return output_list
 
     def clear_empty_genes(self) -> None:
@@ -152,20 +168,15 @@ class GeneAssembler:
 
     def get_protein_count(self,
                           no_sequence_flag: bool = False,
-                          no_annotation_flag: bool = False,
                           no_fas_flag: bool = False) -> int:
         return sum([gene.get_protein_count(no_sequence_flag,
-                                           no_annotation_flag,
                                            no_fas_flag) for gene in self.get_genes()])
 
     def get_collected_sequences_count(self) -> int:
-        return self.get_protein_count(True)
-
-    def get_annotated_sequences_count(self) -> int:
-        return self.get_protein_count(False, True)
+        return self.get_protein_count() - self.get_protein_count(True)
 
     def get_fas_scored_count(self) -> int:
-        return self.get_protein_count(False, False, True)
+        return self.get_protein_count() - self.get_protein_count(False, True)
 
     @staticmethod
     def to_dict(gene_assembly: Dict[str, Gene]) -> Dict[str, Dict[str, Any]]:

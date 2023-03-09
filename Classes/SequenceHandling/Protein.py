@@ -35,7 +35,6 @@ class Protein(Transcript):
         self.id_protein: str = ""
         self.sequence: str = ""
         self.feature: str = "protein"
-        self.annotation: str = ""
 
     def set_id(self, id_protein: str) -> None:
         """
@@ -62,9 +61,6 @@ class Protein(Transcript):
 
     def get_sequence(self) -> str:
         return self.sequence
-
-    def has_annotation(self) -> bool:
-        return self.annotation != ""
 
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
         self.set_id(input_dict["_id"])
