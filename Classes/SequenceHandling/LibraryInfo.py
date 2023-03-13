@@ -1,5 +1,5 @@
 #!/bin/env python
-from typing import Any
+from typing import Any, Dict
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -29,7 +29,7 @@ class LibraryInfo:
     def __init__(self, info_path: str) -> None:
         self.path: str = info_path
         with open(info_path, "r") as f:
-            self.info_dict = yaml.safe_load(f)
+            self.info_dict: Dict[str, Any] = yaml.safe_load(f)
         if self.info_dict is None:
             self.info_dict = dict()
 
@@ -39,6 +39,20 @@ class LibraryInfo:
     def __setitem__(self, key: str, item: Any) -> None:
         self.info_dict[key] = item
 
+    def __str__(self) -> str:
+        output: str = LibraryInfo.format_dict(self.info_dict)
+        return output
+
     def save(self):
         with open(self.path, "w") as f:
-            yaml.dump(self.info_dict ,f)
+            yaml.dump(self.info_dict, f)
+
+    @staticmethod
+    def format_dict(dictionary: Dict[str, Any], layer: int = 0) -> str:
+        output: str = ""
+        for key in dictionary.keys():
+            if isinstance(dictionary[key], dict):
+                output += layer * "\t" + key + ":\n" + LibraryInfo.format_dict(dictionary[key], layer + 1)
+            else:
+                output += layer * "\t" + key + ":\t" + str(dictionary[key]) + "\n"
+        return output

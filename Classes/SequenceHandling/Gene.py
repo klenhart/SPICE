@@ -234,12 +234,18 @@ class Gene:
         return len(self.get_proteins(no_sequence_flag, no_fas_flag))
 
     def delete_transcript(self, transcript_id: str):
-        print("Deleting ", transcript_id)
+        print("\tDeleting ", transcript_id)
         del self.transcripts[transcript_id]
         del self.fas_dict[transcript_id]
         for key in self.fas_dict.keys():
             del self.fas_dict[key][transcript_id]
         self.check_sequence_status()
+
+    def calculate_implicit_fas_scores(self):
+        for key_x in self.fas_dict.keys():
+            for key_y in self.fas_dict.keys():
+                if key_x == key_y:
+                    self.fas_dict[key_x][key_y] = 1.0
 
     def __eq__(self, other):
         if isinstance(other, Gene):
