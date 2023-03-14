@@ -36,7 +36,7 @@ class Transcript:
         self.name_transcript: str = ""
         self.feature = "transcript"
         self.id_gene: str = ""
-        self.id_taxon: str = ""
+        self.id_taxon: int = 0
         self.biotype: str = ""
         self.transcript_support_level: int = 6
         self.tags = list()
@@ -60,10 +60,10 @@ class Transcript:
     def set_name(self, name_transcript: str) -> None:
         self.name_transcript = name_transcript
 
-    def set_id_taxon(self, id_taxon) -> None:
+    def set_id_taxon(self, id_taxon: int) -> None:
         """
 
-        :type id_taxon: str
+        :type id_taxon: int
         """
         self.id_taxon = id_taxon
 
@@ -92,7 +92,7 @@ class Transcript:
     def get_feature(self) -> str:
         return self.feature
 
-    def get_id_taxon(self) -> str:
+    def get_id_taxon(self) -> int:
         return self.id_taxon
 
     def get_biotype(self) -> str:
@@ -153,8 +153,8 @@ class Transcript:
                 self.set_id_gene(attribute_dict["gene_id"])
                 self.set_transcript_support_level(int(attribute_dict["transcript_support_level"]))
 
-    def add_entry(self, entry_type: str, entry: Any) -> None:
-        pass
+    def make_header(self) -> str:
+        return "|".join([self.get_id_gene(), self.get_id(), str(self.get_id_taxon())])
 
     def __eq__(self, other):
         if isinstance(other, Transcript):

@@ -247,6 +247,15 @@ class Gene:
                 if key_x == key_y:
                     self.fas_dict[key_x][key_y] = 1.0
 
+    def make_pairings(self) -> str:
+        protein_list: List[Protein] = self.get_proteins(False, True)
+        row_list: List[str] = list()
+        for protein_1 in protein_list:
+            for protein_2 in protein_list:
+                if protein_1 != protein_2 and protein_2.make_header_pair(protein_1) not in row_list:
+                    row_list.append(protein_1.make_header_pair(protein_2))
+        return "\n".join(row_list)
+
     def __eq__(self, other):
         if isinstance(other, Gene):
             return self.get_id() == other.get_id()
@@ -276,8 +285,8 @@ class Gene:
         proteins: List[Protein] = [transcript for transcript in self.get_transcripts() if isinstance(transcript,
                                                                                                      Protein)]
         output: str = "\n".join([self.fasta_template.format(self.get_id(),
-                                                            protein.get_id_transcript(),
                                                             protein.get_id(),
+                                                            protein.get_id_taxon(),
                                                             protein.get_sequence()) for protein in proteins])
         return output
 

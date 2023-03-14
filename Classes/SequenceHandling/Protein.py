@@ -107,6 +107,9 @@ class Protein(Transcript):
                 self.set_id_transcript(attribute_dict["transcript_id"])
                 self.set_transcript_support_level(int(attribute_dict["transcript_support_level"]))
 
+    def make_header_pair(self, other: Transcript) -> str:
+        return self.make_header() + "\t" + other.make_header()
+
     def __eq__(self, other) -> bool:
         if isinstance(other, Protein):
             return self.get_id() == other.get_id()

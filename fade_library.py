@@ -113,11 +113,31 @@ def generate_fasta_file(gene_assembler: GeneAssembler, library_info: LibraryInfo
 
 
 def generate_pairings(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
-    pass
+    gene_list: List[Gene] = gene_assembler.get_genes(False, True)
+    pairings_dict: Dict[str, str] = dict()
+    for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Pairing generation process"):
+        pairings_dict[gene.get_id()] = gene.make_pairings()
+
+    with open(path_dict["transcript_pairings"], "w") as f:
+        json.dump(pairings_dict, f, indent=4)
+
+    library_info["status"]["06_pairing_generation"] = True
+    library_info.save()
 
 
 def generate_ids_tsv(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
-    pass
+    gene_list: List[Gene] = gene_assembler.get_genes(False, True)
+    output_list: List[str] = list()
+    for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Generating phyloprofile ids"):
+        protein_list: List[Protein] = gene.get_proteins(False, True)
+        for protein in protein_list:
+            output_list.append(protein.make_header() + "\tncbi" + str(protein.get_id_taxon()))
+
+    with open(path_dict["transcript_ids"], "w") as f:
+        f.write("\n".join(output_list))
+
+    library_info["status"]["07_id_tsv_generation"] = True
+    library_info.save()
 
 
 def main():
@@ -208,11 +228,11 @@ def main():
                                      "transcript_pairings": os.path.join(argument_dict["outdir"],
                                                                          library_name,
                                                                          "transcript_data",
-                                                                         "transcript_pairings.tsv"),
+                                                                         "transcript_pairings.json"),
                                      "transcript_ids": os.path.join(argument_dict["outdir"],
                                                                     library_name,
                                                                     "transcript_data",
-                                                                    "transcript_ids.tsv")
+                                                                    "phyloprofile_ids.tsv")
                                      }
 
         tree_grow: TreeGrow = TreeGrow(path_dict)
@@ -347,20 +367,25 @@ def main():
     ####################################################################
     # CREATE PAIRINGS FOR ALL GENES
 
+    print("#06 Creating protein pairings for all genes.")
     if not library_info["status"]["06_pairing_generation"]:
-        generate_pairings(gene_assembler, library_info, path_dict)  # TODO Generate Pairings for each gene.
+        generate_pairings(gene_assembler, library_info, path_dict)
+    else:
+        print("\tPairings already generated.")
 
     ####################################################################
     # CREATE OF ALL IDS.
 
+    print("#07 Generating phyloprofile IDs for all proteins missing FAS scores.")
     if not library_info["status"]["07_id_tsv_generation"]:
-        generate_ids_tsv(gene_assembler, library_info, path_dict)  # TODO ids tsv
+        generate_ids_tsv(gene_assembler, library_info, path_dict)
+    else:
+        print("\tIDs already generated.")
 
     ####################################################################
 
     # TODO Calculate annotation (requires FAS location)
     # TODO Filter proteins with less than 10 aminoacids.
-
 
 if __name__ == "__main__":
     main()
