@@ -275,6 +275,8 @@ def main():
                             }
 
     library_counts: Dict[str, Any] = library_info["info"]
+    if "status" not in library_info.keys():
+        library_info["status"] = dict()
     library_status: Dict[str, Any] = library_info["status"]
     sequence_collection_flag: bool = library_counts["protein_count"] == library_counts["collected_sequences_count"]
 
