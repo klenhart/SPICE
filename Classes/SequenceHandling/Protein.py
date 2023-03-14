@@ -107,7 +107,10 @@ class Protein(Transcript):
                 self.set_id_transcript(attribute_dict["transcript_id"])
                 self.set_transcript_support_level(int(attribute_dict["transcript_support_level"]))
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, Protein):
             return self.get_id() == other.get_id()
         return False
+
+    def __len__(self) -> int:
+        return len(self.sequence)

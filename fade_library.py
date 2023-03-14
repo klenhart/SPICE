@@ -75,7 +75,21 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
 
 
 def remove_small_proteins(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
-    pass
+    gene_list: List[Gene] = gene_assembler.get_genes()
+    for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Small protein removal progress"):
+        protein_list: List[Protein] = gene.get_proteins()
+        for protein in protein_list:
+            if len(protein) < 11:
+                gene.delete_transcript(protein.get_id())
+    gene_assembler.clear_empty_genes()
+    gene_assembler.save(path_dict["transcript_json"])
+    library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
+    library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
+    library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
+    library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
+    library_info["info"]["fas_scored_sequences_count"] = gene_assembler.get_fas_scored_count()
+    library_info["status"]["03_small_protein_removing"] = True
+    library_info.save()
 
 
 def calculate_implicit_fas_scores(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
@@ -157,7 +171,7 @@ def main():
         gene_assembler.load(path_dict["transcript_json"])
 
         print("#01 Collecting transcripts information.")
-        print("\tSkipping collection of transcript information.")
+        print("\tTranscript information already collected.")
     else:
         if os.path.exists(os.path.join(argument_dict["outdir"], library_name)) and argument_dict["force"]:
             shutil.rmtree(os.path.join(argument_dict["outdir"], library_name))
@@ -310,7 +324,7 @@ def main():
     if not library_info["status"]["03_small_protein_removing"]:
         remove_small_proteins(gene_assembler, library_info, path_dict)  # TODO STILL REQUIRES IMPLEMENTATION
     else:
-        print("\tSmall proteins already collected.")
+        print("\tSmall proteins already removed.")
 
     ####################################################################
     # IMPLICIT FAS SCORING
@@ -339,14 +353,13 @@ def main():
     ####################################################################
     # CREATE OF ALL IDS.
 
-    if not library_info["status"]["07_pairing_generation"]:
+    if not library_info["status"]["07_id_tsv_generation"]:
         generate_ids_tsv(gene_assembler, library_info, path_dict)  # TODO ids tsv
 
     ####################################################################
 
     # TODO Calculate annotation (requires FAS location)
     # TODO Filter proteins with less than 10 aminoacids.
-
 
 
 if __name__ == "__main__":
