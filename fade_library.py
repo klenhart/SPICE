@@ -293,6 +293,8 @@ def main():
 
         library_info: LibraryInfo = LibraryInfo(path_dict["info"])
         check_library_status(gene_assembler, library_info, path_dict)
+        library_info["last_edit"] = str(date.today())
+        library_info.save()
 
     else:
         if os.path.exists(os.path.join(argument_dict["outdir"], library_name)) and argument_dict["force"]:

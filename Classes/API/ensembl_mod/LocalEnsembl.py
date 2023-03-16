@@ -75,7 +75,7 @@ class LocalEnsembl:
 
     def download(self) -> str:
         if not self.is_downloaded():
-            print("Downloading " + self.ftp_address + ".")
+            print("\tDownloading " + self.ftp_address + ".")
             with closing(request.urlopen(self.ftp_address)) as r:
                 with open(os.path.join(self.goal_directory, self.local_zipname), 'wb') as f:
                     shutil.copyfileobj(r, f)
