@@ -33,8 +33,9 @@ class TreeGrow:
             self.paths_dict["self"] = os.path.join(self.paths_dict["root"], "paths.json")
 
     def create_folders(self) -> None:
+
         for path in self.paths_dict.values():
-            if "." not in path[-5:]:
+            if not TreeGrow.is_file(path):
                 Path(path).mkdir(parents=True, exist_ok=True)
             else:
                 Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -45,15 +46,24 @@ class TreeGrow:
             with open(os.path.join(self.paths_dict["root"], "paths.json"), "w") as json_file:
                 json.dump(self.paths_dict, json_file, indent=4)
 
+    @staticmethod
+    def is_file(path: str) -> bool:
+        for char in path[::-1]:
+            if char == os.sep:
+                return False
+            elif char == ".":
+                return True
+        return False
+
 
 def main() -> None:
     paths_dict: Dict[str, str] = dict()
-    paths_dict["root"] = "C:/Users/chris/Desktop/git/root/"
-    paths_dict["info"] = "C:/Users/chris/Desktop/git/root/info.tsv"
-    paths_dict["library"] = "C:/Users/chris/Desktop/git/root/library/"
-    paths_dict["FAS"] = "C:/Users/chris/Desktop/git/root/library/FAS/"
-    paths_dict["fasta"] = "C:/Users/chris/Desktop/git/root/library/FAS/sequences.fasta"
-    paths_dict["Disturbance"] = "C:/Users/chris/Desktop/git/root/library/Disturbance/disturb.txt"
+    paths_dict["root"] = "C:\\Users\\chris\\Desktop\\git\\root"
+    paths_dict["info"] = "C:\\Users\\chris\\Desktop\\git\\root\\info.tsv"
+    paths_dict["library"] = "C:\\Users\\chris\\Desktop\\git\\root\\library"
+    paths_dict["FAS"] = "C:\\Users\\chris\\Desktop\\git\\root\\library\\FAS"
+    paths_dict["fasta"] = "C:\\Users\\chris\\Desktop\\git\\root\\library\\FAS\\sequences.fasta"
+    paths_dict["Disturbance"] = "C:\\Users\\chris\\Desktop\\git\\root\\library\\Disturbance\\disturb.txt"
 
     tree_grow = TreeGrow(paths_dict)
     tree_grow.create_folders()

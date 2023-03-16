@@ -39,6 +39,104 @@ import shutil
 import json
 
 
+def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]) -> None:
+    library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
+    library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
+    library_info["info"]["protein_count"] = gene_assembler.get_transcript_count()
+    library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
+    library_info["info"]["fas_scored_sequences_count"] = gene_assembler.get_fas_scored_count()
+
+    # Check sequence collection
+    if gene_assembler.get_protein_count(True) > 0:
+        if library_info["status"]["02_sequence_collection"]:
+            print("Proteins without sequence found.")
+            print("Will attempt to acquire sequence.")
+        library_info["status"]["02_sequence_collection"] = False
+    else:
+        library_info["status"]["02_sequence_collection"] = True
+
+    # Check small protein removal
+    flag: bool = all([len(transcript) > 10 for transcript in gene_assembler.get_transcripts() if isinstance(transcript,
+                                                                                                            Protein)])
+    if not flag:
+        if library_info["status"]["03_small_protein_removing"]:
+            print("Protein sequences below length threshold found.")
+            print("Will remove them.")
+        library_info["status"]["03_small_protein_removing"] = False
+    else:
+        library_info["status"]["03_small_protein_removing"] = True
+
+    # Check implicit FAS scoring
+    fas_dict_list: List[Dict[str, Dict[str, float]]] = [gene.fas_dict for gene in gene_assembler.get_genes(False, True)]
+    flag = True
+    for fas_dict in fas_dict_list:
+        for key in fas_dict.keys():
+            if fas_dict[key][key] == -1.0:
+                flag = False
+    if not flag:
+        if library_info["status"]["04_implicit_fas_scoring"]:
+            print("Not yet computed implicit FAS scores found.")
+            print("Will compute them.")
+        library_info["status"]["04_implicit_fas_scoring"] = False
+    else:
+        library_info["status"]["04_implicit_fas_scoring"] = True
+
+    # Check fasta generation
+    with open(path_dict["transcript_fasta"], "r") as f:
+        fasta_length = len(f.read().split("\n"))
+    gene_list: List[Gene] = gene_assembler.get_genes(False, True)
+    output_list: List[str] = list()
+    for gene in gene_list:
+        output_list.append(gene.fasta)
+    new_fasta_length = len("\n".join(output_list).split("\n"))
+    if fasta_length != new_fasta_length:
+        if library_info["status"]["05_fasta_generation"]:
+            print("Fasta file differs in size from what was expected.")
+            print("Will regenerate it.")
+        library_info["status"]["05_fasta_generation"] = False
+    else:
+        library_info["status"]["05_fasta_generation"] = True
+
+    # Check pairing generation
+    pairings_dict: Dict[str, str] = dict()
+    for gene in gene_list:
+        pairings_dict[gene.get_id()] = gene.make_pairings()
+    with open(path_dict["transcript_pairings"], "r") as f:
+        old_pairing_length = len(str(json.load(f)))
+    new_pairing_length = len(str(pairings_dict))
+    if old_pairing_length != new_pairing_length:
+        if library_info["status"]["06_pairing_generation"]:
+            print("Pairing file differs in size from what was expected.")
+            print("Will regenerate it.")
+        library_info["status"]["06_pairing_generation"] = False
+    else:
+        library_info["status"]["06_pairing_generation"] = True
+
+    # Check ids tsv generation
+    with open(path_dict["transcript_ids"], "r") as f:
+        old_length = len(f.read())
+    id_list: List[str] = list()
+    for gene in gene_list:
+        protein_list: List[Protein] = gene.get_proteins(False, True)
+        for protein in protein_list:
+            id_list.append(protein.make_header() + "\tncbi" + str(protein.get_id_taxon()))
+    new_length = len(id_list)
+    if old_length != new_length:
+        if library_info["status"]["07_id_tsv_generation"]:
+            print("ID tsv differs in size from what was expected.")
+            print("Will regenerate it.")
+        library_info["status"]["07_id_tsv_generation"] = False
+    else:
+        library_info["status"]["07_id_tsv_generation"] = True
+
+    # Check FAS calculation
+    if library_info["info"]["fas_scored_sequences_count"] < library_info["info"]["protein_count"]:
+        library_info["status"]["09_fas_scoring"] = False
+    else:
+        library_info["status"]["09_fas_scoring"] = True
+    library_info.save()
+
+
 def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]) -> None:
     incomplete_gene_list: List[Gene] = gene_assembler.get_genes(True)
     save_marker: int = 0
@@ -192,6 +290,10 @@ def main():
 
         print("#01 Collecting transcripts information.")
         print("\tTranscript information already collected.")
+
+        library_info: LibraryInfo = LibraryInfo(path_dict["info"])
+        check_library_status(gene_assembler, library_info, path_dict)
+
     else:
         if os.path.exists(os.path.join(argument_dict["outdir"], library_name)) and argument_dict["force"]:
             shutil.rmtree(os.path.join(argument_dict["outdir"], library_name))
@@ -256,72 +358,34 @@ def main():
             # Delete the file after successful extraction.
             local_ensembl.remove()
 
-    print("\tSaving info.yaml at " + path_dict["info"])
+        print("\tSaving info.yaml at " + path_dict["info"])
 
-    library_info: LibraryInfo = LibraryInfo(path_dict["info"])
+        library_info: LibraryInfo = LibraryInfo(path_dict["info"])
 
-    # Save base info
-    library_info["fade_version"] = "0.1"
-    library_info["last_edit"] = str(date.today())
-    library_info["commandline_args"] = argument_dict
-    library_info["info"] = {"species": local_ensembl.get_species_name(),
-                            "taxon_id": local_ensembl.get_taxon_id(),
-                            "release": local_ensembl.get_release_num(),
-                            "gene_count": gene_assembler.get_gene_count(),
-                            "transcript_count": gene_assembler.get_transcript_count(),
-                            "protein_count": gene_assembler.get_protein_count(),
-                            "collected_sequences_count": gene_assembler.get_collected_sequences_count(),
-                            "fas_scored_sequences_count": gene_assembler.get_fas_scored_count()
-                            }
-
-    library_counts: Dict[str, Any] = library_info["info"]
-    if "status" not in library_info.info_dict.keys():
-        library_info["status"] = dict()
-    library_status: Dict[str, Any] = library_info["status"]
-    sequence_collection_flag: bool = library_counts["protein_count"] == library_counts["collected_sequences_count"]
-
-    if "03_small_protein_removing" not in library_status.keys():
-        small_cleanse_flag: bool = False
-    else:
-        small_cleanse_flag: bool = library_status["03_small_protein_removing"]
-
-    if "04_implicit_fas_scoring" not in library_status.keys():
-        implicit_fas_flag: bool = False
-    else:
-        implicit_fas_flag: bool = library_status["04_implicit_fas_scoring"]
-
-    if "05_fasta_generation" not in library_status.keys():
-        fasta_flag: bool = False
-    else:
-        fasta_flag: bool = library_status["05_fasta_generation"]
-
-    if "06_pairing_generation" not in library_status.keys():
-        pairing_flag: bool = False
-    else:
-        pairing_flag: bool = library_status["06_pairing_generation"]
-
-    if "07_id_tsv_generation" not in library_status.keys():
-        id_flag: bool = False
-    else:
-        id_flag: bool = library_status["07_id_tsv_generation"]
-
-    if "08_sequence_annotation" not in library_status.keys():
-        anno_flag: bool = False
-    else:
-        anno_flag: bool = library_status["08_sequence_annotation"]
-
-    fas_flag: bool = library_counts["protein_count"] == library_counts["fas_scored_sequences_count"]
-
-    library_info["status"] = {"01_id_collection": True,
-                              "02_sequence_collection": sequence_collection_flag,
-                              "03_small_protein_removing": small_cleanse_flag,
-                              "04_implicit_fas_scoring": implicit_fas_flag,
-                              "05_fasta_generation": fasta_flag,
-                              "06_pairing_generation": pairing_flag,
-                              "07_id_tsv_generation": id_flag,
-                              "08_sequence_annotation": anno_flag,
-                              "09_fas_scoring": fas_flag
-                              }
+        # Save base info
+        library_info["fade_version"] = "0.1"
+        library_info["init_date"] = str(date.today())
+        library_info["last_edit"] = str(date.today())
+        library_info["commandline_args"] = argument_dict
+        library_info["info"] = {"species": local_ensembl.get_species_name(),
+                                "taxon_id": local_ensembl.get_taxon_id(),
+                                "release": local_ensembl.get_release_num(),
+                                "gene_count": gene_assembler.get_gene_count(),
+                                "transcript_count": gene_assembler.get_transcript_count(),
+                                "protein_count": gene_assembler.get_protein_count(),
+                                "collected_sequences_count": gene_assembler.get_collected_sequences_count(),
+                                "fas_scored_sequences_count": gene_assembler.get_fas_scored_count()
+                                }
+        library_info["status"] = {"01_id_collection": True,
+                                  "02_sequence_collection": False,
+                                  "03_small_protein_removing": False,
+                                  "04_implicit_fas_scoring": False,
+                                  "05_fasta_generation": False,
+                                  "06_pairing_generation": False,
+                                  "07_id_tsv_generation": False,
+                                  "08_sequence_annotation": False,
+                                  "09_fas_scoring": False
+                                  }
 
     ####################################################################
     # COLLECT SEQUENCES
@@ -344,7 +408,7 @@ def main():
 
     print("#03 Removing small proteins.")
     if not library_info["status"]["03_small_protein_removing"]:
-        remove_small_proteins(gene_assembler, library_info, path_dict)  # TODO STILL REQUIRES IMPLEMENTATION
+        remove_small_proteins(gene_assembler, library_info, path_dict)
     else:
         print("\tSmall proteins already removed.")
 
@@ -388,6 +452,7 @@ def main():
 
     # TODO Calculate annotation (requires FAS location)
     # TODO Filter proteins with less than 10 aminoacids.
+
 
 if __name__ == "__main__":
     main()
