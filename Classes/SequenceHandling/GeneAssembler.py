@@ -27,7 +27,7 @@ from Classes.SequenceHandling.Protein import Protein
 
 from tqdm import tqdm
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set
 
 
 class GeneAssembler:
@@ -70,6 +70,32 @@ class GeneAssembler:
     def load(self, input_path: str) -> None:
         with open(input_path, "r") as f:
             self.gene_assembly = GeneAssembler.from_dict(json.load(f))
+
+    def integrate_fas_json(self, input_path: str) -> None:
+        with open(input_path, "r") as f:
+            distance_dict: Dict[str, Dict[str, Dict[str, float]]] = json.load(f)
+        count: int = 0
+        for key_gene_id in tqdm(distance_dict.keys(),
+                                ncols=100,
+                                total=len(list(distance_dict.keys())),
+                                desc="Integrating FAS process"):
+            if self.contains_gene(key_gene_id):
+                gene: Gene = self.gene_assembly[key_gene_id]
+                for key_prot_id1 in distance_dict[key_gene_id].keys():
+                    if key_prot_id1 in gene.get_fas_dict().keys():
+                        for key_prot_id2 in distance_dict[key_gene_id][key_prot_id1].keys():
+                            if key_prot_id2 in gene.get_fas_dict()[key_prot_id1].keys():
+                                count += 1
+                                value: float = distance_dict[key_gene_id][key_prot_id1][key_prot_id2]
+                                gene.get_fas_dict()[key_prot_id1][key_prot_id2] = value
+        print("Integrated ", count, " FAS scores.")
+
+    def extract_tags(self) -> List[str]:
+        tag_set: Set[str] = set()
+        for transcript in self.get_transcripts():
+            for tag in transcript.get_tags():
+                tag_set.add(tag)
+        return list(tag_set)
 
     def extract(self, gtf_path: str) -> None:
         """
@@ -147,6 +173,9 @@ class GeneAssembler:
                 output_list.append(gene)
         return output_list
 
+    def contains_gene(self, gene_id) -> bool:
+        return gene_id in self.gene_assembly
+
     def get_transcripts(self) -> List[Transcript]:
         output_list: List[Transcript] = list()
         for key in self.gene_assembly.keys():
@@ -196,10 +225,14 @@ class GeneAssembler:
 
 
 def main() -> None:
+    # gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens", "9606")
+    # gene_assembler.update_inclusion_filter("gene_biotype", ["protein_coding"])
+    # gene_assembler.extract("C:/Users/chris/Desktop/git/root/Homo_sapiens.GRCh38.107.gtf")
+    # gene_assembler.save("C:/Users/chris/Desktop/git/root/extract.json")
     gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens", "9606")
-    gene_assembler.update_inclusion_filter("gene_biotype", ["protein_coding"])
-    gene_assembler.extract("C:/Users/chris/Desktop/git/root/Homo_sapiens.GRCh38.107.gtf")
-    gene_assembler.save("C:/Users/chris/Desktop/git/root/extract.json")
+    gene_assembler.load("C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107/transcript_data/transcript_set.json")
+    gene_assembler.integrate_fas_json("C:/Users/chris/Desktop/fas.json")
+    gene_assembler.save("C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107/transcript_data/transcript_set.json")
 
 
 if __name__ == "__main__":

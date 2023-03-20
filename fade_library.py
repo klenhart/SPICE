@@ -27,6 +27,7 @@ from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
 from Classes.SequenceHandling.Protein import Protein
+from Classes.SequenceHandling.Transcript import Transcript
 from Classes.TreeGrow.TreeGrow import TreeGrow
 from Classes.WriteGuard.WriteGuard import WriteGuard
 
@@ -66,6 +67,29 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
     else:
         library_info["status"]["03_small_protein_removing"] = True
 
+    # Check incorrect entries
+    gene_list: List[Gene] = gene_assembler.get_genes()
+    flag: bool = True
+    for gene in gene_list:
+        transcript_list: List[Transcript] = gene.get_transcripts()
+        for transcript in transcript_list:
+            if transcript.get_biotype() == "protein_coding":
+                if transcript.get_id_taxon() == 9606:
+                    if transcript.get_id()[3] == "T":
+                        if library_info["status"]["04_incorrect_entry_removing"]:
+                            print("Incorrect entries found.")
+                            print("Will remove them.")
+                        flag = False
+                else:
+                    if transcript.get_id()[6] == "T":
+                        if library_info["status"]["04_incorrect_entry_removing"]:
+                            print("Incorrect entries found.")
+                            print("Will remove them.")
+                        flag = False
+        if not flag:
+            break
+    library_info["status"]["04_incorrect_entry_removing"] = flag
+
     # Check implicit FAS scoring
     fas_dict_list: List[Dict[str, Dict[str, float]]] = [gene.fas_dict for gene in gene_assembler.get_genes(False, True)]
     flag = True
@@ -74,12 +98,12 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
             if fas_dict[key][key] == -1.0:
                 flag = False
     if not flag:
-        if library_info["status"]["04_implicit_fas_scoring"]:
+        if library_info["status"]["05_implicit_fas_scoring"]:
             print("Not yet computed implicit FAS scores found.")
             print("Will compute them.")
-        library_info["status"]["04_implicit_fas_scoring"] = False
+        library_info["status"]["05_implicit_fas_scoring"] = False
     else:
-        library_info["status"]["04_implicit_fas_scoring"] = True
+        library_info["status"]["05_implicit_fas_scoring"] = True
 
     # Check fasta generation
     with open(path_dict["transcript_fasta"], "r") as f:
@@ -90,12 +114,12 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
         output_list.append(gene.fasta)
     new_fasta_length = len("\n".join(output_list).split("\n"))
     if fasta_length != new_fasta_length:
-        if library_info["status"]["05_fasta_generation"]:
+        if library_info["status"]["06_fasta_generation"]:
             print("Fasta file differs in size from what was expected.")
             print("Will regenerate it.")
-        library_info["status"]["05_fasta_generation"] = False
+        library_info["status"]["06_fasta_generation"] = False
     else:
-        library_info["status"]["05_fasta_generation"] = True
+        library_info["status"]["06_fasta_generation"] = True
 
     # Check pairing generation
     pairings_dict: Dict[str, str] = dict()
@@ -105,12 +129,12 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
         old_pairing_length = len(str(json.load(f)))
     new_pairing_length = len(str(pairings_dict))
     if old_pairing_length != new_pairing_length:
-        if library_info["status"]["06_pairing_generation"]:
+        if library_info["status"]["07_pairing_generation"]:
             print("Pairing file differs in size from what was expected.")
             print("Will regenerate it.")
-        library_info["status"]["06_pairing_generation"] = False
+        library_info["status"]["07_pairing_generation"] = False
     else:
-        library_info["status"]["06_pairing_generation"] = True
+        library_info["status"]["07_pairing_generation"] = True
 
     # Check ids tsv generation
     with open(path_dict["transcript_ids"], "r") as f:
@@ -122,18 +146,18 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
             id_list.append(protein.make_header() + "\tncbi" + str(protein.get_id_taxon()))
     new_length = len(id_list)
     if old_length != new_length:
-        if library_info["status"]["07_id_tsv_generation"]:
+        if library_info["status"]["08_id_tsv_generation"]:
             print("ID tsv differs in size from what was expected.")
             print("Will regenerate it.")
-        library_info["status"]["07_id_tsv_generation"] = False
+        library_info["status"]["08_id_tsv_generation"] = False
     else:
-        library_info["status"]["07_id_tsv_generation"] = True
+        library_info["status"]["08_id_tsv_generation"] = True
 
     # Check FAS calculation
     if library_info["info"]["fas_scored_sequences_count"] < library_info["info"]["protein_count"]:
-        library_info["status"]["09_fas_scoring"] = False
+        library_info["status"]["10_fas_scoring"] = False
     else:
-        library_info["status"]["09_fas_scoring"] = True
+        library_info["status"]["10_fas_scoring"] = True
     library_info.save()
 
 
@@ -190,12 +214,35 @@ def remove_small_proteins(gene_assembler: GeneAssembler, library_info: LibraryIn
     library_info.save()
 
 
+def remove_incorrect_entries(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
+    gene_list: List[Gene] = gene_assembler.get_genes()
+    for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Incorrect entry removal progress"):
+        transcript_list: List[Transcript] = gene.get_transcripts()
+        for transcript in transcript_list:
+            if transcript.get_biotype() == "protein_coding":
+                if transcript.get_id_taxon() == 9606:
+                    if transcript.get_id()[3] == "T":
+                        gene.delete_transcript(transcript.get_id())
+                else:
+                    if transcript.get_id()[6] == "T":
+                        gene.delete_transcript(transcript.get_id())
+    gene_assembler.clear_empty_genes()
+    gene_assembler.save(path_dict["transcript_json"])
+    library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
+    library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
+    library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
+    library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
+    library_info["info"]["fas_scored_sequences_count"] = gene_assembler.get_fas_scored_count()
+    library_info["status"]["04_incorrect_entry_removing"] = True
+    library_info.save()
+
+
 def calculate_implicit_fas_scores(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
     gene_list: List[Gene] = gene_assembler.get_genes()
     for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Implicit FAS score collection progress"):
         gene.calculate_implicit_fas_scores()
     gene_assembler.save(path_dict["transcript_json"])
-    library_info["status"]["04_implicit_fas_scoring"] = True
+    library_info["status"]["05_implicit_fas_scoring"] = True
     library_info.save()
 
 
@@ -206,7 +253,7 @@ def generate_fasta_file(gene_assembler: GeneAssembler, library_info: LibraryInfo
         output_list.append(gene.fasta)
     with open(path_dict["transcript_fasta"], "w") as f:
         f.write("\n".join(output_list))
-    library_info["status"]["05_fasta_generation"] = True
+    library_info["status"]["06_fasta_generation"] = True
     library_info.save()
 
 
@@ -219,7 +266,7 @@ def generate_pairings(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
     with open(path_dict["transcript_pairings"], "w") as f:
         json.dump(pairings_dict, f, indent=4)
 
-    library_info["status"]["06_pairing_generation"] = True
+    library_info["status"]["07_pairing_generation"] = True
     library_info.save()
 
 
@@ -234,7 +281,7 @@ def generate_ids_tsv(gene_assembler: GeneAssembler, library_info: LibraryInfo, p
     with open(path_dict["transcript_ids"], "w") as f:
         f.write("\n".join(output_list))
 
-    library_info["status"]["07_id_tsv_generation"] = True
+    library_info["status"]["08_id_tsv_generation"] = True
     library_info.save()
 
 
@@ -318,6 +365,10 @@ def main():
                                                               library_name,
                                                               "fas_data",
                                                               "temp"),
+                                     "fas_annotation": os.path.join(argument_dict["outdir"],
+                                                                    library_name,
+                                                                    "fas_data",
+                                                                    "annotation"),
                                      "transcript_data": os.path.join(argument_dict["outdir"],
                                                                      library_name,
                                                                      "transcript_data"),
@@ -381,12 +432,13 @@ def main():
         library_info["status"] = {"01_id_collection": True,
                                   "02_sequence_collection": False,
                                   "03_small_protein_removing": False,
-                                  "04_implicit_fas_scoring": False,
-                                  "05_fasta_generation": False,
-                                  "06_pairing_generation": False,
-                                  "07_id_tsv_generation": False,
-                                  "08_sequence_annotation": False,
-                                  "09_fas_scoring": False
+                                  "04_incorrect_entry_removing": False,
+                                  "05_implicit_fas_scoring": False,
+                                  "06_fasta_generation": False,
+                                  "07_pairing_generation": False,
+                                  "08_id_tsv_generation": False,
+                                  "09_sequence_annotation": False,
+                                  "10_fas_scoring": False
                                   }
 
     ####################################################################
@@ -415,10 +467,19 @@ def main():
         print("\tSmall proteins already removed.")
 
     ####################################################################
+    # CLEAR SMALL PROTEINS
+
+    print("#04 Removing incorrect entries.")
+    if not library_info["status"]["04_incorrect_entry_removing"]:
+        remove_incorrect_entries(gene_assembler, library_info, path_dict)
+    else:
+        print("\tIncorrect entries already removed.")
+
+    ####################################################################
     # IMPLICIT FAS SCORING
 
-    print("#04 Calculating implicit FAS scores.")
-    if not library_info["status"]["04_implicit_fas_scoring"]:
+    print("#05 Calculating implicit FAS scores.")
+    if not library_info["status"]["05_implicit_fas_scoring"]:
         calculate_implicit_fas_scores(gene_assembler, library_info, path_dict)
     else:
         print("\tImplicit FAS scores already calculated.")
@@ -426,8 +487,8 @@ def main():
     ####################################################################
     # CREATE FASTA FILE
 
-    print("#05 Generating FASTA file for all sequences missing FAS scores.")
-    if not library_info["status"]["05_fasta_generation"]:
+    print("#06 Generating FASTA file for all sequences missing FAS scores.")
+    if not library_info["status"]["06_fasta_generation"]:
         generate_fasta_file(gene_assembler, library_info, path_dict)
     else:
         print("\tFasta file already generated.")
@@ -435,8 +496,8 @@ def main():
     ####################################################################
     # CREATE PAIRINGS FOR ALL GENES
 
-    print("#06 Creating protein pairings for all genes.")
-    if not library_info["status"]["06_pairing_generation"]:
+    print("#07 Creating protein pairings for all genes.")
+    if not library_info["status"]["07_pairing_generation"]:
         generate_pairings(gene_assembler, library_info, path_dict)
     else:
         print("\tPairings already generated.")
@@ -444,8 +505,8 @@ def main():
     ####################################################################
     # CREATE OF ALL IDS.
 
-    print("#07 Generating phyloprofile IDs for all proteins missing FAS scores.")
-    if not library_info["status"]["07_id_tsv_generation"]:
+    print("#08 Generating phyloprofile IDs for all proteins missing FAS scores.")
+    if not library_info["status"]["08_id_tsv_generation"]:
         generate_ids_tsv(gene_assembler, library_info, path_dict)
     else:
         print("\tIDs already generated.")

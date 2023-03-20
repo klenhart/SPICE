@@ -52,7 +52,8 @@ setup(
         'numpy',
         'matplotlib',
         'scipy',
-        'yaml'
+        'yaml',
+        'pandas'
     ],
     entry_points={
         'console_scripts': ["gt.run = grand-trumpet.fas_lib:main",
