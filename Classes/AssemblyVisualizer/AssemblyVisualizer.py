@@ -1,4 +1,5 @@
 #!/bin/env python
+import os
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -34,31 +35,45 @@ class AssemblyVisualizer:
 
     incomplete_tags: List[str] = ['mRNA_end_NF', 'cds_end_NF', 'mRNA_start_NF', 'cds_start_NF']
 
-    def __init__(self, gene_assembler: GeneAssembler):
+    def __init__(self, gene_assembler: GeneAssembler, output_path: str):
         self.gene_assembler = gene_assembler
+        self.output_path = output_path
 
-    def generate_fas_diversity_within_genes(self) -> pandas.DataFrame:
+    def generate_fas_diversity_among_genes_boxplot(self) -> None:
+        dataframe: pandas.DataFrame = self.generate_fas_diversity_among_genes()
+        fig = px.box(dataframe, x="transcript_count", y="fas_score")
+        fig.show()
+        # fig.write_image(os.path.join(self.output_path, "fas_diversity_among_genes.png"))
+
+    def generate_fas_diversity_among_genes(self) -> pandas.DataFrame:
+        group_list: List[int] = [0]
+        for entry in [[value] * 5 for value in [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]]:
+            group_list += entry
+        group_list += [50] * 100
+
         data_dict: Dict[str, List[Any]] = {"transcript_count": [],
-                                           "fas_std": []}
+                                           "fas_score": []}
         for gene in self.gene_assembler.get_genes():
-            fas_score_list: List[float] = list()
-            data_dict["transcript_count"].append(0)
+            count: int = 0
+            fas_scores_count: int = 0
             for transcript1 in gene.get_transcripts():
-                if transcript1.get_biotype() == "nonsense_mediated_decay":
-                    continue
-                data_dict["transcript_count"][0] += 1
-                for transcript2 in gene.get_transcripts():
-                    if transcript1 == transcript2 or transcript2.get_biotype() == "nonsense_mediated_decay":
-                        continue
-                    else:
-                        fas_score_list.append(gene.fas_dict[transcript1.get_id()][transcript2.get_id()])
-            data_dict["fas_std"] = np.array(fas_score_list).std()
+                if transcript1.get_biotype() != "nonsense_mediated_decay":
+                    count += 1
+                    for transcript2 in gene.get_transcripts():
+                        if transcript1 != transcript2 and transcript2.get_biotype() != "nonsense_mediated_decay":
+                            data_dict["fas_score"].append(gene.fas_dict[transcript1.get_id()][transcript2.get_id()])
+                            fas_scores_count += 1
+            if count == 1:
+                continue
+            else:
+                data_dict["transcript_count"] += [group_list[count]] * fas_scores_count
         return pandas.DataFrame(data_dict)
 
     def generate_incomplete_fas_distribution(self) -> None:
         dataframe: pandas.DataFrame = self.generate_fas_comparison_dataframe()
         fig = px.histogram(dataframe, x="fas_score", color="complete_status", barmode="group", nbins=20)
         fig.show()
+        # fig.write_image(os.path.join(self.output_path, "incomplete_fas_distrib.png"))
 
     def generate_fas_comparison_dataframe(self) -> pandas.DataFrame:
         data_dict: Dict[str, List[Any]] = {"fas_score": [],
@@ -90,11 +105,13 @@ class AssemblyVisualizer:
         dataframe: pandas.DataFrame = self.generate_transcript_dataframe()
         fig = px.histogram(dataframe, x='tsl', color='biotype', barmode='group')
         fig.show()
+        # fig.write_image(os.path.join(self.output_path, "tsl_biotype_histogram.png"))
 
     def generate_tsl_complete_status_histogram(self) -> None:
         dataframe: pandas.DataFrame = self.generate_transcript_dataframe()
         fig = px.histogram(dataframe, x='tsl', color='complete_status', barmode='group')
         fig.show()
+        # fig.write_image(os.path.join(self.output_path, "tsl_complete_status_histogram.png"))
 
     def generate_transcript_dataframe(self) -> pandas.DataFrame:
         tags: List[str] = self.gene_assembler.extract_tags()
@@ -129,23 +146,16 @@ class AssemblyVisualizer:
                 data_dict["complete_status"].append("complete")
         return pandas.DataFrame(data_dict)
 
-    def fas_score_distribution(self):
-        pass
-
-    def fas_score_distribution_incomplete_x_complete(self):
-        pass
-
-    def fas_diversity_in_genes(self):
-        pass
-
 
 def main():
     gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens", "9606")
     gene_assembler.load("C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107/transcript_data/transcript_set.json")
-    assembly_visualizer: AssemblyVisualizer = AssemblyVisualizer(gene_assembler)
+    assembly_visualizer: AssemblyVisualizer = AssemblyVisualizer(gene_assembler,
+                                                                 "C:/Users/chris/Desktop/AKE/ProgReps/12")
     assembly_visualizer.generate_tsl_biotype_histogram()
     assembly_visualizer.generate_tsl_complete_status_histogram()
     assembly_visualizer.generate_incomplete_fas_distribution()
+    assembly_visualizer.generate_fas_diversity_among_genes_boxplot()
 
 
 if __name__ == "__main__":
