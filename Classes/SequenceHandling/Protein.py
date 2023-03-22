@@ -21,7 +21,6 @@
 #######################################################################
 
 
-from Classes.SequenceHandling.Exon import Exon
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.GTFBoy.GTFBoy import GTFBoy
 
