@@ -20,8 +20,27 @@
 #
 #######################################################################
 
+import json
+
+from typing import Dict
+
+from Classes.SequenceHandling.Gene import Gene
+from Classes.SequenceHandling.GeneAssembler import GeneAssembler
+
 
 class ExpressionAssembler:
 
     def __init__(self, transcript_set_path: str):
         self.transcript_set_path: str = transcript_set_path
+
+    def __load_gene_assembly(self) -> Dict[str, Gene]:
+        with open(self.transcript_set_path, "r") as f:
+            gene_assembly: Dict[str, Gene] = GeneAssembler.from_dict(json.load(f))
+        return gene_assembly
+
+    def load(self) -> None:
+        pass
+
+    def save(self) -> None:
+        pass
+
