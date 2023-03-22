@@ -33,7 +33,6 @@ class TreeGrow:
             self.paths_dict["self"] = os.path.join(self.paths_dict["root"], "paths.json")
 
     def create_folders(self) -> None:
-
         for path in self.paths_dict.values():
             if not TreeGrow.is_file(path):
                 Path(path).mkdir(parents=True, exist_ok=True)

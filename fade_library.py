@@ -165,7 +165,7 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
     incomplete_gene_list: List[Gene] = gene_assembler.get_genes(True)
     save_marker: int = 0
     for gene in tqdm(incomplete_gene_list, ncols=100,
-                     total=len(incomplete_gene_list), desc="Sequence collection progress:"):
+                     total=len(incomplete_gene_list), desc="Sequence collection progress"):
 
         save_marker += 1
         incomplete_proteins_list: List[Protein] = gene.get_proteins(True)

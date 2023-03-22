@@ -85,7 +85,7 @@ class GTFBoy:
         for i, field_name in enumerate(GTFBoy.GTF_MASK[:-1]):
             full_dict[field_name] = gtf_split_line[i]
         full_dict.update(attribute_dict)
-        return attribute_dict
+        return full_dict
 
     @staticmethod
     def has_attribute_value(attribute_key: str, attribute_value: str, attribute_entry: str):
