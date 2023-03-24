@@ -1,5 +1,5 @@
 #!/bin/env python
-import json
+
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
@@ -21,13 +21,18 @@ import json
 #######################################################################
 
 import os
+import json
 
 from typing import Dict, Any, List
 
 from tqdm import tqdm
 
 from Classes.GTFBoy.GTFBoy import GTFBoy
+from Classes.ResultBuddy.ExpressionHandling.ExpressionAssembler import ExpressionAssembler
+from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
+from Classes.SequenceHandling.Protein import Protein
+from Classes.SequenceHandling.Transcript import Transcript
 from Classes.TreeGrow.TreeGrow import TreeGrow
 
 
@@ -78,9 +83,15 @@ class ResultBuddy:
             result_paths: Dict[str, Any] = json.load(f)
         return result_paths
 
-    def import_expression_gtf(self, expression_path: str) -> None:
+    def import_expression_gtf(self, expression_path: str, expression_name: str, normalization: str) -> None:
+        transcript_to_protein_dict: Dict[str, str] = self.transcript_to_protein_map()
         expression_gtf: GTFBoy = GTFBoy(expression_path)
-        count = 0
+        expression_assembler: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
+                                                                                     "transcript_data",
+                                                                                     "transcript_set.json"),
+                                                                        expression_name,
+                                                                        expression_path,
+                                                                        normalization)
         for line in tqdm(expression_gtf,
                          ncols=100,
                          total=expression_gtf.total_lines,
@@ -92,10 +103,25 @@ class ResultBuddy:
                 line_dict: Dict[str, str] = GTFBoy.build_dict(split_line)
                 transcript_flag: bool = line_dict["feature"] == "transcript"
                 if all([key in line_dict.keys() for key in ["reference_id", "ref_gene_id"]]) and transcript_flag:
-                    print(line_dict) # TODO TEST NOW CHANGED THAT IT RETURNS
-                    count += 1
+                    line_dict["gene_id"] = line_dict["ref_gene_id"].split(".")[0]
+                    line_dict["transcript_id"] = line_dict["reference_id"].split(".")[0]
+                    # This implicitly checks if the transcript is PROTEIN CODING or NMD bio-typed.
+                    if line_dict["transcript_id"] in transcript_to_protein_dict.keys():
+                        line_dict["protein_id"] = transcript_to_protein_dict[line_dict["transcript_id"]]
+                        expression_assembler.insert_expression_dict()
 
         print(count)
+
+    def transcript_to_protein_map(self) -> Dict[str, str]:
+        transcript_to_protein_map: Dict[str, str] = dict()
+        gene_assembler: GeneAssembler = GeneAssembler(self.result_info["species"], self.result_info["taxon_id"])
+        gene_assembler.load(os.path.join(self.library_path, "transcript_data", "transcript_set.json"))
+        for transcript in gene_assembler.get_transcripts():
+            if isinstance(transcript, Protein):
+                transcript_to_protein_map[transcript.get_id_transcript()] = transcript.get_id()
+            elif isinstance(transcript, Transcript):
+                transcript_to_protein_map[transcript.get_id()] = ""
+        return transcript_to_protein_map
 
 
 def main():
