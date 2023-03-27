@@ -34,6 +34,7 @@ from Classes.SequenceHandling.LibraryInfo import LibraryInfo
 from Classes.SequenceHandling.Protein import Protein
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.TreeGrow.TreeGrow import TreeGrow
+from Classes.WriteGuard.WriteGuard import WriteGuard
 
 
 class ResultBuddy:
@@ -51,14 +52,16 @@ class ResultBuddy:
             self.result_info["library_integrity_flag"] = all(library_info["status"].values())
 
             self.result_info["expression_imports"]: Dict[str, Dict[str, Dict[str, str]]] = dict()
-            self.result_info["expression_imports"]["conditions"]: Dict[str, Dict[str, str]] = dict()
-            self.result_info["expression_imports"]["replicates"]: Dict[str, Dict[str, str]] = dict()
+            self.result_info["expression_imports"]["conditions"]: Dict[str, Dict[str, Any]] = dict()
+            self.result_info["expression_imports"]["replicates"]: Dict[str, Dict[str, Dict[str, str]]] = dict()
 
             self.result_paths: Dict[str, Any] = dict()
             self.result_paths["library_path"] = self.library_path
             self.result_paths["root"] = self.result_path
             self.result_paths["result_info"] = os.path.join(self.result_path, "info.json")
             self.result_paths["expression"] = os.path.join(self.result_path, "expression")
+            self.result_paths["replicates"] = os.path.join(self.result_path, "expression", "replicates")
+            self.result_paths["conditions"] = os.path.join(self.result_path, "expression", "conditions")
             self.result_paths["movement"] = os.path.join(self.result_path, "movement")
             self.result_paths["comparison"] = os.path.join(self.result_path, "comparison")
 
@@ -78,10 +81,40 @@ class ResultBuddy:
             result_info: Dict[str, Any] = json.load(f)
         return result_info
 
+    def __save_info(self) -> None:
+        with open(os.path.join(self.result_path, "info.json"), "w") as f:
+            json.dump(self.result_info, f, indent=4)
+
     def __load_paths(self) -> Dict[str, Any]:
         with open(os.path.join(self.result_path, "paths.json"), "r") as f:
             result_paths: Dict[str, Any] = json.load(f)
         return result_paths
+
+    def build_condition(self, condition_name: str, replicate_names: List[str]):
+        self.result_info = self.__load_info()
+        last_expression: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
+                                                                                "transcript_data",
+                                                                                "transcript_set.json"),
+                                                                   condition_name,
+                                                                   ";".join(replicate_names))
+        for name in replicate_names:
+            next_expression: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
+                                                                                    "transcript_data",
+                                                                                    "transcript_set.json"),
+                                                                       condition_name,
+                                                                       ";".join(replicate_names))
+            next_expression.load(self.result_info["expression_imports"]["replicates"][name]["path"])
+            last_expression.update(next_expression.expression_assembly)
+
+        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
+            self.result_info = self.__load_info()
+            new_condition_dict: Dict[str, Any] = {"replicates": replicate_names,
+                                                  "path": os.path.join(self.result_paths["conditions"],
+                                                                       condition_name + ".json")}
+            self.result_info["expression_imports"]["conditions"][condition_name]: Dict[str, Dict[str, Any]] = dict()
+            self.result_info["expression_imports"]["conditions"][condition_name] = new_condition_dict
+            self.__save_info()
+            last_expression.save(self.result_info["expression_imports"]["conditions"][condition_name]["path"])
 
     def import_expression_gtf(self, expression_path: str, expression_name: str, normalization: str) -> None:
         transcript_to_protein_dict: Dict[str, str] = self.transcript_to_protein_map()
@@ -91,7 +124,8 @@ class ResultBuddy:
                                                                                      "transcript_set.json"),
                                                                         expression_name,
                                                                         expression_path,
-                                                                        normalization)
+                                                                        normalization,
+                                                                        True)
         for line in tqdm(expression_gtf,
                          ncols=100,
                          total=expression_gtf.total_lines,
@@ -108,9 +142,17 @@ class ResultBuddy:
                     # This implicitly checks if the transcript is PROTEIN CODING or NMD bio-typed.
                     if line_dict["transcript_id"] in transcript_to_protein_dict.keys():
                         line_dict["protein_id"] = transcript_to_protein_dict[line_dict["transcript_id"]]
-                        expression_assembler.insert_expression_dict()
-
-        print(count)
+                        expression_assembler.insert_expression_dict(line_dict)
+        expression_assembler.cleanse_assembly()
+        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
+            self.result_info = self.__load_info()
+            new_expression_dict: Dict[str, str] = {"origin": expression_path,
+                                                   "path": os.path.join(self.result_paths["replicates"],
+                                                                        expression_name + ".json")}
+            self.result_info["expression_imports"]["replicates"][expression_name]: Dict[str, Dict[str, str]] = dict()
+            self.result_info["expression_imports"]["replicates"][expression_name] = new_expression_dict
+            self.__save_info()
+        expression_assembler.save(self.result_info["expression_imports"]["replicates"][expression_name]["path"])
 
     def transcript_to_protein_map(self) -> Dict[str, str]:
         transcript_to_protein_map: Dict[str, str] = dict()
@@ -125,10 +167,16 @@ class ResultBuddy:
 
 
 def main():
-    path: str = "C:/Users/chris/Desktop/ENCFF961HLO.gtf"
+
     library_path: str = "C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107"
-    result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf")
+    #   result_buddy_1: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
+    #   result_buddy_1.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy1", "FPKM")
+    #
+    #   result_buddy_2: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
+    #   result_buddy_2.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy2", "FPKM")
+
+    result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
+    result_buddy.build_condition("buddy_con", ["Buddy1", "Buddy2"])
 
 
 if __name__ == "__main__":

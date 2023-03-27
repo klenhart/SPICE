@@ -1,4 +1,7 @@
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
+import requests
+import json
+import sys
 
 
 def manipulate(info):
@@ -7,11 +10,7 @@ def manipulate(info):
 
 
 def main():
-    info: LibraryInfo = LibraryInfo("C:\\Users\\chris\\Desktop\\git\\fade_lib_homo_sapiens_107\\info.yaml")
-    print(info)
-    manipulate(info)
-    print(info)
-
+    pass
 
 if __name__ == "__main__":
     main()
