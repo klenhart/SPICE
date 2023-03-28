@@ -21,6 +21,7 @@
 #######################################################################
 
 import json
+import math
 
 from typing import Dict, Any, List
 
@@ -35,7 +36,9 @@ class ExpressionAssembler:
                  expression_name: str,
                  origin_path: str = "",
                  normalization: str = "",
-                 initial_flag: bool = False):
+                 initial_flag: bool = False,
+                 condition_flag: bool = False,
+                 expression_threshold: float = 1.0):
         if initial_flag:
             self.transcript_set_path: str = transcript_set_path
             self.expression_assembly: Dict[str, Any] = dict()
@@ -43,7 +46,10 @@ class ExpressionAssembler:
             self.expression_assembly["origin"]: str = origin_path
             self.expression_assembly["library"]: str = transcript_set_path
             self.expression_assembly["normalization"] = normalization
+            self.expression_assembly["expression_threshold"] = expression_threshold
             self.expression_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
+            if condition_flag:
+                self.expression_assembly["replicate_count"]: int = 0
             gene_assembly: Dict[str, Gene] = self.__load_gene_assembly()
             for gene_id in gene_assembly.keys():
                 self.expression_assembly["data"][gene_id]: Dict[str, Any] = dict()
@@ -51,6 +57,12 @@ class ExpressionAssembler:
                 self.expression_assembly["data"][gene_id]["transcript_support_levels"]: Dict[str, int] = dict()
                 self.expression_assembly["data"][gene_id]["tags"]: Dict[str, List[str]] = dict()
                 self.expression_assembly["data"][gene_id]["expression"]: Dict[str, float] = dict()
+                if condition_flag:
+                    self.expression_assembly["data"][gene_id]["expression_max"]: Dict[str, float] = dict()
+                    self.expression_assembly["data"][gene_id]["expression_min"]: Dict[str, float] = dict()
+                    self.expression_assembly["data"][gene_id]["expression_avg"]: Dict[str, float] = dict()
+                    self.expression_assembly["data"][gene_id]["expression_all"]: Dict[str, List[float]] = dict()
+                    self.expression_assembly["data"][gene_id]["expression_std"]: Dict[str, float] = dict()
                 for transcript in gene_assembly[gene_id].get_transcripts():
                     biotype: str = transcript.get_biotype()
                     self.expression_assembly["data"][gene_id]["biotypes"][transcript.get_id()] = biotype
@@ -58,6 +70,12 @@ class ExpressionAssembler:
                     self.expression_assembly["data"][gene_id]["transcript_support_levels"][transcript.get_id()] = tsl
                     self.expression_assembly["data"][gene_id]["tags"][transcript.get_id()] = transcript.get_tags()
                     self.expression_assembly["data"][gene_id]["expression"][transcript.get_id()] = 0.0
+                    if condition_flag:
+                        self.expression_assembly["data"][gene_id]["expression_max"][transcript.get_id()] = 0.0
+                        self.expression_assembly["data"][gene_id]["expression_min"][transcript.get_id()] = 0.0
+                        self.expression_assembly["data"][gene_id]["expression_avg"][transcript.get_id()] = 0.0
+                        self.expression_assembly["data"][gene_id]["expression_all"][transcript.get_id()] = []
+                        self.expression_assembly["data"][gene_id]["expression_std"][transcript.get_id()] = 0.0
         else:
             self.transcript_set_path: str = ""
             self.expression_assembly: Dict[str, Any] = dict()
@@ -65,29 +83,60 @@ class ExpressionAssembler:
             self.expression_assembly["origin"]: str = origin_path
             self.expression_assembly["library"]: str = transcript_set_path
             self.expression_assembly["normalization"]: str = ""
+            self.expression_assembly["expression_threshold"] = expression_threshold
             self.expression_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
 
     def __len__(self) -> int:
         return len(self.expression_assembly["data"])
 
-    def update(self, assembly_update: Dict[str, Any]):
+    def update(self, assembly_update: Dict[str, Any], condition_flag: bool = False) -> None:
+        replicate_count: int
+        if condition_flag:
+            self.expression_assembly["replicate_count"] += 1
+            replicate_count: int = self.expression_assembly["replicate_count"]
+        else:
+            replicate_count = 1
         self.expression_assembly["normalization"] = assembly_update["normalization"]
-        for gene_id in assembly_update["data"].keys():
-            if gene_id in self.expression_assembly["data"].keys():
-                for transcript_id in assembly_update["data"][gene_id]["biotypes"].keys():
-                    expression_value: float = assembly_update["data"][gene_id]["expression"][transcript_id]
-                    if transcript_id in self.expression_assembly["data"][gene_id]["expression"].keys():
-                        self.expression_assembly["data"][gene_id]["expression"][transcript_id] += expression_value
+        for gene_id in self.expression_assembly["data"].keys():
+            if gene_id in assembly_update["data"].keys():
+                for transcript_id in self.expression_assembly["data"][gene_id]["biotypes"].keys():
+                    if transcript_id in assembly_update["data"][gene_id]["biotypes"].keys():
+                        expr_value = assembly_update["data"][gene_id]["expression"][transcript_id]
                     else:
-                        self.expression_assembly["data"][gene_id]["expression"][transcript_id] = expression_value
-                        biotype: str = assembly_update["data"][gene_id]["biotypes"][transcript_id]
-                        tags: List[str] = assembly_update["data"][gene_id]["tags"][transcript_id]
-                        tsl: int = assembly_update["data"][gene_id]["transcript_support_levels"][transcript_id]
-                        self.expression_assembly["data"][gene_id]["biotypes"][transcript_id] = biotype
-                        self.expression_assembly["data"][gene_id]["tags"][transcript_id] = tags
-                        self.expression_assembly["data"][gene_id]["transcript_support_levels"][transcript_id] = tsl
+                        expr_value = 0.0
+                    self.expression_assembly["data"][gene_id]["expression"][transcript_id] += expr_value
+                    if condition_flag:
+                        current_max: float = self.expression_assembly["data"][gene_id]["expression_max"][transcript_id]
+                        current_min: float = self.expression_assembly["data"][gene_id]["expression_min"][transcript_id]
+                        if expr_value > current_max:
+                            self.expression_assembly["data"][gene_id]["expression_max"][transcript_id] = expr_value
+                        if expr_value < current_min:
+                            self.expression_assembly["data"][gene_id]["expression_min"][transcript_id] = expr_value
+                        self.expression_assembly["data"][gene_id]["expression_all"][transcript_id].append(expr_value)
+                        expr_all: List[float]
+                        expr_all = self.expression_assembly["data"][gene_id]["expression_all"][transcript_id]
+                        expr_avg: float = sum(expr_all) / self.expression_assembly["replicate_count"]
+                        self.expression_assembly["data"][gene_id]["expression_avg"][transcript_id] = expr_avg
+                        expr_std: float = math.sqrt(sum([(x - expr_avg)**2 for x in expr_all]) / replicate_count)
+                        self.expression_assembly["data"][gene_id]["expression_std"][transcript_id] = expr_std
             else:
-                self.expression_assembly["data"][gene_id] = assembly_update["data"][gene_id]
+                for transcript_id in self.expression_assembly["data"][gene_id]["biotypes"].keys():
+                    expr_value = 0.0
+                    self.expression_assembly["data"][gene_id]["expression"][transcript_id] += expr_value
+                    if condition_flag:
+                        current_max: float = self.expression_assembly["data"][gene_id]["expression_max"][transcript_id]
+                        current_min: float = self.expression_assembly["data"][gene_id]["expression_min"][transcript_id]
+                        if expr_value > current_max:
+                            self.expression_assembly["data"][gene_id]["expression_max"][transcript_id] = expr_value
+                        if expr_value < current_min:
+                            self.expression_assembly["data"][gene_id]["expression_min"][transcript_id] = expr_value
+                        self.expression_assembly["data"][gene_id]["expression_all"][transcript_id].append(expr_value)
+                        expr_all: List[float]
+                        expr_all = self.expression_assembly["data"][gene_id]["expression_all"][transcript_id]
+                        expr_avg: float = sum(expr_all) / self.expression_assembly["replicate_count"]
+                        self.expression_assembly["data"][gene_id]["expression_avg"][transcript_id] = expr_avg
+                        expr_std: float = math.sqrt(sum([(x - expr_avg) ** 2 for x in expr_all]) / replicate_count)
+                        self.expression_assembly["data"][gene_id]["expression_std"][transcript_id] = expr_std
 
     def __load_gene_assembly(self) -> Dict[str, Gene]:
         with open(self.transcript_set_path, "r") as f:
@@ -99,12 +148,19 @@ class ExpressionAssembler:
         transcript_id: str = insert_dict["transcript_id"]
         protein_id: str = insert_dict["protein_id"]
         expression: float = float(insert_dict[self.expression_assembly["normalization"]])
+        expression_threshold: float = self.expression_assembly["expression_threshold"]
         if len(protein_id) == 0:
-            self.expression_assembly["data"][gene_id]["expression"][transcript_id] = expression
+            if expression >= expression_threshold:
+                self.expression_assembly["data"][gene_id]["expression"][transcript_id] = expression
+            else:
+                self.expression_assembly["data"][gene_id]["expression"][transcript_id] = 0.0
         else:
-            self.expression_assembly["data"][gene_id]["expression"][protein_id] = expression
+            if expression >= expression_threshold:
+                self.expression_assembly["data"][gene_id]["expression"][protein_id] = expression
+            else:
+                self.expression_assembly["data"][gene_id]["expression"][protein_id] = 0.0
 
-    def cleanse_assembly(self):
+    def cleanse_assembly(self, condition_flag: bool = False):
         cleanse_dict: Dict[str, List[str]] = dict()
         for gene_id in self.expression_assembly["data"].keys():
             cleanse_dict[gene_id] = list()
@@ -117,6 +173,12 @@ class ExpressionAssembler:
                 del self.expression_assembly["data"][gene_id]["transcript_support_levels"][transcript_id]
                 del self.expression_assembly["data"][gene_id]["tags"][transcript_id]
                 del self.expression_assembly["data"][gene_id]["expression"][transcript_id]
+                if condition_flag:
+                    del self.expression_assembly["data"][gene_id]["expression_max"][transcript_id]
+                    del self.expression_assembly["data"][gene_id]["expression_min"][transcript_id]
+                    del self.expression_assembly["data"][gene_id]["expression_all"][transcript_id]
+                    del self.expression_assembly["data"][gene_id]["expression_avg"][transcript_id]
+                    del self.expression_assembly["data"][gene_id]["expression_std"][transcript_id]
             if len(self.expression_assembly["data"][gene_id]["biotypes"]) == 0:
                 del self.expression_assembly["data"][gene_id]
 

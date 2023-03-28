@@ -90,13 +90,17 @@ class ResultBuddy:
             result_paths: Dict[str, Any] = json.load(f)
         return result_paths
 
-    def build_condition(self, condition_name: str, replicate_names: List[str]):
+    def build_condition(self, condition_name: str, replicate_names: List[str], expression_threshold: float = 1.0):
         self.result_info = self.__load_info()
         last_expression: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
                                                                                 "transcript_data",
                                                                                 "transcript_set.json"),
                                                                    condition_name,
-                                                                   ";".join(replicate_names))
+                                                                   ";".join(replicate_names),
+                                                                   "",
+                                                                   True,
+                                                                   True,
+                                                                   expression_threshold)
         for name in replicate_names:
             next_expression: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
                                                                                     "transcript_data",
@@ -104,7 +108,8 @@ class ResultBuddy:
                                                                        condition_name,
                                                                        ";".join(replicate_names))
             next_expression.load(self.result_info["expression_imports"]["replicates"][name]["path"])
-            last_expression.update(next_expression.expression_assembly)
+            last_expression.update(next_expression.expression_assembly, True)
+        last_expression.cleanse_assembly(True)
 
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
             self.result_info = self.__load_info()
@@ -116,7 +121,10 @@ class ResultBuddy:
             self.__save_info()
             last_expression.save(self.result_info["expression_imports"]["conditions"][condition_name]["path"])
 
-    def import_expression_gtf(self, expression_path: str, expression_name: str, normalization: str) -> None:
+    def import_expression_gtf(self, expression_path: str,
+                              expression_name: str,
+                              normalization: str,
+                              expression_threshold: float = 1.0) -> None:
         transcript_to_protein_dict: Dict[str, str] = self.transcript_to_protein_map()
         expression_gtf: GTFBoy = GTFBoy(expression_path)
         expression_assembler: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
@@ -125,7 +133,9 @@ class ResultBuddy:
                                                                         expression_name,
                                                                         expression_path,
                                                                         normalization,
-                                                                        True)
+                                                                        True,
+                                                                        False,
+                                                                        expression_threshold)
         for line in tqdm(expression_gtf,
                          ncols=100,
                          total=expression_gtf.total_lines,
@@ -169,11 +179,11 @@ class ResultBuddy:
 def main():
 
     library_path: str = "C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107"
-    #   result_buddy_1: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
-    #   result_buddy_1.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy1", "FPKM")
-    #
-    #   result_buddy_2: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
-    #   result_buddy_2.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy2", "FPKM")
+    # result_buddy_1: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
+    # result_buddy_1.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy1", "FPKM")
+#
+    # result_buddy_2: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
+    # result_buddy_2.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy2", "FPKM")
 
     result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
     result_buddy.build_condition("buddy_con", ["Buddy1", "Buddy2"])
