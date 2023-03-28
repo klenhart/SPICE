@@ -179,11 +179,11 @@ class ResultBuddy:
 def main():
 
     library_path: str = "C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107"
-    # result_buddy_1: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
-    # result_buddy_1.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy1", "FPKM")
-#
-    # result_buddy_2: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
-    # result_buddy_2.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy2", "FPKM")
+    result_buddy_1: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
+    result_buddy_1.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy1", "FPKM")
+
+    result_buddy_2: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
+    result_buddy_2.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy2", "FPKM")
 
     result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
     result_buddy.build_condition("buddy_con", ["Buddy1", "Buddy2"])
