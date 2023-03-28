@@ -10,7 +10,10 @@ def manipulate(info):
 
 
 def main():
-    pass
+    x = [1, 2, 3]
+    print(x)
+    x.pop(1)
+    print(x)
 
 if __name__ == "__main__":
     main()

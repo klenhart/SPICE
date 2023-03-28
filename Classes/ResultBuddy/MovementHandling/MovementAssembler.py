@@ -32,14 +32,8 @@ class MovementAssembler:
                  species: str,
                  taxon_id: int,
                  transcript_set_path: str,
-                 expression_path: str,
-                 condition_flag: bool = False):
-        expr_assembler: ExpressionAssembler = ExpressionAssembler(transcript_set_path,
-                                                                        "",
-                                                                        "",
-                                                                        "",
-                                                                        False,
-                                                                        condition_flag)
+                 expression_path: str):
+        expr_assembler: ExpressionAssembler = ExpressionAssembler(transcript_set_path)
         expr_assembler.load(expression_path)
         self.transcript_set_path: str = transcript_set_path
         self.movement_assembly: Dict[str, Any] = dict()
