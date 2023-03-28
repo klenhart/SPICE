@@ -207,6 +207,12 @@ class GeneAssembler:
     def get_fas_scored_count(self) -> int:
         return self.get_protein_count() - self.get_protein_count(False, True)
 
+    def get_fas_dist_matrix(self) -> Dict[str, Dict[str, Dict[str, float]]]:
+        dist_matrix: Dict[str, Dict[str, Dict[str, float]]] = dict()
+        for gene in self.get_genes():
+            dist_matrix[gene.get_id()] = gene.get_fas_dict()
+        return dist_matrix
+
     @staticmethod
     def to_dict(gene_assembly: Dict[str, Gene]) -> Dict[str, Dict[str, Any]]:
         json_dict: Dict[str, Dict[str, Any]] = dict()

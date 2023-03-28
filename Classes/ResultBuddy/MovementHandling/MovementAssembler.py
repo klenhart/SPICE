@@ -52,8 +52,11 @@ class MovementAssembler:
 
         gene_assembler: GeneAssembler = GeneAssembler(species, str(taxon_id))
         gene_assembler.load(transcript_set_path)
+        fas_dist_matrix: Dict[str, Dict[str, Dict[str, float]]] = gene_assembler.get_fas_dist_matrix()
+        expr_data: Dict[str, Any] = expr_assembler.expression_assembly["data"]
+
+        for gene_id in expr_data.keys():
+            gene_dist_matrix: Dict[str, Dict[str, float]] = fas_dist_matrix[gene_id]
 
 
-#
-        #for expr_assembler.load(expression_path)
 
