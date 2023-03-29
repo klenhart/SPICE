@@ -28,6 +28,7 @@ from typing import Dict, Any, List
 from tqdm import tqdm
 
 from Classes.GTFBoy.GTFBoy import GTFBoy
+from Classes.ResultBuddy.ExpressionHandling.ConditionAssembler import ConditionAssembler
 from Classes.ResultBuddy.ExpressionHandling.ExpressionAssembler import ExpressionAssembler
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
@@ -90,35 +91,32 @@ class ResultBuddy:
             result_paths: Dict[str, Any] = json.load(f)
         return result_paths
 
-    # def build_condition(self, condition_name: str, replicate_names: List[str], expression_threshold: float = 1.0):
-    #     self.result_info = self.__load_info()
-    #     last_expression: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
-    #                                                                             "transcript_data",
-    #                                                                             "transcript_set.json"),
-    #                                                                condition_name,
-    #                                                                ";".join(replicate_names),
-    #                                                                "",
-    #                                                                True,
-    #                                                                expression_threshold)
-    #     for name in replicate_names:
-    #         next_expression: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
-    #                                                                                 "transcript_data",
-    #                                                                                 "transcript_set.json"),
-    #                                                                    condition_name,
-    #                                                                    ";".join(replicate_names))
-    #         next_expression.load(self.result_info["expression_imports"]["replicates"][name]["path"])
-    #         last_expression.update(next_expression.expression_assembly, True)
-    #     last_expression.cleanse_assembly(True)
-#
-    #     with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
-    #         self.result_info = self.__load_info()
-    #         new_condition_dict: Dict[str, Any] = {"replicates": replicate_names,
-    #                                               "path": os.path.join(self.result_paths["conditions"],
-    #                                                                    condition_name + ".json")}
-    #         self.result_info["expression_imports"]["conditions"][condition_name]: Dict[str, Dict[str, Any]] = dict()
-    #         self.result_info["expression_imports"]["conditions"][condition_name] = new_condition_dict
-    #         self.__save_info()
-    #         last_expression.save(self.result_info["expression_imports"]["conditions"][condition_name]["path"])
+    def build_condition(self, condition_name: str, replicate_names: List[str]):
+        self.result_info = self.__load_info()
+        condition: ConditionAssembler = ConditionAssembler(os.path.join(self.library_path,
+                                                                        "transcript_data",
+                                                                        "transcript_set.json"),
+                                                           condition_name,
+                                                           True)
+        for name in replicate_names:
+            expression: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
+                                                                               "transcript_data",
+                                                                               "transcript_set.json"),
+                                                                  name)
+            expression.load(self.result_info["expression_imports"]["replicates"][name]["path"])
+            condition.insert_expression(expression)
+
+        condition.cleanse_assembly()
+
+        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
+            self.result_info = self.__load_info()
+            new_condition_dict: Dict[str, Any] = {"replicates": replicate_names,
+                                                  "path": os.path.join(self.result_paths["conditions"],
+                                                                       condition_name + ".json")}
+            self.result_info["expression_imports"]["conditions"][condition_name]: Dict[str, Dict[str, Any]] = dict()
+            self.result_info["expression_imports"]["conditions"][condition_name] = new_condition_dict
+            self.__save_info()
+            condition.save(self.result_info["expression_imports"]["conditions"][condition_name]["path"])
 
     def import_expression_gtf(self, expression_path: str,
                               expression_name: str,
@@ -184,8 +182,8 @@ def main():
     result_buddy_2: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
     result_buddy_2.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy2", "FPKM")
 
-    # result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
-    # result_buddy.build_condition("buddy_con", ["Buddy1", "Buddy2"])
+    result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
+    result_buddy.build_condition("buddy_con", ["Buddy1", "Buddy2"])
 
 
 if __name__ == "__main__":

@@ -56,7 +56,7 @@ class ExpressionAssembler:
                 self.expression_assembly["data"][gene_id]["expression"]: List[float] = list()
                 self.expression_assembly["data"][gene_id]["expression_rel"]: List[float] = list()
                 for transcript in gene_assembly[gene_id].get_transcripts():
-                    self.expression_assembly["data"][gene_id]["id"].append(transcript.get_id())
+                    self.expression_assembly["data"][gene_id]["ids"].append(transcript.get_id())
                     biotype: str = transcript.get_biotype()
                     self.expression_assembly["data"][gene_id]["biotypes"].append(biotype)
                     tsl: int = transcript.get_transcript_support_level()
@@ -88,15 +88,15 @@ class ExpressionAssembler:
         protein_id: str = insert_dict["protein_id"]
         expression: float = float(insert_dict[self.expression_assembly["normalization"]])
         expression_threshold: float = self.expression_assembly["expression_threshold"]
-        id_list: List[str] = self.expression_assembly["data"][gene_id]["id"]
+        id_list: List[str] = self.expression_assembly["data"][gene_id]["ids"]
         if len(protein_id) == 0:
-            index: int = id_list.index(protein_id)
+            index: int = id_list.index(transcript_id)
             if expression >= expression_threshold:
                 self.expression_assembly["data"][gene_id]["expression"][index] = expression
             else:
                 self.expression_assembly["data"][gene_id]["expression"][index] = 0.0
         else:
-            index: int = id_list.index(transcript_id)
+            index: int = id_list.index(protein_id)
             if expression >= expression_threshold:
                 self.expression_assembly["data"][gene_id]["expression"][index] = expression
             else:
@@ -106,7 +106,7 @@ class ExpressionAssembler:
         cleanse_dict: Dict[str, List[str]] = dict()
         for gene_id in self.expression_assembly["data"].keys():
             cleanse_dict[gene_id] = list()
-            id_list: List[str] = self.expression_assembly["data"][gene_id]["id"]
+            id_list: List[str] = self.expression_assembly["data"][gene_id]["ids"]
             for index, transcript_id in enumerate(id_list):
                 if self.expression_assembly["data"][gene_id]["expression"][index] == 0.0:
                     cleanse_dict[gene_id].append(transcript_id)
@@ -114,12 +114,12 @@ class ExpressionAssembler:
             for transcript_id in cleanse_dict[gene_id]:
                 id_list: List[str] = self.expression_assembly["data"][gene_id]["ids"]
                 index: int = id_list.index(transcript_id)
-                self.expression_assembly["data"][gene_id]["ids"][index].pop()
-                self.expression_assembly["data"][gene_id]["biotypes"][index].pop()
-                self.expression_assembly["data"][gene_id]["transcript_support_levels"][index].pop()
-                self.expression_assembly["data"][gene_id]["tags"][index].pop()
-                self.expression_assembly["data"][gene_id]["expression"][index].pop()
-                self.expression_assembly["data"][gene_id]["expression_rel"][index].pop()
+                self.expression_assembly["data"][gene_id]["ids"].pop(index)
+                self.expression_assembly["data"][gene_id]["biotypes"].pop(index)
+                self.expression_assembly["data"][gene_id]["transcript_support_levels"].pop(index)
+                self.expression_assembly["data"][gene_id]["tags"].pop(index)
+                self.expression_assembly["data"][gene_id]["expression"].pop(index)
+                self.expression_assembly["data"][gene_id]["expression_rel"].pop(index)
             if len(self.expression_assembly["data"][gene_id]["ids"]) == 0:
                 del self.expression_assembly["data"][gene_id]
 
