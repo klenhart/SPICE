@@ -70,8 +70,7 @@ class ResultBuddy:
             tree_grow.create_folders()
             tree_grow.put_path_json()
 
-            with open(self.result_paths["result_info"], "w") as f:
-                json.dump(self.result_info, f, indent=4)
+            self.__save_info()
 
         else:
             self.result_info: Dict[str, Any] = self.__load_info()
@@ -135,7 +134,7 @@ class ResultBuddy:
         for line in tqdm(expression_gtf,
                          ncols=100,
                          total=expression_gtf.total_lines,
-                         desc="GTF extraction progress"):
+                         desc=expression_name + " GTF extraction progress"):
             if line.startswith("#"):
                 continue
             else:
@@ -176,14 +175,19 @@ class ResultBuddy:
 def main():
 
     library_path: str = "C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107"
-    result_buddy_1: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
-    result_buddy_1.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy1", "FPKM")
+    result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF023EXJ.gtf", "EXJ", "FPKM")
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF082OHO.gtf", "OHO", "FPKM")
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF180OMN.gtf", "OMN", "FPKM")
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF263YFG.gtf", "YFG", "FPKM")
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF277PKW.gtf", "PKW", "FPKM")
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF304JRO.gtf", "JRO", "FPKM")
 
-    result_buddy_2: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
-    result_buddy_2.import_expression_gtf("C:/Users/chris/Desktop/ENCFF961HLO.gtf", "Buddy2", "FPKM")
-
-    result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
-    result_buddy.build_condition("buddy_con", ["Buddy1", "Buddy2"])
+    # result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
+    result_buddy.build_condition("COND_0", ["EXJ", "OHO"])
+    result_buddy.build_condition("COND_13", ["OMN", "JRO"])
+    result_buddy.build_condition("COND_2", ["YFG", "PKW"])
+    result_buddy.build_condition("COND_ALL", ["YFG", "PKW", "EXJ", "OHO", "OMN", "JRO"])
 
 
 if __name__ == "__main__":

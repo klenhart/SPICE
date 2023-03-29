@@ -185,5 +185,6 @@ class ConditionAssembler:
                 self.condition_assembly["data"][gene_id]["expression_all"].pop(index)
                 self.condition_assembly["data"][gene_id]["expression_rel_all"].pop(index)
                 self.condition_assembly["data"][gene_id]["expression_rel_std"].pop(index)
+
             if len(self.condition_assembly["data"][gene_id]["ids"]) == 0:
                 del self.condition_assembly["data"][gene_id]
