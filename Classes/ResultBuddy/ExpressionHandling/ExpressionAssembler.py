@@ -24,6 +24,8 @@ import json
 
 from typing import Dict, Any, List
 
+from tqdm import tqdm
+
 from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 
@@ -104,7 +106,10 @@ class ExpressionAssembler:
 
     def cleanse_assembly(self):
         cleanse_dict: Dict[str, List[str]] = dict()
-        for gene_id in self.expression_assembly["data"].keys():
+        for gene_id in tqdm(self.expression_assembly["data"].keys(),
+                            ncols=100,
+                            total=len(self.expression_assembly["data"]),
+                            desc=self.expression_assembly["name"] + ": extract cleanup progress"):
             cleanse_dict[gene_id] = list()
             id_list: List[str] = self.expression_assembly["data"][gene_id]["ids"]
             for index, transcript_id in enumerate(id_list):
@@ -124,7 +129,10 @@ class ExpressionAssembler:
                 del self.expression_assembly["data"][gene_id]
 
     def calc_relative_expression(self):
-        for gene_id in self.expression_assembly["data"].keys():
+        for gene_id in tqdm(self.expression_assembly["data"].keys(),
+                            ncols=100,
+                            total=len(self.expression_assembly["data"]),
+                            desc=self.expression_assembly["name"] + ": relative expression calculation progress"):
             expressions: List[float] = self.expression_assembly["data"][gene_id]["expression"]
             total: float = sum(expressions)
             self.expression_assembly["data"][gene_id]["expression_rel"] = [expr / total for expr in expressions]

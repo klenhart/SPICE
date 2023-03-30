@@ -122,6 +122,7 @@ class ResultBuddy:
                               normalization: str,
                               expression_threshold: float = 1.0) -> None:
         transcript_to_protein_dict: Dict[str, str] = self.transcript_to_protein_map()
+        transcript_to_gene_dict: Dict[str, str] = self.transcript_to_gene_map()
         expression_gtf: GTFBoy = GTFBoy(expression_path)
         expression_assembler: ExpressionAssembler = ExpressionAssembler(os.path.join(self.library_path,
                                                                                      "transcript_data",
@@ -141,11 +142,13 @@ class ResultBuddy:
                 split_line: List[str] = line.split("\t")
                 line_dict: Dict[str, str] = GTFBoy.build_dict(split_line)
                 transcript_flag: bool = line_dict["feature"] == "transcript"
-                if all([key in line_dict.keys() for key in ["reference_id", "ref_gene_id"]]) and transcript_flag:
-                    line_dict["gene_id"] = line_dict["ref_gene_id"].split(".")[0]
-                    line_dict["transcript_id"] = line_dict["reference_id"].split(".")[0]
+                if "transcript_id" in line_dict.keys() and transcript_flag:
+                    line_dict["transcript_id"] = line_dict["transcript_id"].split(".")[0]
+                    gene_in_lib_flag: bool = line_dict["transcript_id"] in transcript_to_gene_dict.keys()
+                    transcript_in_lib_flag: bool = line_dict["transcript_id"] in transcript_to_protein_dict.keys()
                     # This implicitly checks if the transcript is PROTEIN CODING or NMD bio-typed.
-                    if line_dict["transcript_id"] in transcript_to_protein_dict.keys():
+                    if transcript_in_lib_flag and gene_in_lib_flag:
+                        line_dict["gene_id"] = transcript_to_gene_dict[line_dict["transcript_id"]]
                         line_dict["protein_id"] = transcript_to_protein_dict[line_dict["transcript_id"]]
                         expression_assembler.insert_expression_dict(line_dict)
         expression_assembler.cleanse_assembly()
@@ -160,6 +163,19 @@ class ResultBuddy:
             self.__save_info()
         expression_assembler.save(self.result_info["expression_imports"]["replicates"][expression_name]["path"])
 
+    def transcript_to_biotype_map(self) -> Dict[str, str]:
+        transcript_to_biotype_map: Dict[str, str] = dict()
+        gene_assembler: GeneAssembler = GeneAssembler(self.result_info["species"], self.result_info["taxon_id"])
+        gene_assembler.load(os.path.join(self.library_path, "transcript_data", "transcript_set.json"))
+        count: int = 0
+        for transcript in gene_assembler.get_transcripts():
+            if isinstance(transcript, Protein):
+                count += 1
+                transcript_to_biotype_map[transcript.id_transcript] = "protein_coding"
+            elif isinstance(transcript, Transcript):
+                transcript_to_biotype_map[transcript.id_transcript] = "nonsense_mediated_decay"
+        return transcript_to_biotype_map
+
     def transcript_to_protein_map(self) -> Dict[str, str]:
         transcript_to_protein_map: Dict[str, str] = dict()
         gene_assembler: GeneAssembler = GeneAssembler(self.result_info["species"], self.result_info["taxon_id"])
@@ -171,23 +187,34 @@ class ResultBuddy:
                 transcript_to_protein_map[transcript.get_id()] = ""
         return transcript_to_protein_map
 
+    def transcript_to_gene_map(self) -> Dict[str, str]:
+        transcript_to_gene_map: Dict[str, str] = dict()
+        gene_assembler: GeneAssembler = GeneAssembler(self.result_info["species"], self.result_info["taxon_id"])
+        gene_assembler.load(os.path.join(self.library_path, "transcript_data", "transcript_set.json"))
+        for transcript in gene_assembler.get_transcripts():
+            if isinstance(transcript, Protein):
+                transcript_to_gene_map[transcript.get_id_transcript()] = transcript.get_id_gene()
+            elif isinstance(transcript, Transcript):
+                transcript_to_gene_map[transcript.get_id()] = transcript.get_id_gene()
+        return transcript_to_gene_map
+
 
 def main():
 
     library_path: str = "C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107"
     result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF023EXJ.gtf", "EXJ", "FPKM")
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF082OHO.gtf", "OHO", "FPKM")
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF180OMN.gtf", "OMN", "FPKM")
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF263YFG.gtf", "YFG", "FPKM")
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF277PKW.gtf", "PKW", "FPKM")
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF304JRO.gtf", "JRO", "FPKM")
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF023EXJ.gtf", "3EXJ", "FPKM", 1.0)
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF082OHO.gtf", "2OHO", "FPKM", 1.0)
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF180OMN.gtf", "0OMN", "FPKM", 1.0)
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF263YFG.gtf", "3YFG", "FPKM", 1.0)
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF277PKW.gtf", "7PKW", "FPKM", 1.0)
+    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF304JRO.gtf", "4JRO", "FPKM", 1.0)
 
-    # result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
-    result_buddy.build_condition("COND_0", ["EXJ", "OHO"])
-    result_buddy.build_condition("COND_13", ["OMN", "JRO"])
-    result_buddy.build_condition("COND_2", ["YFG", "PKW"])
-    result_buddy.build_condition("COND_ALL", ["YFG", "PKW", "EXJ", "OHO", "OMN", "JRO"])
+    result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
+    result_buddy.build_condition("COND_0", ["3EXJ", "2OHO"])
+    result_buddy.build_condition("COND_13", ["0OMN", "4JRO"])
+    result_buddy.build_condition("COND_2", ["3YFG", "7PKW"])
+    result_buddy.build_condition("COND_ALL", ["3YFG", "7PKW", "3EXJ", "2OHO", "0OMN", "4JRO"])
 
 
 if __name__ == "__main__":

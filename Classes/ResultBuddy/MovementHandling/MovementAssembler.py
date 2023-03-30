@@ -32,7 +32,7 @@ class MovementAssembler:
                  species: str,
                  taxon_id: int,
                  transcript_set_path: str,
-                 expression_path: str):
+                 condition_path: str):
         expr_assembler: ExpressionAssembler = ExpressionAssembler(transcript_set_path)
         expr_assembler.load(expression_path)
         self.transcript_set_path: str = transcript_set_path

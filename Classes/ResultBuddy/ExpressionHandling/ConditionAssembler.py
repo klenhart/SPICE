@@ -43,7 +43,6 @@ class ConditionAssembler:
             self.condition_assembly["name"]: str = condition_name
             self.condition_assembly["library"]: str = transcript_set_path
             self.condition_assembly["normalization"]: str = ""
-            self.condition_assembly["expression_threshold"]: float = 0.0
             self.condition_assembly["replicates"]: List[str] = list()
             self.condition_assembly["replicate_count"]: int = 0
             self.condition_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
@@ -83,7 +82,6 @@ class ConditionAssembler:
             self.condition_assembly["name"]: str = condition_name
             self.condition_assembly["library"]: str = transcript_set_path
             self.condition_assembly["normalization"]: str = ""
-            self.condition_assembly["expression_threshold"]: float = 0.0
             self.condition_assembly["replicates"]: List[str] = list()
             self.condition_assembly["replicate_count"]: int = 0
             self.condition_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
@@ -186,5 +184,5 @@ class ConditionAssembler:
                 self.condition_assembly["data"][gene_id]["expression_rel_all"].pop(index)
                 self.condition_assembly["data"][gene_id]["expression_rel_std"].pop(index)
 
-            if len(self.condition_assembly["data"][gene_id]["ids"]) == 0:
+            if len(self.condition_assembly["data"][gene_id]["ids"]) <= 1:
                 del self.condition_assembly["data"][gene_id]
