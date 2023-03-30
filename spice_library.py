@@ -5,12 +5,12 @@
 #
 # This file is part of main.
 #
-#  fade_library is free software: you can redistribute it and/or modify
+#  spice_library is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  fade_library is distributed in the hope that it will be useful,
+#  spice_library is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -317,7 +317,7 @@ def main():
                                                argument_dict["outdir"],
                                                argument_dict["release"])
 
-    library_name: str = "fade_lib_" + local_ensembl.get_species_name() + "_" + argument_dict["release"]
+    library_name: str = "spice_lib_" + local_ensembl.get_species_name() + "_" + argument_dict["release"]
 
     ####################################################################
     # DATASTRUCTURE AND PATH SETUP
@@ -416,7 +416,7 @@ def main():
         library_info: LibraryInfo = LibraryInfo(path_dict["info"])
 
         # Save base info
-        library_info["fade_version"] = "0.1"
+        library_info["spice_version"] = "0.1"
         library_info["init_date"] = str(date.today())
         library_info["last_edit"] = str(date.today())
         library_info["commandline_args"] = argument_dict

@@ -20,9 +20,9 @@
 #
 #######################################################################
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 
-from Classes.ResultBuddy.ExpressionHandling.ExpressionAssembler import ExpressionAssembler
+from Classes.ResultBuddy.ExpressionHandling.ConditionAssembler import ConditionAssembler
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 
 
@@ -32,25 +32,54 @@ class MovementAssembler:
                  species: str,
                  taxon_id: int,
                  transcript_set_path: str,
-                 condition_path: str):
-        expr_assembler: ExpressionAssembler = ExpressionAssembler(transcript_set_path)
-        expr_assembler.load(expression_path)
-        self.transcript_set_path: str = transcript_set_path
-        self.movement_assembly: Dict[str, Any] = dict()
-        self.movement_assembly["name"]: str = expr_assembler.expression_assembly["name"]
-        self.movement_assembly["origin"]: str = expr_assembler.expression_assembly["origin"]
-        self.movement_assembly["library"]: str = expr_assembler.expression_assembly["library"]
-        self.movement_assembly["normalization"] = expr_assembler.expression_assembly["normalization"]
-        self.movement_assembly["expression_threshold"] = expr_assembler.expression_assembly["expression_threshold"]
-        self.movement_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
+                 condition_path: str,
+                 initial_flag: bool = False):
+        if initial_flag:
+            condition_assembler: ConditionAssembler = ConditionAssembler(transcript_set_path)
+            condition_assembler.load(condition_path)
+            self.transcript_set_path: str = transcript_set_path
+            self.movement_assembly: Dict[str, Any] = dict()
+            self.movement_assembly["name"]: str = condition_assembler.condition_assembly["name"]
+            self.movement_assembly["library"]: str = condition_assembler.condition_assembly["library"]
+            self.movement_assembly["normalization"] = condition_assembler.condition_assembly["normalization"]
+            self.movement_assembly["replicates"] = condition_assembler.condition_assembly["replicates"]
+            self.movement_assembly["replicate_count"] = condition_assembler.condition_assembly["replicate_count"]
+            self.movement_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
 
-        gene_assembler: GeneAssembler = GeneAssembler(species, str(taxon_id))
-        gene_assembler.load(transcript_set_path)
-        fas_dist_matrix: Dict[str, Dict[str, Dict[str, float]]] = gene_assembler.get_fas_dist_matrix()
-        expr_data: Dict[str, Any] = expr_assembler.expression_assembly["data"]
+            gene_assembler: GeneAssembler = GeneAssembler(species, str(taxon_id))
+            gene_assembler.load(transcript_set_path)
+            fas_dist_matrix: Dict[str, Dict[str, Dict[str, float]]] = gene_assembler.get_fas_dist_matrix()
+            condition_data: Dict[str, Any] = condition_assembler.condition_assembly["data"]
 
-        for gene_id in expr_data.keys():
-            gene_dist_matrix: Dict[str, Dict[str, float]] = fas_dist_matrix[gene_id]
+            for gene_id in condition_data.keys():
+                gene_dist_matrix: Dict[str, Dict[str, float]] = fas_dist_matrix[gene_id]
+                self.movement_assembly["data"][gene_id]: Dict[str, Any] = dict()
+                self.movement_assembly["data"][gene_id]["ids"]: List[str] = list()
+                self.movement_assembly["data"][gene_id]["biotypes"]: List[str] = list()
+                self.movement_assembly["data"][gene_id]["transcript_support_levels"]: List[int] = list()
+                self.movement_assembly["data"][gene_id]["tags"]: List[List[str]] = list()
+                self.movement_assembly["data"][gene_id]["movement"]: List[float] = list()
+                self.movement_assembly["data"][gene_id]["movement_min"]: List[float] = list()
+                self.movement_assembly["data"][gene_id]["movement_max"]: List[float] = list()
+                self.movement_assembly["data"][gene_id]["movement_avg"]: List[float] = list()
 
+
+
+                self.movement_assembly["data"][gene_id]["expression_rel_avg"]: List[float] = list()
+                self.movement_assembly["data"][gene_id]["expression_all"]: List[List[float]] = list()
+                self.movement_assembly["data"][gene_id]["expression_rel_all"]: List[List[float]] = list()
+                self.movement_assembly["data"][gene_id]["expression_rel_std"]: List[float] = list()
+
+    @staticmethod
+    def calculate_movement(gene_fas_dists: Dict[str, Dict[str, float]],
+                           rel_expressions: List[float],
+                           transcript_ids: List[str]) -> List[float]:
+        movement_list: List[float] = [0.0] * len(transcript_ids)
+
+        for s, seed_id in enumerate(transcript_ids):
+            for q, query_id in enumerate(transcript_ids):
+                movement_list[s] += rel_expressions[q] * gene_fas_dists[seed_id][query_id]
+
+        return movement_list
 
 
