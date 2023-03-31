@@ -32,12 +32,12 @@ class ReduxArgParse:
                  parse_tags: List[str],
                  parse_types: List[type],
                  parse_actions: List[str],
-                 parse_nargs: List[str],
+                 parse_nargs: List[Any],
                  parse_help: List[str]) -> None:
         self.parse_tags: List[str] = parse_tags
         self.parse_types: List[type] = parse_types
         self.parse_actions: List[str] = parse_actions  # store, append, store_true, store_false, count, help, version
-        self.parse_nargs: List[str] = parse_nargs  # ? zero or 1, * zero or more, + one or more
+        self.parse_nargs: List[str] = parse_nargs  # ? 0 or 1, * 0 or more, + 1 or more, <number> that exact amount
         self.parse_help: List[str] = parse_help
         self.parser: argparse.ArgumentParser = argparse.ArgumentParser()
 
@@ -69,7 +69,7 @@ def main() -> None:
     argument_parser: ReduxArgParse = ReduxArgParse(["--flag", "--list", "--integer", "--multilist"],
                                                    [None, str, int, str],
                                                    ["store_true", "store", "store", "append"],
-                                                   [None, "*", "?", "*"],
+                                                   [None, 1, "?", "*"],
                                                    ["help1", "help2", "help3", "help4"])
     argument_parser.generate_parser()
     argument_parser.execute()

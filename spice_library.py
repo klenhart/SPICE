@@ -291,9 +291,9 @@ def main():
 
     # Set up the args parser.
     argument_parser: ReduxArgParse = ReduxArgParse(["--outdir", "--species", "--release", "--force", "--keepgtf"],
-                                                   [str, str, str, bool],
+                                                   [str, str, str, None, None],
                                                    ["store", "store", "store", "store_true", "store_true"],
-                                                   [None, None, None, "?", "?"],
+                                                   [1, 1, 1, None, None],
                                                    ["Directory the library will be generated in.",
                                                     "Species of the library.",
                                                     "Ensembl release of the library.",

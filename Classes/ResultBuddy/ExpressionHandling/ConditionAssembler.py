@@ -169,7 +169,7 @@ class ConditionAssembler:
             cleanse_dict[gene_id] = list()
             id_list: List[str] = self.condition_assembly["data"][gene_id]["ids"]
             for index, transcript_id in enumerate(id_list):
-                if self.condition_assembly["data"][gene_id]["expression"][index] == 0.0:
+                if self.condition_assembly["data"][gene_id]["expression_rel_avg"][index] == 0.0:
                     cleanse_dict[gene_id].append(transcript_id)
         for gene_id in cleanse_dict.keys():
             for transcript_id in cleanse_dict[gene_id]:

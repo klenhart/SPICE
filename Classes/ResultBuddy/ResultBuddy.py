@@ -30,6 +30,7 @@ from tqdm import tqdm
 from Classes.GTFBoy.GTFBoy import GTFBoy
 from Classes.ResultBuddy.ExpressionHandling.ConditionAssembler import ConditionAssembler
 from Classes.ResultBuddy.ExpressionHandling.ExpressionAssembler import ExpressionAssembler
+from Classes.ResultBuddy.MovementHandling.MovementAssembler import MovementAssembler
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
 from Classes.SequenceHandling.Protein import Protein
@@ -40,16 +41,19 @@ from Classes.WriteGuard.WriteGuard import WriteGuard
 
 class ResultBuddy:
 
-    def __init__(self, library_path: str, result_path: str, initial_flag: bool = False):
+    def __init__(self, library_path: str, output_path: str, initial_flag: bool = False):
         self.library_path: str = library_path
-        self.result_path: str = result_path
+        library_info: LibraryInfo = LibraryInfo(os.path.join(self.library_path, "info.yaml"))
+        species: str = library_info["info"]["species"]
+        release: str = library_info["info"]["release"]
+        self.result_path: str = os.path.join(output_path, "spice_result_" + species + "_" + release)
+
         if initial_flag:
-            library_info: LibraryInfo = LibraryInfo(os.path.join(self.library_path, "info.yaml"))
             self.result_info: Dict[str, Any] = dict()
 
-            self.result_info["species"] = library_info["info"]["species"]
+            self.result_info["species"] = species
             self.result_info["taxon_id"] = library_info["info"]["taxon_id"]
-            self.result_info["release"] = library_info["info"]["release"]
+            self.result_info["release"] = release
             self.result_info["library_integrity_flag"] = all(library_info["status"].values())
 
             self.result_info["expression_imports"]: Dict[str, Dict[str, Dict[str, str]]] = dict()
@@ -90,8 +94,30 @@ class ResultBuddy:
             result_paths: Dict[str, Any] = json.load(f)
         return result_paths
 
+    def generate_movement_file(self, condition_name: str):
+        self.result_info = self.__load_info()
+        species: str = self.result_info["species"]
+        taxon_id: int = self.result_info["taxon_id"]
+        expr_path: str = self.result_info["expression_imports"]["conditions"][condition_name]["expression_path"]
+        movement: MovementAssembler = MovementAssembler(species,
+                                                        taxon_id,
+                                                        os.path.join(self.library_path,
+                                                                     "transcript_data",
+                                                                     "transcript_set.json"),
+                                                        expr_path,
+                                                        True)
+
+        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
+            self.result_info = self.__load_info()
+
+            movement_path: str = os.path.join(self.result_paths["movement"], "movement_" + condition_name + ".json")
+            self.result_info["expression_imports"]["conditions"][condition_name]["movement_path"] = movement_path
+            self.__save_info()
+            movement.save(self.result_info["expression_imports"]["conditions"][condition_name]["movement_path"])
+
     def build_condition(self, condition_name: str, replicate_names: List[str]):
         self.result_info = self.__load_info()
+
         condition: ConditionAssembler = ConditionAssembler(os.path.join(self.library_path,
                                                                         "transcript_data",
                                                                         "transcript_set.json"),
@@ -102,7 +128,7 @@ class ResultBuddy:
                                                                                "transcript_data",
                                                                                "transcript_set.json"),
                                                                   name)
-            expression.load(self.result_info["expression_imports"]["replicates"][name]["path"])
+            expression.load(self.result_info["expression_imports"]["replicates"][name]["expression_path"])
             condition.insert_expression(expression)
 
         condition.cleanse_assembly()
@@ -110,12 +136,13 @@ class ResultBuddy:
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
             self.result_info = self.__load_info()
             new_condition_dict: Dict[str, Any] = {"replicates": replicate_names,
-                                                  "path": os.path.join(self.result_paths["conditions"],
-                                                                       condition_name + ".json")}
+                                                  "expression_path": os.path.join(self.result_paths["conditions"],
+                                                                                  condition_name + ".json"),
+                                                  "movement_path": ""}
             self.result_info["expression_imports"]["conditions"][condition_name]: Dict[str, Dict[str, Any]] = dict()
             self.result_info["expression_imports"]["conditions"][condition_name] = new_condition_dict
             self.__save_info()
-            condition.save(self.result_info["expression_imports"]["conditions"][condition_name]["path"])
+            condition.save(self.result_info["expression_imports"]["conditions"][condition_name]["expression_path"])
 
     def import_expression_gtf(self, expression_path: str,
                               expression_name: str,
@@ -153,15 +180,18 @@ class ResultBuddy:
                         expression_assembler.insert_expression_dict(line_dict)
         expression_assembler.cleanse_assembly()
         expression_assembler.calc_relative_expression()
+
+        expression_path: str = os.path.join(self.result_paths["replicates"],
+                                            "expression_" + expression_name + ".json")
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
             self.result_info = self.__load_info()
             new_expression_dict: Dict[str, str] = {"origin": expression_path,
-                                                   "path": os.path.join(self.result_paths["replicates"],
-                                                                        expression_name + ".json")}
+                                                   "expression_path": expression_path}
             self.result_info["expression_imports"]["replicates"][expression_name]: Dict[str, Dict[str, str]] = dict()
             self.result_info["expression_imports"]["replicates"][expression_name] = new_expression_dict
             self.__save_info()
-        expression_assembler.save(self.result_info["expression_imports"]["replicates"][expression_name]["path"])
+
+        expression_assembler.save(expression_path)
 
     def transcript_to_biotype_map(self) -> Dict[str, str]:
         transcript_to_biotype_map: Dict[str, str] = dict()
@@ -201,14 +231,14 @@ class ResultBuddy:
 
 def main():
 
-    library_path: str = "C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107"
-    result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF023EXJ.gtf", "3EXJ", "FPKM", 1.0)
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF082OHO.gtf", "2OHO", "FPKM", 1.0)
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF180OMN.gtf", "0OMN", "FPKM", 1.0)
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF263YFG.gtf", "3YFG", "FPKM", 1.0)
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF277PKW.gtf", "7PKW", "FPKM", 1.0)
-    result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF304JRO.gtf", "4JRO", "FPKM", 1.0)
+    library_path: str = "C:/Users/chris/Desktop/git/spice_lib_homo_sapiens_107"
+    # result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result", True)
+    # result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF023EXJ.gtf", "3EXJ", "FPKM", 1.0)
+    # result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF082OHO.gtf", "2OHO", "FPKM", 1.0)
+    # result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF180OMN.gtf", "0OMN", "FPKM", 1.0)
+    # result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF263YFG.gtf", "3YFG", "FPKM", 1.0)
+    # result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF277PKW.gtf", "7PKW", "FPKM", 1.0)
+    # result_buddy.import_expression_gtf("C:/Users/chris/Desktop/gtfs/ENCFF304JRO.gtf", "4JRO", "FPKM", 1.0)
 
     result_buddy: ResultBuddy = ResultBuddy(library_path, "C:/Users/chris/Desktop/git/result")
     result_buddy.build_condition("COND_0", ["3EXJ", "2OHO"])
