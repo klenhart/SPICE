@@ -104,6 +104,7 @@ def main():
     elif argument_dict["mode"][0] == "expression":
 
         if any(argument_dict[key] is None for key in ["outdir", "gtf", "name", "Normalization", "library"]):
+            print(argument_dict)
             print("""'expression' mode failed. 
             Either 'library', 'outdir', 'gtf', 'Normalization' or 'name' missing from commandline arguments.\nAborting.""")
         else:
