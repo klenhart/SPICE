@@ -171,7 +171,7 @@ class ResultBuddy:
                 line_dict: Dict[str, str] = GTFBoy.build_dict(split_line)
                 transcript_flag: bool = line_dict["feature"] == "transcript"
                 if "transcript_id" in line_dict.keys() and transcript_flag:
-                    line_dict["transcript_id"] = line_dict["transcript_id"].split(".")[0]
+                    line_dict["transcript_id"] = line_dict["transcript_id"].split(".")[0].split(":")[-1]
                     gene_in_lib_flag: bool = line_dict["transcript_id"] in transcript_to_gene_dict.keys()
                     transcript_in_lib_flag: bool = line_dict["transcript_id"] in transcript_to_protein_dict.keys()
                     # This implicitly checks if the transcript is PROTEIN CODING or NMD bio-typed.
