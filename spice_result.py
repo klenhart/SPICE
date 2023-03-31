@@ -54,9 +54,9 @@ def main():
     ####################################################################
     # SETUP ARGS PARSER
 
-    argument_parser: ReduxArgParse = ReduxArgParse(["--mode", "--library", "--outdir",
-                                                    "--gtf", "--name", "--replicates", "--compared",
-                                                    "--Normalization", "--threshold"],
+    argument_parser: ReduxArgParse = ReduxArgParse(["--mode", "--library", "--outdir", "--gtf",
+                                                    "--name", "--replicates", "--compared", "--Normalization",
+                                                    "--threshold"],
                                                    [str, str, str, str,
                                                     str, str, str, str,
                                                     float],
@@ -104,7 +104,6 @@ def main():
     elif argument_dict["mode"][0] == "expression":
 
         if any(argument_dict[key] is None for key in ["outdir", "gtf", "name", "Normalization", "library"]):
-            print(argument_dict)
             print("""'expression' mode failed. 
             Either 'library', 'outdir', 'gtf', 'Normalization' or 'name' missing from commandline arguments.\nAborting.""")
         else:
