@@ -25,7 +25,8 @@ from typing import Iterator, Dict, List
 
 class GTFBoy:
 
-    incomplete_tags: List[str] = ['mRNA_end_NF', 'cds_end_NF', 'mRNA_start_NF', 'cds_start_NF']
+    start_incomplete_tags: List[str] = ['mRNA_start_NF', 'cds_start_NF']
+    end_incomplete_tags: List[str] = ['mRNA_end_NF', 'cds_end_NF']
 
     GTF_MASK: List[str] = ["seqname", "source", "feature",
                            "start", "end", "score",
@@ -68,7 +69,11 @@ class GTFBoy:
             else:
                 attribute_dict[pair[0]] = pair[1]
         # Search for tags indicating a 3'/5' incomplete transcript.
-        if any([tag in GTFBoy.incomplete_tags for tag in tag_list]):
+        if any([tag in GTFBoy.start_incomplete_tags for tag in tag_list]):
+            tag_list.append("start_incomplete")
+            tag_list.append("incomplete")
+        elif any([tag in GTFBoy.end_incomplete_tags for tag in tag_list]):
+            tag_list.append("end_incomplete")
             tag_list.append("incomplete")
         else:
             tag_list.append("complete")
