@@ -192,7 +192,7 @@ class ResultBuddy:
             self.result_info["expression_imports"]["replicates"][expression_name] = new_expression_dict
             self.__save_info()
 
-        expression_assembler.save(expression_path)
+        expression_assembler.save(expression_json_path)
 
     def transcript_to_biotype_map(self) -> Dict[str, str]:
         transcript_to_biotype_map: Dict[str, str] = dict()
