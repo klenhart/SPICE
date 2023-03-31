@@ -110,10 +110,12 @@ class MovementAssembler:
                                                                                            transcript_ids)
                 self.movement_assembly["data"][gene_id]["movement_avg_rel_expr-std"] = mov_rel_expr_minus_std
 
-                for i, transcript_id in enumerate(transcript_ids):
-                    repl_rel_expr: List[float] = expr_rel_all_list[i]
+                for i in range(self.movement_assembly["replicate_count"]):
+                    repl_rel_expr_list: List[float] = list()
+                    for rel_expr_list in expr_rel_all_list:
+                        repl_rel_expr_list.append(rel_expr_list[i])
                     mov_repl_rel_expr: List[float] = MovementAssembler.calculate_movement(gene_dist_matrix,
-                                                                                          repl_rel_expr,
+                                                                                          repl_rel_expr_list,
                                                                                           transcript_ids)
                     self.movement_assembly["data"][gene_id]["movement_all_rel_expr"].append(mov_repl_rel_expr)
         else:
@@ -132,7 +134,6 @@ class MovementAssembler:
                            rel_expressions: List[float],
                            transcript_ids: List[str]) -> List[float]:
         movement_list: List[float] = [0.0] * len(transcript_ids)
-
         for s, seed_id in enumerate(transcript_ids):
             for q, query_id in enumerate(transcript_ids):
                 movement_list[s] += rel_expressions[q] * gene_fas_dists[seed_id][query_id]
