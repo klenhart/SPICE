@@ -182,12 +182,12 @@ class ResultBuddy:
         expression_assembler.cleanse_assembly()
         expression_assembler.calc_relative_expression()
 
-        expression_path: str = os.path.join(self.result_paths["replicates"],
-                                            "expression_" + expression_name + ".json")
+        expression_json_path: str = os.path.join(self.result_paths["replicates"],
+                                                 "expression_" + expression_name + ".json")
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
             self.result_info = self.__load_info()
             new_expression_dict: Dict[str, str] = {"origin": expression_path,
-                                                   "expression_path": expression_path}
+                                                   "expression_path": expression_json_path}
             self.result_info["expression_imports"]["replicates"][expression_name]: Dict[str, Dict[str, str]] = dict()
             self.result_info["expression_imports"]["replicates"][expression_name] = new_expression_dict
             self.__save_info()
