@@ -106,7 +106,8 @@ def main():
 
         if any(argument_dict[key] is None for key in ["outdir", "gtf", "name", "Normalization", "library"]):
             print("""'expression' mode failed. 
-            Either 'library', 'outdir', 'gtf', 'Normalization' or 'name' missing from commandline arguments.\nAborting.""")
+            Either 'library', 'outdir', 'gtf', 'Normalization' or 'name' missing from commandline arguments.
+            Aborting.""")
         else:
             if argument_dict["threshold"] is None:
                 argument_dict["threshold"] = 1.0
