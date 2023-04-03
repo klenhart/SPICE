@@ -38,12 +38,13 @@ def expression(library_path: str,
                normalization_threshold: float = 1.0):
     result: ResultBuddy = ResultBuddy(library_path, outdir)
     result.import_expression_gtf(gtf_path, expression_name, normalization, normalization_threshold)
+    result.generate_ewfd_file(expression_name)
 
 
 def condition(library_path: str, outdir: str, replicate_name_list: List[str], condition_name: str):
     result: ResultBuddy = ResultBuddy(library_path, outdir)
     result.build_condition(condition_name, replicate_name_list)
-    result.generate_movement_file(condition_name)
+    result.generate_ewfd_file(condition_name, True)
 
 
 def compare():
@@ -70,8 +71,8 @@ def main():
                                                    'setup' creates the result directory system.
                                                    'expression' loads a gtf expression file into results as replicate.
                                                    'condition' combines replicates and calculates the new conditions
-                                                   movement.
-                                                   'compare' generates a comparison between two conditions movements.
+                                                   EWFD.
+                                                   'compare' generates a comparison between two conditions EWFDs.
                                                    """,
                                                     "Path to the library. Required for all modes.",
                                                     "Parent directory of the result output. Required for all modes.",
@@ -80,7 +81,7 @@ def main():
                                                     """Name of replicate or condition that will be generated. 
                                                     Required for 'expression' and 'condition' modes.""",
                                                     """Names of replicates to be joined into condition.
-                                                    Required for 'condition' mode. Can be just one.""",
+                                                    Required for 'condition' mode. Must be more than one.""",
                                                     """Names of conditions that shall be compared.
                                                      Required for 'compare' mode.""",
                                                     """Normalization method referencing expression entry in gtf file.
@@ -121,6 +122,10 @@ def main():
         if any(argument_dict[key] is None for key in ["library", "outdir", "name", "replicates"]):
             print("""'condition' mode failed. 
             Either 'library', 'outdir', 'replicates' or 'name' missing from commandline arguments.\nAborting.""")
+        elif len(argument_dict["replicates"]) < 2:
+            print("""'condition' mode failed. 
+            A condition requires more than one replicate.
+            All replicates automatically get their EWFD calculated.\nAborting.""")
         else:
             condition(argument_dict["library"][0],
                       argument_dict["outdir"][0],

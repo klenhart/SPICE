@@ -30,7 +30,7 @@ from tqdm import tqdm
 from Classes.GTFBoy.GTFBoy import GTFBoy
 from Classes.ResultBuddy.ExpressionHandling.ConditionAssembler import ConditionAssembler
 from Classes.ResultBuddy.ExpressionHandling.ExpressionAssembler import ExpressionAssembler
-from Classes.ResultBuddy.MovementHandling.MovementAssembler import MovementAssembler
+from Classes.ResultBuddy.EWFDHandling.EWFDAssembler import EWFDAssembler
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
 from Classes.SequenceHandling.Protein import Protein
@@ -65,9 +65,11 @@ class ResultBuddy:
             self.result_paths["root"] = self.result_path
             self.result_paths["result_info"] = os.path.join(self.result_path, "info.json")
             self.result_paths["expression"] = os.path.join(self.result_path, "expression")
-            self.result_paths["replicates"] = os.path.join(self.result_path, "expression", "replicates")
-            self.result_paths["conditions"] = os.path.join(self.result_path, "expression", "conditions")
-            self.result_paths["movement"] = os.path.join(self.result_path, "movement")
+            self.result_paths["expression_replicates"] = os.path.join(self.result_path, "expression", "replicates")
+            self.result_paths["expression_conditions"] = os.path.join(self.result_path, "expression", "conditions")
+            self.result_paths["ewfd"] = os.path.join(self.result_path, "ewfd")
+            self.result_paths["ewfd_replicates"] = os.path.join(self.result_path, "ewfd", "replicates")
+            self.result_paths["ewfd_conditions"] = os.path.join(self.result_path, "ewfd", "conditions")
             self.result_paths["comparison"] = os.path.join(self.result_path, "comparison")
 
             tree_grow: TreeGrow = TreeGrow(self.result_paths)
@@ -94,26 +96,26 @@ class ResultBuddy:
             result_paths: Dict[str, Any] = json.load(f)
         return result_paths
 
-    def generate_movement_file(self, condition_name: str):
+    def generate_ewfd_file(self, name: str, condition_flag: bool = False):
+        if condition_flag:
+            ewfd_type: str = "conditions"
+        else:
+            ewfd_type: str = "replicates"
         self.result_info = self.__load_info()
         species: str = self.result_info["species"]
         taxon_id: int = self.result_info["taxon_id"]
-        expr_path: str = self.result_info["expression_imports"]["conditions"][condition_name]["expression_path"]
-        movement: MovementAssembler = MovementAssembler(species,
-                                                        taxon_id,
-                                                        os.path.join(self.library_path,
-                                                                     "transcript_data",
-                                                                     "transcript_set.json"),
-                                                        expr_path,
-                                                        True)
+        expr_path: str = self.result_info["expression_imports"][ewfd_type][name]["expression_path"]
+        ewfd: EWFDAssembler = EWFDAssembler(species, taxon_id, os.path.join(self.library_path,
+                                                                            "transcript_data",
+                                                                            "transcript_set.json"), expr_path, True,
+                                            condition_flag)
 
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
             self.result_info = self.__load_info()
-
-            movement_path: str = os.path.join(self.result_paths["movement"], "movement_" + condition_name + ".json")
-            self.result_info["expression_imports"]["conditions"][condition_name]["movement_path"] = movement_path
+            ewfd_path: str = os.path.join(self.result_paths["ewfd_" + ewfd_type], "ewfd_" + name + ".json")
+            self.result_info["expression_imports"][ewfd_type][name]["ewfd_path"] = ewfd_path
             self.__save_info()
-            movement.save(self.result_info["expression_imports"]["conditions"][condition_name]["movement_path"])
+            ewfd.save(self.result_info["expression_imports"][ewfd_type][name]["ewfd_path"])
 
     def build_condition(self, condition_name: str, replicate_names: List[str]):
         self.result_info = self.__load_info()
@@ -139,7 +141,7 @@ class ResultBuddy:
                                                "expression_" + condition_name + ".json")
             new_condition_dict: Dict[str, Any] = {"replicates": replicate_names,
                                                   "expression_path": condition_path,
-                                                  "movement_path": ""}
+                                                  "ewfd_path": ""}
             self.result_info["expression_imports"]["conditions"][condition_name]: Dict[str, Dict[str, Any]] = dict()
             self.result_info["expression_imports"]["conditions"][condition_name] = new_condition_dict
             self.__save_info()
@@ -187,7 +189,8 @@ class ResultBuddy:
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
             self.result_info = self.__load_info()
             new_expression_dict: Dict[str, str] = {"origin": expression_path,
-                                                   "expression_path": expression_json_path}
+                                                   "expression_path": expression_json_path,
+                                                   "ewfd_path": ""}
             self.result_info["expression_imports"]["replicates"][expression_name]: Dict[str, Dict[str, str]] = dict()
             self.result_info["expression_imports"]["replicates"][expression_name] = new_expression_dict
             self.__save_info()

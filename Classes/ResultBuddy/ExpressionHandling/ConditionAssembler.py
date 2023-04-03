@@ -52,17 +52,8 @@ class ConditionAssembler:
                 self.condition_assembly["data"][gene_id]["biotypes"]: List[str] = list()
                 self.condition_assembly["data"][gene_id]["transcript_support_levels"]: List[int] = list()
                 self.condition_assembly["data"][gene_id]["tags"]: List[List[str]] = list()
-                # Summing expression is not statistically viable for many normalization methods,
-                # this I shall not include it. It can always be calculated on the fly by
-                # summing the "expression_all" entry.
-                # self.condition_assembly["data"][gene_id]["expression"]: List[float] = list()
-                # self.condition_assembly["data"][gene_id]["expression_rel"]: List[float] = list()
-                self.condition_assembly["data"][gene_id]["expression_rel_max"]: List[float] = list()
-                self.condition_assembly["data"][gene_id]["expression_rel_min"]: List[float] = list()
                 self.condition_assembly["data"][gene_id]["expression_rel_avg"]: List[float] = list()
-                self.condition_assembly["data"][gene_id]["expression_all"]: List[List[float]] = list()
                 self.condition_assembly["data"][gene_id]["expression_rel_all"]: List[List[float]] = list()
-                self.condition_assembly["data"][gene_id]["expression_rel_std"]: List[float] = list()
                 for transcript in gene_assembly[gene_id].get_transcripts():
                     self.condition_assembly["data"][gene_id]["ids"].append(transcript.get_id())
                     biotype: str = transcript.get_biotype()
@@ -70,17 +61,8 @@ class ConditionAssembler:
                     tsl: int = transcript.get_transcript_support_level()
                     self.condition_assembly["data"][gene_id]["transcript_support_levels"].append(tsl)
                     self.condition_assembly["data"][gene_id]["tags"].append(transcript.get_tags())
-                    # Summing expression is not statistically viable for many normalization methods,
-                    # this I shall not include it. It can always be calculated on the fly by
-                    # summing the "expression_all" entry.
-                    # self.condition_assembly["data"][gene_id]["expression"].append(0.0)
-                    # self.condition_assembly["data"][gene_id]["expression_rel"].append(0.0)
-                    self.condition_assembly["data"][gene_id]["expression_rel_max"].append(0.0)
-                    self.condition_assembly["data"][gene_id]["expression_rel_min"].append(1.0)
                     self.condition_assembly["data"][gene_id]["expression_rel_avg"].append(1.0)
-                    self.condition_assembly["data"][gene_id]["expression_all"].append([])
                     self.condition_assembly["data"][gene_id]["expression_rel_all"].append([])
-                    self.condition_assembly["data"][gene_id]["expression_rel_std"].append(0.0)
         else:
             self.transcript_set_path: str = ""
             self.condition_assembly: Dict[str, Any] = dict()
@@ -134,30 +116,6 @@ class ConditionAssembler:
                 rel_expr_avg: float = rel_expr_sum / repl_count
                 self.condition_assembly["data"][gene_id]["expression_rel_avg"][i] = rel_expr_avg
 
-                current_min: float = self.condition_assembly["data"][gene_id]["expression_rel_min"][i]
-                current_max: float = self.condition_assembly["data"][gene_id]["expression_rel_max"][i]
-
-                # Replace the minimum and maximum relative expressions, if they change.
-                if current_min > rel_expr_value:
-                    self.condition_assembly["data"][gene_id]["expression_rel_min"][i] = rel_expr_value
-                if current_max < rel_expr_value:
-                    self.condition_assembly["data"][gene_id]["expression_rel_max"][i] = rel_expr_value
-
-                expr_rel_std: float = math.sqrt(sum([(x - rel_expr_avg)**2 for x in rel_expr_all]) / repl_count)
-
-                # Calculate the standard deviation for the transcript.
-                self.condition_assembly["data"][gene_id]["expression_rel_std"][i] = expr_rel_std
-            # Summing expression is not statistically viable for many normalization methods,
-            # this I shall not include it. It can always be calculated on the fly by
-            # summing the "expression_all" entry.
-            # # Update all relative expressions.
-            # expr_sum: float = sum(self.condition_assembly["data"][gene_id]["expression"])
-            # for i, expr in enumerate(self.condition_assembly["data"][gene_id]["expression"]):
-            #     if expr_sum == 0:
-            #         self.condition_assembly["data"][gene_id]["expression_rel"][i] = 0.0
-            #     else:
-            #         self.condition_assembly["data"][gene_id]["expression_rel"][i] = expr / expr_sum
-
     def __load_gene_assembly(self) -> Dict[str, Gene]:
         with open(self.transcript_set_path, "r") as f:
             gene_assembly: Dict[str, Gene] = GeneAssembler.from_dict(json.load(f))
@@ -179,14 +137,8 @@ class ConditionAssembler:
                 self.condition_assembly["data"][gene_id]["biotypes"].pop(index)
                 self.condition_assembly["data"][gene_id]["transcript_support_levels"].pop(index)
                 self.condition_assembly["data"][gene_id]["tags"].pop(index)
-                # self.condition_assembly["data"][gene_id]["expression"].pop(index)
-                # self.condition_assembly["data"][gene_id]["expression_rel"].pop(index)
-                self.condition_assembly["data"][gene_id]["expression_rel_max"].pop(index)
-                self.condition_assembly["data"][gene_id]["expression_rel_min"].pop(index)
                 self.condition_assembly["data"][gene_id]["expression_rel_avg"].pop(index)
-                self.condition_assembly["data"][gene_id]["expression_all"].pop(index)
                 self.condition_assembly["data"][gene_id]["expression_rel_all"].pop(index)
-                self.condition_assembly["data"][gene_id]["expression_rel_std"].pop(index)
 
             if len(self.condition_assembly["data"][gene_id]["ids"]) == 0:
                 del self.condition_assembly["data"][gene_id]
