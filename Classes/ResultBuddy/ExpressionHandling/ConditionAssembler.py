@@ -21,7 +21,6 @@
 #######################################################################
 
 import json
-import math
 
 from typing import Dict, Any, List
 
@@ -96,14 +95,9 @@ class ConditionAssembler:
                     rel_expr_value = 0.0
                 elif transcript_id in expr_assembly["data"][gene_id]["ids"]:
                     index: int = expr_assembly["data"][gene_id]["ids"].index(transcript_id)
-                    expr_value = expr_assembly["data"][gene_id]["expression"][index]
                     rel_expr_value = expr_assembly["data"][gene_id]["expression_rel"][index]
                 else:
-                    expr_value = 0.0
                     rel_expr_value = 0.0
-
-                # Append the expression to the list of all expressions.
-                self.condition_assembly["data"][gene_id]["expression_all"][i].append(expr_value)
 
                 # Append the relative expression to the list of all relative expressions.
                 self.condition_assembly["data"][gene_id]["expression_rel_all"][i].append(rel_expr_value)
