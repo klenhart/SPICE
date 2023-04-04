@@ -184,7 +184,7 @@ class ResultBuddy:
         expression_assembler.cleanse_assembly()
         expression_assembler.calc_relative_expression()
 
-        expression_json_path: str = os.path.join(self.result_paths["replicates"],
+        expression_json_path: str = os.path.join(self.result_paths["expression_replicates"],
                                                  "expression_" + expression_name + ".json")
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
             self.result_info = self.__load_info()
