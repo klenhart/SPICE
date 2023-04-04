@@ -110,7 +110,7 @@ class ResultBuddy:
                                                                             "transcript_set.json"), expr_path, True,
                                             condition_flag)
 
-        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
+        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path, name):
             self.result_info = self.__load_info()
             ewfd_path: str = os.path.join(self.result_paths["ewfd_" + ewfd_type], "ewfd_" + name + ".json")
             self.result_info["expression_imports"][ewfd_type][name]["ewfd_path"] = ewfd_path
@@ -135,7 +135,7 @@ class ResultBuddy:
 
         condition.cleanse_assembly()
 
-        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
+        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path, condition_name):
             self.result_info = self.__load_info()
             condition_path: str = os.path.join(self.result_paths["conditions"],
                                                "expression_" + condition_name + ".json")
@@ -186,7 +186,7 @@ class ResultBuddy:
 
         expression_json_path: str = os.path.join(self.result_paths["expression_replicates"],
                                                  "expression_" + expression_name + ".json")
-        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path):
+        with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path, expression_name):
             self.result_info = self.__load_info()
             new_expression_dict: Dict[str, str] = {"origin": expression_path,
                                                    "expression_path": expression_json_path,

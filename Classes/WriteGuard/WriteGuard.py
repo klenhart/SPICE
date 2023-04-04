@@ -29,7 +29,8 @@ from Classes.WriteGuard.NoHashBut import NoHashBut
 
 class WriteGuard:
 
-    def __init__(self, guarded_file_path: str, guarded_file_dir_path: str):
+    def __init__(self, guarded_file_path: str, guarded_file_dir_path: str, tag: str = ""):
+        self.tag = tag
         self.guarded_flag = False
         self.guarded_file_path = guarded_file_path
         no_hash: NoHashBut = NoHashBut(guarded_file_path)
@@ -56,7 +57,7 @@ class WriteGuard:
                 if (time.time() - start_time) >= time_limit:
                     print("Establishing lock timed out. Took longer than", time_limit, "seconds.")
                     return False
-                print("Failed to establish guard on file")
+                print(self.tag, "Guard already in place. Passed time:", time.time() - start_time)
                 time.sleep(1)
         self.guarded_flag = True
         return True
