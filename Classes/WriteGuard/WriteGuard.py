@@ -42,7 +42,7 @@ class WriteGuard:
 
     def start_guard(self) -> bool:
         start_time: float = time.time()
-        time_limit: int = 120
+        time_limit: int = 1200
         # Run this until the guard could be started.
         while True:
             try:
