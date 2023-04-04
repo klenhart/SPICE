@@ -137,7 +137,7 @@ class ResultBuddy:
 
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path, condition_name):
             self.result_info = self.__load_info()
-            condition_path: str = os.path.join(self.result_paths["conditions"],
+            condition_path: str = os.path.join(self.result_paths["expression_conditions"],
                                                "expression_" + condition_name + ".json")
             new_condition_dict: Dict[str, Any] = {"replicates": replicate_names,
                                                   "expression_path": condition_path,
