@@ -121,9 +121,9 @@ class EWFDAssembler:
                         self.ewfd_assembly["data"][gene_id]["avg_ewfd+std"].append(ewfd_average+std)
                         self.ewfd_assembly["data"][gene_id]["avg_ewfd-std"].append(ewfd_average-std)
             else:
-                expression_assembler: ExpressionAssembler = ExpressionAssembler(transcript_set_path)
+                expression_assembler: ExpressionAssembler = ExpressionAssembler(library_pass_path)
                 expression_assembler.load(expression_path)
-                self.transcript_set_path: str = transcript_set_path
+                self.library_pass_path: PassPath = library_pass_path
                 self.ewfd_assembly: Dict[str, Any] = dict()
                 self.ewfd_assembly["name"]: str = expression_assembler.expression_assembly["name"]
                 self.ewfd_assembly["library"]: str = expression_assembler.expression_assembly["library"]
@@ -131,7 +131,7 @@ class EWFDAssembler:
                 self.ewfd_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
 
                 gene_assembler: GeneAssembler = GeneAssembler(species, str(taxon_id))
-                gene_assembler.load(transcript_set_path)
+                gene_assembler.load(self.library_pass_path)
                 fas_dist_matrix: Dict[str, Dict[str, Dict[str, float]]] = gene_assembler.get_fas_dist_matrix()
                 expression_data: Dict[str, Any] = expression_assembler.expression_assembly["data"]
 

@@ -21,10 +21,6 @@
 #######################################################################
 
 
-from typing import Type
-from typing import List
-
-
 class APIHandler:
 
     def __init__(self) -> None:

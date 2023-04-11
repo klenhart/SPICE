@@ -1,5 +1,4 @@
 #!/bin/env python
-import os
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -28,7 +27,6 @@ from typing import Dict, List, Any
 import plotly.express as px
 
 import pandas
-import numpy as np
 
 
 class AssemblyVisualizer:
@@ -73,7 +71,6 @@ class AssemblyVisualizer:
         dataframe: pandas.DataFrame = self.generate_fas_comparison_dataframe()
         fig = px.histogram(dataframe, x="fas_score", color="complete_status", barmode="group", nbins=20)
         fig.show()
-        # fig.write_image(os.path.join(self.output_path, "incomplete_fas_distrib.png"))
 
     def generate_fas_comparison_dataframe(self) -> pandas.DataFrame:
         data_dict: Dict[str, List[Any]] = {"fas_score": [],
@@ -148,14 +145,7 @@ class AssemblyVisualizer:
 
 
 def main():
-    gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens", "9606")
-    gene_assembler.load("C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107/transcript_data/transcript_set.json")
-    assembly_visualizer: AssemblyVisualizer = AssemblyVisualizer(gene_assembler,
-                                                                 "C:/Users/chris/Desktop/AKE/ProgReps/12")
-    assembly_visualizer.generate_tsl_biotype_histogram()
-    assembly_visualizer.generate_tsl_complete_status_histogram()
-    assembly_visualizer.generate_incomplete_fas_distribution()
-    assembly_visualizer.generate_fas_diversity_among_genes_boxplot()
+    pass
 
 
 if __name__ == "__main__":

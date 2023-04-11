@@ -21,7 +21,7 @@
 #######################################################################
 
 
-from typing import Type, List, Dict, Any
+from typing import List, Dict
 from time import sleep
 
 import requests
@@ -49,6 +49,7 @@ class RemoteEnsembl:
         output_list: List[Dict[str, str]] = list()
 
         for i, request in enumerate(ensembl_requests):
+            decoded: List[Dict[str, str]] = list()
             for x in range(4):
                 r = requests.post(server, headers=headers, data=request)
                 decoded: List[Dict[str, str]] = r.json()

@@ -3,33 +3,34 @@
 #######################################################################
 # Copyright (C) 2022 Christian, Blümel, Julian Dosch
 #
-# This file is part of grand-trumpet.
+# This file is part of Spice.
 #
-#  grand-trumpet is free software: you can redistribute it and/or modify
+#  Spice is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  grand-trumpet is distributed in the hope that it will be useful,
+#  Spice is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with grand-trumpet.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
 from setuptools import setup, find_packages
 
-with open("README.md", "r") as input:
-    long_description = input.read()
+with open("README.md", "r") as i:
+    long_description = i.read()
 
 setup(
-    name="grand-trumpet",
+    name="spice",
     version="0.1",
     python_requires='>=3.9.0',
-    description="Genome wide appliance and visualization of the FAS algorithm for Alternative Splicing",
+    description="""Splicing-based protein isoform comparion estimator.
+    Genome wide appliance and visualization of the FAS algorithm for Alternative Splicing""",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Christian Blümel",
