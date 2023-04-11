@@ -3,7 +3,7 @@
 #######################################################################
 # Copyright (C) 2022 Julian Dosch
 #
-# This file is part of main.
+# This file is part of Spice.
 #
 #  get_domain_importance is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by

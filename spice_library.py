@@ -3,7 +3,7 @@
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
-# This file is part of main.
+# This file is part of Spice.
 #
 #  spice_library is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
