@@ -16,16 +16,18 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
 import json
+import os
 
 from typing import Dict, Any, List
 
 from tqdm import tqdm
 
+from Classes.PassPath.PassPath import PassPath
 from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 
@@ -33,18 +35,18 @@ from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 class ExpressionAssembler:
 
     def __init__(self,
-                 transcript_set_path: str,
+                 library_pass_path: PassPath,
                  expression_name: str = "",
                  origin_path: str = "",
                  normalization: str = "",
                  initial_flag: bool = False,
                  expression_threshold: float = 1.0):
         if initial_flag:
-            self.transcript_set_path: str = transcript_set_path
+            self.library_pass_path: PassPath = library_pass_path
             self.expression_assembly: Dict[str, Any] = dict()
             self.expression_assembly["name"]: str = expression_name
             self.expression_assembly["origin"]: str = origin_path
-            self.expression_assembly["library"]: str = transcript_set_path
+            self.expression_assembly["library"]: str = library_pass_path["root"]
             self.expression_assembly["normalization"] = normalization
             self.expression_assembly["expression_threshold"] = expression_threshold
             self.expression_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
@@ -67,11 +69,11 @@ class ExpressionAssembler:
                     self.expression_assembly["data"][gene_id]["expression"].append(0.0)
                     self.expression_assembly["data"][gene_id]["expression_rel"].append(0.0)
         else:
-            self.transcript_set_path: str = ""
+            self.library_pass_path: PassPath = PassPath(dict())
             self.expression_assembly: Dict[str, Any] = dict()
             self.expression_assembly["name"]: str = expression_name
             self.expression_assembly["origin"]: str = origin_path
-            self.expression_assembly["library"]: str = transcript_set_path
+            self.expression_assembly["library"]: str = library_pass_path["root"]
             self.expression_assembly["normalization"]: str = ""
             self.expression_assembly["expression_threshold"] = expression_threshold
             self.expression_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
@@ -80,8 +82,13 @@ class ExpressionAssembler:
         return len(self.expression_assembly["data"])
 
     def __load_gene_assembly(self) -> Dict[str, Gene]:
-        with open(self.transcript_set_path, "r") as f:
-            gene_assembly: Dict[str, Gene] = GeneAssembler.from_dict(json.load(f))
+        with open(self.library_pass_path["transcript_info"], "r") as f:
+            info_dict: Dict[str, Dict[str, Any]] = json.load(f)
+        with open(self.library_pass_path["transcript_seq"], "r") as f:
+            seq_dict: Dict[str, Dict[str, Any]] = json.load(f)
+        with open(self.library_pass_path["fas_scores"], "r") as f:
+            fas_dict: Dict[str, Dict[str, Any]] = json.load(f)
+        gene_assembly: Dict[str, Gene] = GeneAssembler.from_dict(info_dict, seq_dict, fas_dict)
         return gene_assembly
 
     def insert_expression_dict(self, insert_dict: Dict[str, Any]):
@@ -140,7 +147,8 @@ class ExpressionAssembler:
     def load(self, input_path: str) -> None:
         with open(input_path, "r") as f:
             self.expression_assembly = json.load(f)
-            self.transcript_set_path = self.expression_assembly["library"]
+        with open(os.path.join(self.expression_assembly["library"], "paths.json"), "r") as f:
+            self.library_pass_path = PassPath(json.load(f))
 
     def save(self, output_path: str) -> None:
         with open(output_path, "w") as f:

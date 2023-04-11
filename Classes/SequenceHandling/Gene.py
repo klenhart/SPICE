@@ -16,7 +16,7 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
@@ -166,41 +166,50 @@ class Gene:
     def check_fas_status(self) -> None:
         self.fas_complete_flag = all([-1 not in list(row_dict.values()) for row_dict in self.get_fas_dict().values()])
 
-    def from_dict(self, input_dict: Dict[str, Any]) -> None:
-        self.set_id(input_dict["_id"])
-        self.set_name(input_dict["name"])
-        self.set_feature(input_dict["feature"])
-        self.set_id_taxon(input_dict["taxon_id"])
-        self.set_chromosome(input_dict["chromosome"])
-        self.set_species(input_dict["species"])
-        self.set_biotype(input_dict["biotype"])
-        self.set_fas_dict(input_dict["fas_dict"])
-        for key in input_dict["transcripts"].keys():
-            transcript_dict = input_dict["transcripts"][key]
+    def from_dict(self,
+                  info_dict: Dict[str, Any],
+                  seq_dict: Dict[str, Any],
+                  fas_dict: Dict[str, Any]) -> None:
+        self.set_id(info_dict["_id"])
+        self.set_name(info_dict["name"])
+        self.set_feature(info_dict["feature"])
+        self.set_id_taxon(info_dict["taxon_id"])
+        self.set_chromosome(info_dict["chromosome"])
+        self.set_species(info_dict["species"])
+        self.set_biotype(info_dict["biotype"])
+        self.set_fas_dict(fas_dict)
+        for key in info_dict["transcripts"].keys():
+            transcript_dict = info_dict["transcripts"][key]
             if transcript_dict["feature"] == "transcript":
                 transcript: Transcript = Transcript()
                 transcript.from_dict(transcript_dict)
                 self.add_transcript(transcript)
             else:
+                transcript_dict["sequence"] = seq_dict[key]
                 protein: Protein = Protein()
                 protein.from_dict(transcript_dict)
                 self.add_transcript(protein)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, mode: str) -> Dict[str, Any]:
         output: Dict[str, Any]
         output: Dict[str, Any] = dict()
-        output["_id"] = self.get_id()
-        output["name"] = self.get_name()
-        output["feature"] = self.get_feature()
-        output["taxon_id"] = self.get_id_taxon()
-        output["chromosome"] = self.get_chromosome()
-        output["species"] = self.get_species()
-        output["biotype"] = self.get_biotype()
-        output["fas_dict"] = self.get_fas_dict()
-        transcript_dict: Dict[str, Dict[str, Any]] = dict()
-        for transcript in self.get_transcripts():
-            transcript_dict[transcript.get_id()] = transcript.to_dict()
-        output["transcripts"] = transcript_dict
+        if mode == "fas":
+            output = self.get_fas_dict()
+        elif mode == "seq":
+            for protein in self.get_proteins():
+                output[protein.get_id()] = protein.get_sequence()
+        elif mode == "info":
+            output["_id"] = self.get_id()
+            output["name"] = self.get_name()
+            output["feature"] = self.get_feature()
+            output["taxon_id"] = self.get_id_taxon()
+            output["chromosome"] = self.get_chromosome()
+            output["species"] = self.get_species()
+            output["biotype"] = self.get_biotype()
+            transcript_dict: Dict[str, Dict[str, Any]] = dict()
+            for transcript in self.get_transcripts():
+                transcript_dict[transcript.get_id()] = transcript.to_dict()
+            output["transcripts"] = transcript_dict
         return output
 
     def from_gtf_line(self, gtf_split_line: List[str]):

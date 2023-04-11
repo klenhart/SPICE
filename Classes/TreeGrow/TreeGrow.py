@@ -16,7 +16,7 @@ import os
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
@@ -31,14 +31,20 @@ class TreeGrow:
         self.paths_dict: Dict[str, str] = paths_dict
         if "root" in self.paths_dict.keys():
             self.paths_dict["self"] = os.path.join(self.paths_dict["root"], "paths.json")
+        else:
+            raise Exception("""Argument 'path_dict' passed to TreeGrow constructor must
+            contain key-value-pair 'root': <path>. Exiting...""")
 
     def create_folders(self) -> None:
+        root_path: str = self.paths_dict["root"]
         for path in self.paths_dict.values():
-            if not TreeGrow.is_file(path):
+            if path == root_path:
+                continue
+            elif not TreeGrow.is_file(os.path.join(root_path, path)):
                 Path(path).mkdir(parents=True, exist_ok=True)
             else:
-                Path(path).parent.mkdir(parents=True, exist_ok=True)
-                Path(path).touch()
+                Path(os.path.join(root_path, path)).parent.mkdir(parents=True, exist_ok=True)
+                Path(os.path.join(root_path, path)).touch()
 
     def put_path_json(self) -> None:
         if "root" in self.paths_dict.keys():
@@ -56,17 +62,7 @@ class TreeGrow:
 
 
 def main() -> None:
-    paths_dict: Dict[str, str] = dict()
-    paths_dict["root"] = "C:\\Users\\chris\\Desktop\\git\\root"
-    paths_dict["info"] = "C:\\Users\\chris\\Desktop\\git\\root\\info.tsv"
-    paths_dict["library"] = "C:\\Users\\chris\\Desktop\\git\\root\\library"
-    paths_dict["FAS"] = "C:\\Users\\chris\\Desktop\\git\\root\\library\\FAS"
-    paths_dict["fasta"] = "C:\\Users\\chris\\Desktop\\git\\root\\library\\FAS\\sequences.fasta"
-    paths_dict["Disturbance"] = "C:\\Users\\chris\\Desktop\\git\\root\\library\\Disturbance\\disturb.txt"
-
-    tree_grow = TreeGrow(paths_dict)
-    tree_grow.create_folders()
-    tree_grow.put_path_json()
+    pass
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
@@ -30,6 +30,7 @@ from Classes.SequenceHandling.Protein import Protein
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.TreeGrow.TreeGrow import TreeGrow
 from Classes.WriteGuard.WriteGuard import WriteGuard
+from Classes.PassPath.PassPath import PassPath
 
 from typing import Dict, Any, List
 from tqdm import tqdm
@@ -40,7 +41,7 @@ import shutil
 import json
 
 
-def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]) -> None:
+def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath) -> None:
     library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
     library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
     library_info["info"]["protein_count"] = gene_assembler.get_transcript_count()
@@ -106,7 +107,7 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
         library_info["status"]["05_implicit_fas_scoring"] = True
 
     # Check fasta generation
-    with open(path_dict["transcript_fasta"], "r") as f:
+    with open(pass_path["transcript_fasta"], "r") as f:
         fasta_length = len(f.read().split("\n"))
     gene_list: List[Gene] = gene_assembler.get_genes(False, True)
     output_list: List[str] = list()
@@ -125,7 +126,7 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
     pairings_dict: Dict[str, str] = dict()
     for gene in gene_list:
         pairings_dict[gene.get_id()] = gene.make_pairings()
-    with open(path_dict["transcript_pairings"], "r") as f:
+    with open(pass_path["transcript_pairings"], "r") as f:
         old_pairing_length = len(str(json.load(f)))
     new_pairing_length = len(str(pairings_dict))
     if old_pairing_length != new_pairing_length:
@@ -137,7 +138,7 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
         library_info["status"]["07_pairing_generation"] = True
 
     # Check ids tsv generation
-    with open(path_dict["transcript_ids"], "r") as f:
+    with open(pass_path["transcript_ids"], "r") as f:
         old_length = len(f.read())
     id_list: List[str] = list()
     for gene in gene_list:
@@ -161,7 +162,7 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
     library_info.save()
 
 
-def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]) -> None:
+def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath) -> None:
     incomplete_gene_list: List[Gene] = gene_assembler.get_genes(True)
     save_marker: int = 0
     for gene in tqdm(incomplete_gene_list, ncols=100,
@@ -183,11 +184,11 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
             else:
                 gene.set_sequence_of_transcript(result["query"], result["seq"])
         if save_marker % 250 == 0:
-            gene_assembler.save(path_dict["transcript_json"])
+            gene_assembler.save_seq(pass_path)
             library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
             library_info.save()
     gene_assembler.clear_empty_genes()
-    gene_assembler.save(path_dict["transcript_json"])
+    gene_assembler.save_seq(pass_path)
     info: Dict[str, Any] = library_info["info"]
     library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
     sequence_collection_flag: bool = info["protein_count"] == info["collected_sequences_count"]
@@ -196,7 +197,7 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
     library_info.save()
 
 
-def remove_small_proteins(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
+def remove_small_proteins(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath):
     gene_list: List[Gene] = gene_assembler.get_genes()
     for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Small protein removal progress"):
         protein_list: List[Protein] = gene.get_proteins()
@@ -204,7 +205,9 @@ def remove_small_proteins(gene_assembler: GeneAssembler, library_info: LibraryIn
             if len(protein) < 11:
                 gene.delete_transcript(protein.get_id())
     gene_assembler.clear_empty_genes()
-    gene_assembler.save(path_dict["transcript_json"])
+    gene_assembler.save_seq(pass_path)
+    gene_assembler.save_fas(pass_path)
+    gene_assembler.save_info(pass_path)
     library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
     library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
     library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
@@ -214,7 +217,7 @@ def remove_small_proteins(gene_assembler: GeneAssembler, library_info: LibraryIn
     library_info.save()
 
 
-def remove_incorrect_entries(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
+def remove_incorrect_entries(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath):
     gene_list: List[Gene] = gene_assembler.get_genes()
     for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Incorrect entry removal progress"):
         transcript_list: List[Transcript] = gene.get_transcripts()
@@ -227,7 +230,9 @@ def remove_incorrect_entries(gene_assembler: GeneAssembler, library_info: Librar
                     if transcript.get_id()[6] == "T":
                         gene.delete_transcript(transcript.get_id())
     gene_assembler.clear_empty_genes()
-    gene_assembler.save(path_dict["transcript_json"])
+    gene_assembler.save_seq(pass_path)
+    gene_assembler.save_fas(pass_path)
+    gene_assembler.save_info(pass_path)
     library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
     library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
     library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
@@ -237,40 +242,40 @@ def remove_incorrect_entries(gene_assembler: GeneAssembler, library_info: Librar
     library_info.save()
 
 
-def calculate_implicit_fas_scores(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
+def calculate_implicit_fas_scores(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath):
     gene_list: List[Gene] = gene_assembler.get_genes()
     for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Implicit FAS score collection progress"):
         gene.calculate_implicit_fas_scores()
-    gene_assembler.save(path_dict["transcript_json"])
+    gene_assembler.save_fas(pass_path)
     library_info["status"]["05_implicit_fas_scoring"] = True
     library_info.save()
 
 
-def generate_fasta_file(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
+def generate_fasta_file(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath):
     gene_list: List[Gene] = gene_assembler.get_genes(False, True)
     output_list: List[str] = list()
     for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Fasta generation process"):
         output_list.append(gene.fasta)
-    with open(path_dict["transcript_fasta"], "w") as f:
+    with open(pass_path["transcript_fasta"], "w") as f:
         f.write("\n".join(output_list))
     library_info["status"]["06_fasta_generation"] = True
     library_info.save()
 
 
-def generate_pairings(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
+def generate_pairings(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath):
     gene_list: List[Gene] = gene_assembler.get_genes(False, True)
     pairings_dict: Dict[str, str] = dict()
     for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Pairing generation process"):
         pairings_dict[gene.get_id()] = gene.make_pairings()
 
-    with open(path_dict["transcript_pairings"], "w") as f:
+    with open(pass_path["transcript_pairings"], "w") as f:
         json.dump(pairings_dict, f, indent=4)
 
     library_info["status"]["07_pairing_generation"] = True
     library_info.save()
 
 
-def generate_ids_tsv(gene_assembler: GeneAssembler, library_info: LibraryInfo, path_dict: Dict[str, str]):
+def generate_ids_tsv(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath):
     gene_list: List[Gene] = gene_assembler.get_genes(False, True)
     output_list: List[str] = list()
     for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Generating phyloprofile ids"):
@@ -278,7 +283,7 @@ def generate_ids_tsv(gene_assembler: GeneAssembler, library_info: LibraryInfo, p
         for protein in protein_list:
             output_list.append(protein.make_header() + "\tncbi" + str(protein.get_id_taxon()))
 
-    with open(path_dict["transcript_ids"], "w") as f:
+    with open(pass_path["transcript_ids"], "w") as f:
         f.write("\n".join(output_list))
 
     library_info["status"]["08_id_tsv_generation"] = True
@@ -332,14 +337,15 @@ def main():
         print("\tLoading existing library.")
 
         with open(os.path.join(argument_dict["outdir"], library_name, "paths.json"), "r") as f:
-            path_dict: Dict[str, str] = json.load(f)
-        gene_assembler.load(path_dict["transcript_json"])
+            pass_path: PassPath = PassPath(json.load(f))
+
+        gene_assembler.load(pass_path)
 
         print("#01 Collecting transcripts information.")
         print("\tTranscript information already collected.")
 
-        library_info: LibraryInfo = LibraryInfo(path_dict["info"])
-        check_library_status(gene_assembler, library_info, path_dict)
+        library_info: LibraryInfo = LibraryInfo(pass_path["info"])
+        check_library_status(gene_assembler, library_info, pass_path)
         library_info["last_edit"] = str(date.today())
         library_info.save()
 
@@ -355,41 +361,28 @@ def main():
         # Build the library directory system
         path_dict: Dict[str, str] = {"root": os.path.join(argument_dict["outdir"],
                                                           library_name),
-                                     "info": os.path.join(argument_dict["outdir"],
-                                                          library_name,
-                                                          "info.yaml"),
-                                     "fas_data": os.path.join(argument_dict["outdir"],
-                                                              library_name,
-                                                              "fas_data"),
-                                     "fas_temp": os.path.join(argument_dict["outdir"],
-                                                              library_name,
-                                                              "fas_data",
+                                     "info": os.path.join("info.yaml"),
+                                     "fas_data": os.path.join("fas_data"),
+                                     "fas_scores": os.path.join("fas_data",
+                                                                "fas_scores.json"),
+                                     "fas_temp": os.path.join("fas_data",
                                                               "temp"),
-                                     "fas_annotation": os.path.join(argument_dict["outdir"],
-                                                                    library_name,
-                                                                    "fas_data",
+                                     "fas_annotation": os.path.join("fas_data",
                                                                     "annotation"),
-                                     "transcript_data": os.path.join(argument_dict["outdir"],
-                                                                     library_name,
-                                                                     "transcript_data"),
-                                     "transcript_json": os.path.join(argument_dict["outdir"],
-                                                                     library_name,
-                                                                     "transcript_data",
-                                                                     "transcript_set.json"),
-                                     "transcript_fasta": os.path.join(argument_dict["outdir"],
-                                                                      library_name,
-                                                                      "transcript_data",
+                                     "transcript_data": os.path.join("transcript_data"),
+                                     "transcript_info": os.path.join("transcript_data",
+                                                                     "transcript_info.json"),
+                                     "transcript_seq": os.path.join("transcript_data",
+                                                                    "sequences.json"),
+                                     "transcript_fasta": os.path.join("transcript_data",
                                                                       "transcript_set.fasta"),
-                                     "transcript_pairings": os.path.join(argument_dict["outdir"],
-                                                                         library_name,
-                                                                         "transcript_data",
+                                     "transcript_pairings": os.path.join("transcript_data",
                                                                          "transcript_pairings.json"),
-                                     "transcript_ids": os.path.join(argument_dict["outdir"],
-                                                                    library_name,
-                                                                    "transcript_data",
+                                     "transcript_ids": os.path.join("transcript_data",
                                                                     "phyloprofile_ids.tsv")
                                      }
 
+        pass_path: PassPath = PassPath(path_dict)
         tree_grow: TreeGrow = TreeGrow(path_dict)
         tree_grow.create_folders()
         tree_grow.put_path_json()
@@ -405,15 +398,17 @@ def main():
         gene_assembler.update_inclusion_filter("transcript_biotype", ["protein_coding", "nonsense_mediated_decay"])
         gene_assembler.extract(gtf_path)
         gene_assembler.clear_empty_genes()
-        gene_assembler.save(path_dict["transcript_json"])
+        gene_assembler.save_seq(pass_path)
+        gene_assembler.save_fas(pass_path)
+        gene_assembler.save_info(pass_path)
 
         if not argument_dict["keepgtf"]:
             # Delete the file after successful extraction.
             local_ensembl.remove()
 
-        print("\tSaving info.yaml at " + path_dict["info"])
+        print("\tSaving info.yaml at " + pass_path["info"])
 
-        library_info: LibraryInfo = LibraryInfo(path_dict["info"])
+        library_info: LibraryInfo = LibraryInfo(pass_path["info"])
 
         # Save base info
         library_info["spice_version"] = "0.1"
@@ -447,12 +442,12 @@ def main():
     print("#02 Collecting sequences.")
     if not library_info["status"]["02_sequence_collection"]:
         # Collect sequences.
-        with WriteGuard(path_dict["transcript_json"], path_dict["transcript_data"]):
+        with WriteGuard(pass_path["sequences"], pass_path["transcript_data"]):
             # Collect the sequences for each incomplete gene.
             print("\tSequence Collection Run 0/2")
-            collect_sequences(gene_assembler, library_info, path_dict)
+            collect_sequences(gene_assembler, library_info, pass_path)
             print("\tSequence Collection Run 1/2")
-            collect_sequences(gene_assembler, library_info, path_dict)
+            collect_sequences(gene_assembler, library_info, pass_path)
             print("\tSequence Collection Run 2/2")
     else:
         print("\tSequences already collected.")
@@ -462,7 +457,7 @@ def main():
 
     print("#03 Removing small proteins.")
     if not library_info["status"]["03_small_protein_removing"]:
-        remove_small_proteins(gene_assembler, library_info, path_dict)
+        remove_small_proteins(gene_assembler, library_info, pass_path)
     else:
         print("\tSmall proteins already removed.")
 
@@ -471,7 +466,7 @@ def main():
 
     print("#04 Removing incorrect entries.")
     if not library_info["status"]["04_incorrect_entry_removing"]:
-        remove_incorrect_entries(gene_assembler, library_info, path_dict)
+        remove_incorrect_entries(gene_assembler, library_info, pass_path)
     else:
         print("\tIncorrect entries already removed.")
 
@@ -480,7 +475,7 @@ def main():
 
     print("#05 Calculating implicit FAS scores.")
     if not library_info["status"]["05_implicit_fas_scoring"]:
-        calculate_implicit_fas_scores(gene_assembler, library_info, path_dict)
+        calculate_implicit_fas_scores(gene_assembler, library_info, pass_path)
     else:
         print("\tImplicit FAS scores already calculated.")
 
@@ -489,7 +484,7 @@ def main():
 
     print("#06 Generating FASTA file for all sequences missing FAS scores.")
     if not library_info["status"]["06_fasta_generation"]:
-        generate_fasta_file(gene_assembler, library_info, path_dict)
+        generate_fasta_file(gene_assembler, library_info, pass_path)
     else:
         print("\tFasta file already generated.")
 
@@ -498,7 +493,7 @@ def main():
 
     print("#07 Creating protein pairings for all genes.")
     if not library_info["status"]["07_pairing_generation"]:
-        generate_pairings(gene_assembler, library_info, path_dict)
+        generate_pairings(gene_assembler, library_info, pass_path)
     else:
         print("\tPairings already generated.")
 
@@ -507,14 +502,11 @@ def main():
 
     print("#08 Generating phyloprofile IDs for all proteins missing FAS scores.")
     if not library_info["status"]["08_id_tsv_generation"]:
-        generate_ids_tsv(gene_assembler, library_info, path_dict)
+        generate_ids_tsv(gene_assembler, library_info, pass_path)
     else:
         print("\tIDs already generated.")
 
     ####################################################################
-
-    # TODO Calculate annotation (requires FAS location)
-    # TODO Filter proteins with less than 10 aminoacids.
 
 
 if __name__ == "__main__":

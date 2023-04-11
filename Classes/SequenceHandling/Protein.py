@@ -16,7 +16,7 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
@@ -81,7 +81,6 @@ class Protein(Transcript):
         output["transcript_name"] = self.get_name()
         output["transcript_id"] = self.get_id_transcript()
         output["taxon_id"] = self.get_id_taxon()
-        output["sequence"] = self.get_sequence()
         output["biotype"] = self.get_biotype()
         output["tags"] = self.get_tags()
         output["tsl"] = self.get_transcript_support_level()

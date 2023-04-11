@@ -5,12 +5,12 @@
 #
 # This file is part of main.
 #
-#  APIHandler is free software: you can redistribute it and/or modify
+#  PassPath is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  APIHandler is distributed in the hope that it will be useful,
+#  PassPath is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -20,13 +20,17 @@
 #
 #######################################################################
 
+import os
+from typing import Dict
 
-from typing import Type
-from typing import List
 
+class PassPath:
 
-class APIHandler:
+    def __init__(self, path_dict: Dict[str, str]):
+        self.path_dict: Dict[str, str] = path_dict
 
-    def __init__(self) -> None:
-        pass
-
+    def __getitem__(self, item: str) -> str:
+        if item == "root":
+            return self.path_dict["root"]
+        else:
+            return os.path.join(self.path_dict["root"], self.path_dict[item])

@@ -16,11 +16,12 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
 from Classes.GTFBoy.GTFBoy import GTFBoy
+from Classes.PassPath.PassPath import PassPath
 from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.SequenceHandling.Protein import Protein
@@ -62,14 +63,29 @@ class GeneAssembler:
     def update_inclusion_filter(self, key: str, possible_values: List[str]) -> None:
         self.inclusion_filter_dict.update({key: possible_values})
 
-    def save(self, output_path: str) -> None:
-        json_dict: Dict[str, Dict[str, Any]] = GeneAssembler.to_dict(self.gene_assembly)
-        with open(output_path, "w") as f:
+    def save_fas(self, pass_path: PassPath) -> None:
+        json_dict: Dict[str, Dict[str, Any]] = GeneAssembler.to_dict(self.gene_assembly, "fas")
+        with open(pass_path["fas_scores"], "w") as f:
             json.dump(json_dict, f, indent=4)
 
-    def load(self, input_path: str) -> None:
-        with open(input_path, "r") as f:
-            self.gene_assembly = GeneAssembler.from_dict(json.load(f))
+    def save_info(self, pass_path: PassPath) -> None:
+        json_dict: Dict[str, Dict[str, Any]] = GeneAssembler.to_dict(self.gene_assembly, "info")
+        with open(pass_path["transcript_info"], "w") as f:
+            json.dump(json_dict, f, indent=4)
+
+    def save_seq(self, pass_path: PassPath) -> None:
+        json_dict: Dict[str, Dict[str, Any]] = GeneAssembler.to_dict(self.gene_assembly, "seq")
+        with open(pass_path["transcript_seq"], "w") as f:
+            json.dump(json_dict, f, indent=4)
+
+    def load(self, pass_path: PassPath) -> None:
+        with open(pass_path["transcript_info"], "r") as f:
+            info_dict: Dict[str, Dict[str, Any]] = json.load(f)
+        with open(pass_path["transcript_seq"], "r") as f:
+            seq_dict: Dict[str, Dict[str, Any]] = json.load(f)
+        with open(pass_path["fas_scores"], "r") as f:
+            fas_dict: Dict[str, Dict[str, Any]] = json.load(f)
+        self.gene_assembly = GeneAssembler.from_dict(info_dict, seq_dict, fas_dict)
 
     def integrate_fas_json(self, input_path: str) -> None:
         with open(input_path, "r") as f:
@@ -140,7 +156,7 @@ class GeneAssembler:
                         # Use Transcripts method to construct itself from a split gtf line.
                         transcript.from_gtf_line(split_line)
                         # Externally set the taxon id.
-                        transcript.set_id_taxon(self.taxon_id)
+                        transcript.set_id_taxon(int(self.taxon_id))
                     self.gene_assembly[transcript.get_id_gene()].add_transcript(transcript, True)
                 elif feature == "CDS":
                     # Do not extract transcripts that will have a protein counterpart in the GTF due to their biotype.
@@ -152,7 +168,7 @@ class GeneAssembler:
                         # Use Proteins method to construct itself from a split gtf line.
                         protein.from_gtf_line(split_line)
                         # Externally set the taxon id.
-                        protein.set_id_taxon(self.taxon_id)
+                        protein.set_id_taxon(int(self.taxon_id))
                         self.gene_assembly[protein.get_id_gene()].add_transcript(protein, True)
 
     def get_genes(self, no_sequence_flag: bool = False, no_fas_flag: bool = False) -> List[Gene]:
@@ -214,31 +230,26 @@ class GeneAssembler:
         return dist_matrix
 
     @staticmethod
-    def to_dict(gene_assembly: Dict[str, Gene]) -> Dict[str, Dict[str, Any]]:
+    def to_dict(gene_assembly: Dict[str, Gene], mode: str) -> Dict[str, Dict[str, Any]]:
         json_dict: Dict[str, Dict[str, Any]] = dict()
         for key in gene_assembly.keys():
-            json_dict[key] = gene_assembly[key].to_dict()
+            json_dict[key] = gene_assembly[key].to_dict(mode)
         return json_dict
 
     @staticmethod
-    def from_dict(json_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Gene]:
+    def from_dict(info_dict: Dict[str, Dict[str, Any]],
+                  seq_dict: Dict[str, Dict[str, Any]],
+                  fas_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Gene]:
         output_dict: Dict[str, Gene] = dict()
-        for key in json_dict.keys():
+        for key in info_dict.keys():
             new_gene: Gene = Gene()
-            new_gene.from_dict(json_dict[key])
+            new_gene.from_dict(info_dict[key], seq_dict[key], fas_dict[key])
             output_dict[new_gene.get_id()] = new_gene
         return output_dict
 
 
 def main() -> None:
-    # gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens", "9606")
-    # gene_assembler.update_inclusion_filter("gene_biotype", ["protein_coding"])
-    # gene_assembler.extract("C:/Users/chris/Desktop/git/root/Homo_sapiens.GRCh38.107.gtf")
-    # gene_assembler.save("C:/Users/chris/Desktop/git/root/extract.json")
-    gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens", "9606")
-    gene_assembler.load("C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107/transcript_data/transcript_set.json")
-    gene_assembler.integrate_fas_json("C:/Users/chris/Desktop/fas.json")
-    gene_assembler.save("C:/Users/chris/Desktop/git/fade_lib_homo_sapiens_107/transcript_data/transcript_set.json")
+    pass
 
 
 if __name__ == "__main__":

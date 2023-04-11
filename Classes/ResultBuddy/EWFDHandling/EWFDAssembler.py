@@ -16,7 +16,7 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
@@ -25,6 +25,7 @@ import math
 
 from typing import Dict, Any, List
 
+from Classes.PassPath.PassPath import PassPath
 from Classes.ResultBuddy.ExpressionHandling.ConditionAssembler import ConditionAssembler
 from Classes.ResultBuddy.ExpressionHandling.ExpressionAssembler import ExpressionAssembler
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
@@ -35,15 +36,15 @@ class EWFDAssembler:
     def __init__(self,
                  species: str = "",
                  taxon_id: int = "",
-                 transcript_set_path: str = "",
+                 library_pass_path: PassPath = PassPath(dict()),
                  expression_path: str = "",
                  initial_flag: bool = False,
                  condition_flag: bool = False):
         if initial_flag:
             if condition_flag:
-                condition_assembler: ConditionAssembler = ConditionAssembler(transcript_set_path)
+                condition_assembler: ConditionAssembler = ConditionAssembler(library_pass_path)
                 condition_assembler.load(expression_path)
-                self.transcript_set_path: str = transcript_set_path
+                self.library_pass_path: PassPath = library_pass_path
                 self.ewfd_assembly: Dict[str, Any] = dict()
                 self.ewfd_assembly["name"]: str = condition_assembler.condition_assembly["name"]
                 self.ewfd_assembly["library"]: str = condition_assembler.condition_assembly["library"]
@@ -53,7 +54,7 @@ class EWFDAssembler:
                 self.ewfd_assembly["data"]: Dict[str, Dict[str, Any]] = dict()
 
                 gene_assembler: GeneAssembler = GeneAssembler(species, str(taxon_id))
-                gene_assembler.load(transcript_set_path)
+                gene_assembler.load(self.library_pass_path)
                 fas_dist_matrix: Dict[str, Dict[str, Dict[str, float]]] = gene_assembler.get_fas_dist_matrix()
                 condition_data: Dict[str, Any] = condition_assembler.condition_assembly["data"]
 

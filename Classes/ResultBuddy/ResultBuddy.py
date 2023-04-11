@@ -16,7 +16,7 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
@@ -28,6 +28,7 @@ from typing import Dict, Any, List
 from tqdm import tqdm
 
 from Classes.GTFBoy.GTFBoy import GTFBoy
+from Classes.PassPath.PassPath import PassPath
 from Classes.ResultBuddy.ExpressionHandling.ConditionAssembler import ConditionAssembler
 from Classes.ResultBuddy.ExpressionHandling.ExpressionAssembler import ExpressionAssembler
 from Classes.ResultBuddy.EWFDHandling.EWFDAssembler import EWFDAssembler
@@ -43,7 +44,9 @@ class ResultBuddy:
 
     def __init__(self, library_path: str, output_path: str, initial_flag: bool = False):
         self.library_path: str = library_path
-        library_info: LibraryInfo = LibraryInfo(os.path.join(self.library_path, "info.yaml"))
+        with open(os.path.join(library_path, "paths.json"), "r") as f:
+            self.library_pass_path: PassPath = PassPath(json.load(f))
+        library_info: LibraryInfo = LibraryInfo(self.library_pass_path["info"])
         species: str = library_info["info"]["species"]
         release: str = library_info["info"]["release"]
         self.result_path: str = os.path.join(output_path, "spice_result_" + species + "_" + release)
@@ -60,19 +63,20 @@ class ResultBuddy:
             self.result_info["expression_imports"]["conditions"]: Dict[str, Dict[str, Any]] = dict()
             self.result_info["expression_imports"]["replicates"]: Dict[str, Dict[str, Dict[str, str]]] = dict()
 
-            self.result_paths: Dict[str, Any] = dict()
-            self.result_paths["library_path"] = self.library_path
-            self.result_paths["root"] = self.result_path
-            self.result_paths["result_info"] = os.path.join(self.result_path, "info.json")
-            self.result_paths["expression"] = os.path.join(self.result_path, "expression")
-            self.result_paths["expression_replicates"] = os.path.join(self.result_path, "expression", "replicates")
-            self.result_paths["expression_conditions"] = os.path.join(self.result_path, "expression", "conditions")
-            self.result_paths["ewfd"] = os.path.join(self.result_path, "ewfd")
-            self.result_paths["ewfd_replicates"] = os.path.join(self.result_path, "ewfd", "replicates")
-            self.result_paths["ewfd_conditions"] = os.path.join(self.result_path, "ewfd", "conditions")
-            self.result_paths["comparison"] = os.path.join(self.result_path, "comparison")
+            result_paths: Dict[str, Any] = dict()
+            result_paths["library_path"] = self.library_path
+            result_paths["root"] = self.result_path
+            result_paths["result_info"] = "info.json"
+            result_paths["expression"] = "expression"
+            result_paths["expression_replicates"] = os.path.join("expression", "replicates")
+            result_paths["expression_conditions"] = os.path.join("expression", "conditions")
+            result_paths["ewfd"] = "ewfd"
+            result_paths["ewfd_replicates"] = os.path.join("ewfd", "replicates")
+            result_paths["ewfd_conditions"] = os.path.join("ewfd", "conditions")
+            result_paths["comparison"] = "comparison"
 
-            tree_grow: TreeGrow = TreeGrow(self.result_paths)
+            self.result_pass_path: PassPath = PassPath(result_paths)
+            tree_grow: TreeGrow = TreeGrow(result_paths)
             tree_grow.create_folders()
             tree_grow.put_path_json()
 
@@ -80,7 +84,7 @@ class ResultBuddy:
 
         else:
             self.result_info: Dict[str, Any] = self.__load_info()
-            self.result_paths: Dict[str, Any] = self.__load_paths()
+            self.result_pass_path: PassPath = PassPath(self.__load_paths())
 
     def __load_info(self) -> Dict[str, Any]:
         with open(os.path.join(self.result_path, "info.json"), "r") as f:
@@ -105,10 +109,7 @@ class ResultBuddy:
         species: str = self.result_info["species"]
         taxon_id: int = self.result_info["taxon_id"]
         expr_path: str = self.result_info["expression_imports"][ewfd_type][name]["expression_path"]
-        ewfd: EWFDAssembler = EWFDAssembler(species, taxon_id, os.path.join(self.library_path,
-                                                                            "transcript_data",
-                                                                            "transcript_set.json"), expr_path, True,
-                                            condition_flag)
+        ewfd: EWFDAssembler = EWFDAssembler(species, taxon_id, self.library_pass_path, expr_path, True, condition_flag)
 
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path, name):
             self.result_info = self.__load_info()
@@ -198,6 +199,7 @@ class ResultBuddy:
         expression_assembler.save(expression_json_path)
 
     def transcript_to_biotype_map(self) -> Dict[str, str]:
+        self.p
         transcript_to_biotype_map: Dict[str, str] = dict()
         gene_assembler: GeneAssembler = GeneAssembler(self.result_info["species"], self.result_info["taxon_id"])
         gene_assembler.load(os.path.join(self.library_path, "transcript_data", "transcript_set.json"))

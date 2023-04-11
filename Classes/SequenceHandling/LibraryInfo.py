@@ -1,5 +1,4 @@
 #!/bin/env python
-from typing import Any, Dict
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -17,11 +16,12 @@ from typing import Any, Dict
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
 import yaml
+from typing import Any, Dict
 
 
 class LibraryInfo:
