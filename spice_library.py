@@ -440,6 +440,8 @@ def main():
                                   "10_fas_scoring": False
                                   }
 
+        library_info.save()
+
     ####################################################################
     # COLLECT SEQUENCES
 
