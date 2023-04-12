@@ -391,6 +391,18 @@ def main():
         tree_grow.create_folders()
         tree_grow.put_path_json()
 
+        with open(pass_path["transcript_pairings"], "w") as f:
+            json.dump(dict(), f, indent=4)
+
+        with open(pass_path["transcript_seq"], "w") as f:
+            json.dump(dict(), f, indent=4)
+
+        with open(pass_path["fas_scores"], "w") as f:
+            json.dump(dict(), f, indent=4)
+
+        with open(pass_path["transcript_info"], "w") as f:
+            json.dump(dict(), f, indent=4)
+
         ####################################################################
         # LOCAL ENSEMBL DOWNLOAD
 
