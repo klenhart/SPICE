@@ -174,7 +174,7 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
         for result in results:
             if "error" in result.keys():
                 for protein in incomplete_proteins_list:
-                    print("\n\t", protein.get_id(), " is depreciated. Removing from library.")
+                    print("\n\t", protein.get_id(), " is deprecated. Removing from library.")
                     gene.delete_transcript(protein.get_id())
                     library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
                     library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
@@ -185,6 +185,8 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
                 gene.set_sequence_of_transcript(result["query"], result["seq"])
         if save_marker % 250 == 0:
             gene_assembler.save_seq(pass_path)
+            gene_assembler.save_fas(pass_path)
+            gene_assembler.save_info(pass_path)
             library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
             library_info.save()
     gene_assembler.clear_empty_genes()
