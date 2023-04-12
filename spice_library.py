@@ -109,7 +109,7 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
     # Check fasta generation
     with open(pass_path["transcript_fasta"], "r") as f:
         fasta_length = len(f.read().split("\n"))
-    gene_list: List[Gene] = gene_assembler.get_genes(False, True)
+    gene_list: List[Gene] = gene_assembler.get_genes()
     output_list: List[str] = list()
     for gene in gene_list:
         output_list.append(gene.fasta)
@@ -142,7 +142,7 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
         old_length = len(f.read())
     id_list: List[str] = list()
     for gene in gene_list:
-        protein_list: List[Protein] = gene.get_proteins(False, True)
+        protein_list: List[Protein] = gene.get_proteins()
         for protein in protein_list:
             id_list.append(protein.make_header() + "\tncbi" + str(protein.get_id_taxon()))
     new_length = len(id_list)
@@ -252,7 +252,7 @@ def calculate_implicit_fas_scores(gene_assembler: GeneAssembler, library_info: L
 
 
 def generate_fasta_file(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath):
-    gene_list: List[Gene] = gene_assembler.get_genes(False, True)
+    gene_list: List[Gene] = gene_assembler.get_genes()
     output_list: List[str] = list()
     for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Fasta generation process"):
         output_list.append(gene.fasta)
@@ -276,7 +276,7 @@ def generate_pairings(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
 
 
 def generate_ids_tsv(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath):
-    gene_list: List[Gene] = gene_assembler.get_genes(False, True)
+    gene_list: List[Gene] = gene_assembler.get_genes()
     output_list: List[str] = list()
     for gene in tqdm(gene_list, ncols=100, total=len(gene_list), desc="Generating phyloprofile ids"):
         protein_list: List[Protein] = gene.get_proteins(False, True)
@@ -313,6 +313,10 @@ def main():
 
     if argument_dict["keepgtf"] is None:
         argument_dict["keepgtf"] = False
+
+    argument_dict["outdir"] = argument_dict["outdir"][0]
+    argument_dict["species"] = argument_dict["species"][0]
+    argument_dict["release"] = argument_dict["release"][0]
 
     ####################################################################
     # LocalEnsembl SETUP.
@@ -442,7 +446,7 @@ def main():
     print("#02 Collecting sequences.")
     if not library_info["status"]["02_sequence_collection"]:
         # Collect sequences.
-        with WriteGuard(pass_path["sequences"], pass_path["transcript_data"]):
+        with WriteGuard(pass_path["transcript_seq"], pass_path["transcript_data"]):
             # Collect the sequences for each incomplete gene.
             print("\tSequence Collection Run 0/2")
             collect_sequences(gene_assembler, library_info, pass_path)
