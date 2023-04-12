@@ -130,7 +130,8 @@ class ResultBuddy:
             expression.load(self.result_info["expression_imports"]["replicates"][name]["expression_path"])
             condition.insert_expression(expression)
 
-        condition.cleanse_assembly()
+        # Keep all genes and transcripts, doesn't matter if they have expression or not.
+        # condition.cleanse_assembly()
 
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path, condition_name):
             self.result_info = self.__load_info()
@@ -144,7 +145,8 @@ class ResultBuddy:
             self.__save_info()
             condition.save(self.result_info["expression_imports"]["conditions"][condition_name]["expression_path"])
 
-    def import_expression_gtf(self, expression_path: str,
+    def import_expression_gtf(self,
+                              expression_path: str,
                               expression_name: str,
                               normalization: str,
                               expression_threshold: float = 1.0) -> None:
@@ -176,7 +178,8 @@ class ResultBuddy:
                         line_dict["gene_id"] = transcript_to_gene_dict[line_dict["transcript_id"]]
                         line_dict["protein_id"] = transcript_to_protein_dict[line_dict["transcript_id"]]
                         expression_assembler.insert_expression_dict(line_dict)
-        expression_assembler.cleanse_assembly()
+        # Keep all genes and transcripts, doesn't matter if they have expression or not.
+        # expression_assembler.cleanse_assembly()
         expression_assembler.calc_relative_expression()
 
         expression_json_path: str = os.path.join(self.result_pass_path["expression_replicates"],
