@@ -124,6 +124,7 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
 
     # Check pairing generation
     pairings_dict: Dict[str, str] = dict()
+    gene_list: List[Gene] = gene_assembler.get_genes(False, True)
     for gene in gene_list:
         pairings_dict[gene.get_id()] = gene.make_pairings()
     with open(pass_path["transcript_pairings"], "r") as f:
@@ -141,6 +142,7 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
     with open(pass_path["transcript_ids"], "r") as f:
         old_length = len(f.read())
     id_list: List[str] = list()
+    gene_list: List[Gene] = gene_assembler.get_genes()
     for gene in gene_list:
         protein_list: List[Protein] = gene.get_proteins()
         for protein in protein_list:
@@ -482,7 +484,7 @@ def main():
         print("\tSmall proteins already removed.")
 
     ####################################################################
-    # CLEAR SMALL PROTEINS
+    # REMOVE INCORRECT ENTRIES
 
     print("#04 Removing incorrect entries.")
     if not library_info["status"]["04_incorrect_entry_removing"]:
