@@ -193,6 +193,8 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
             library_info.save()
     gene_assembler.clear_empty_genes()
     gene_assembler.save_seq(pass_path)
+    gene_assembler.save_fas(pass_path)
+    gene_assembler.save_info(pass_path)
     info: Dict[str, Any] = library_info["info"]
     library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
     sequence_collection_flag: bool = info["protein_count"] == info["collected_sequences_count"]
