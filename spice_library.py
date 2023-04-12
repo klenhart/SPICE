@@ -506,7 +506,7 @@ def main():
     ####################################################################
     # CREATE FASTA FILE
 
-    print("#06 Generating FASTA file for all sequences missing FAS scores.")
+    print("#06 Generating FASTA file for all sequences.")
     if not library_info["status"]["06_fasta_generation"]:
         generate_fasta_file(gene_assembler, library_info, pass_path)
     else:
@@ -524,7 +524,7 @@ def main():
     ####################################################################
     # CREATE OF ALL IDS.
 
-    print("#08 Generating phyloprofile IDs for all proteins missing FAS scores.")
+    print("#08 Generating phyloprofile IDs for all proteins.")
     if not library_info["status"]["08_id_tsv_generation"]:
         generate_ids_tsv(gene_assembler, library_info, pass_path)
     else:
