@@ -21,6 +21,7 @@ def main():
 
     gene_assembler.load(pass_path)
     gene_assembler.integrate_fas_json("C:\\Users\\chris\\Desktop\\AKE\\data\\stats\\old_fas.json")
+    gene_assembler.save_fas(pass_path)
 
 
 if __name__ == "__main__":

@@ -44,7 +44,7 @@ import json
 def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath) -> None:
     library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
     library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
-    library_info["info"]["protein_count"] = gene_assembler.get_transcript_count()
+    library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
     library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
     library_info["info"]["fas_scored_sequences_count"] = gene_assembler.get_fas_scored_count()
 
