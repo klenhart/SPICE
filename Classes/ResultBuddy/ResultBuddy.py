@@ -49,8 +49,8 @@ class ResultBuddy:
         library_info: LibraryInfo = LibraryInfo(self.library_pass_path["info"])
         species: str = library_info["info"]["species"]
         release: str = library_info["info"]["release"]
-        filename: str = "/spice_result_" + species + "_" + release
-        self.result_path: str = output_path + filename
+        filename: str = "spice_result_" + species + "_" + release
+        self.result_path: str = output_path + "/" + filename
 
         if initial_flag:
             self.result_info: Dict[str, Any] = dict()

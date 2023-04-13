@@ -41,7 +41,7 @@ class TreeGrow:
             if path == root_path:
                 continue
             elif not TreeGrow.is_file(os.path.join(root_path, path)):
-                Path(path).mkdir(parents=True, exist_ok=True)
+                Path(os.path.join(root_path, path)).mkdir(parents=True, exist_ok=True)
             else:
                 Path(os.path.join(root_path, path)).parent.mkdir(parents=True, exist_ok=True)
                 Path(os.path.join(root_path, path)).touch()
