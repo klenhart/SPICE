@@ -30,7 +30,7 @@ class TreeGrow:
     def __init__(self, paths_dict: Dict[str, str]) -> None:
         self.paths_dict: Dict[str, str] = paths_dict
         if "root" in self.paths_dict.keys():
-            self.paths_dict["self"] = os.path.join(self.paths_dict["root"], "paths.json")
+            self.paths_dict["self"] = "paths.json"
         else:
             raise Exception("""Argument 'path_dict' passed to TreeGrow constructor must
             contain key-value-pair 'root': <path>. Exiting...""")

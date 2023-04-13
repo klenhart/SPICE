@@ -49,7 +49,8 @@ class ResultBuddy:
         library_info: LibraryInfo = LibraryInfo(self.library_pass_path["info"])
         species: str = library_info["info"]["species"]
         release: str = library_info["info"]["release"]
-        self.result_path: str = os.path.join(output_path, "spice_result_" + species + "_" + release)
+        filename: str = "/spice_result_" + species + "_" + release
+        self.result_path: str = output_path + filename
 
         if initial_flag:
             self.result_info: Dict[str, Any] = dict()
@@ -68,11 +69,11 @@ class ResultBuddy:
             result_paths["root"] = self.result_path
             result_paths["result_info"] = "info.json"
             result_paths["expression"] = "expression"
-            result_paths["expression_replicates"] = os.path.join("expression", "replicates")
-            result_paths["expression_conditions"] = os.path.join("expression", "conditions")
+            result_paths["expression_replicates"] = "expression/replicates"
+            result_paths["expression_conditions"] = "expression/conditions"
             result_paths["ewfd"] = "ewfd"
-            result_paths["ewfd_replicates"] = os.path.join("ewfd", "replicates")
-            result_paths["ewfd_conditions"] = os.path.join("ewfd", "conditions")
+            result_paths["ewfd_replicates"] = "ewfd/replicates"
+            result_paths["ewfd_conditions"] = "ewfd/conditions"
             result_paths["comparison"] = "comparison"
 
             self.result_pass_path: PassPath = PassPath(result_paths)
@@ -113,7 +114,8 @@ class ResultBuddy:
 
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path, name):
             self.result_info = self.__load_info()
-            ewfd_path: str = os.path.join(self.result_pass_path["ewfd_" + ewfd_type], "ewfd_" + name + ".json")
+            filename: str = "/ewfd_" + name + ".json"
+            ewfd_path: str = self.result_pass_path["ewfd_" + ewfd_type] + filename
             self.result_info["expression_imports"][ewfd_type][name]["ewfd_path"] = ewfd_path
             self.__save_info()
             ewfd.save(self.result_info["expression_imports"][ewfd_type][name]["ewfd_path"])
@@ -135,8 +137,8 @@ class ResultBuddy:
 
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path, condition_name):
             self.result_info = self.__load_info()
-            condition_path: str = os.path.join(self.result_pass_path["expression_conditions"],
-                                               "expression_" + condition_name + ".json")
+            filename: str = "/expression_" + condition_name + ".json"
+            condition_path: str = self.result_pass_path["expression_conditions"] + filename
             new_condition_dict: Dict[str, Any] = {"replicates": replicate_names,
                                                   "expression_path": condition_path,
                                                   "ewfd_path": ""}
@@ -181,9 +183,8 @@ class ResultBuddy:
         # Keep all genes and transcripts, doesn't matter if they have expression or not.
         # expression_assembler.cleanse_assembly()
         expression_assembler.calc_relative_expression()
-
-        expression_json_path: str = os.path.join(self.result_pass_path["expression_replicates"],
-                                                 "expression_" + expression_name + ".json")
+        filename: str = "/expression_" + expression_name + ".json"
+        expression_json_path: str = self.result_pass_path["expression_replicates"] + filename
         with WriteGuard(os.path.join(self.result_path, "info.json"), self.result_path, expression_name):
             self.result_info = self.__load_info()
             new_expression_dict: Dict[str, str] = {"origin": expression_path,

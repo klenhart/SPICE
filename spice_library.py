@@ -371,25 +371,17 @@ def main():
         # Build the library directory system
         path_dict: Dict[str, str] = {"root": os.path.join(argument_dict["outdir"],
                                                           library_name),
-                                     "info": os.path.join("info.yaml"),
-                                     "fas_data": os.path.join("fas_data"),
-                                     "fas_scores": os.path.join("fas_data",
-                                                                "fas_scores.json"),
-                                     "fas_temp": os.path.join("fas_data",
-                                                              "temp"),
-                                     "fas_annotation": os.path.join("fas_data",
-                                                                    "annotation"),
-                                     "transcript_data": os.path.join("transcript_data"),
-                                     "transcript_info": os.path.join("transcript_data",
-                                                                     "transcript_info.json"),
-                                     "transcript_seq": os.path.join("transcript_data",
-                                                                    "sequences.json"),
-                                     "transcript_fasta": os.path.join("transcript_data",
-                                                                      "transcript_set.fasta"),
-                                     "transcript_pairings": os.path.join("transcript_data",
-                                                                         "transcript_pairings.json"),
-                                     "transcript_ids": os.path.join("transcript_data",
-                                                                    "phyloprofile_ids.tsv")
+                                     "info": "info.yaml",
+                                     "fas_data": "fas_data",
+                                     "fas_scores": "fas_data/fas_scores.json",
+                                     "fas_temp": "fas_data/temp",
+                                     "fas_annotation": "fas_data/annotation",
+                                     "transcript_data": "transcript_data",
+                                     "transcript_info": "transcript_data/transcript_info.json",
+                                     "transcript_seq": "transcript_data/sequences.json",
+                                     "transcript_fasta": "transcript_data/transcript_set.fasta",
+                                     "transcript_pairings": "transcript_data/transcript_pairings.json",
+                                     "transcript_ids": "transcript_data/phyloprofile_ids.tsv"
                                      }
 
         pass_path: PassPath = PassPath(path_dict)
