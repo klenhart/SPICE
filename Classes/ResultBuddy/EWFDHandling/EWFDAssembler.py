@@ -174,6 +174,7 @@ class EWFDAssembler:
         # This calculates the movement.
         for s, seed_id in enumerate(transcript_ids):
             for q, query_id in enumerate(transcript_ids):
+
                 ewfd_list[s] += rel_expressions[q] * gene_fas_dists[seed_id][query_id]
 
         ewfd_list = [round(1 - movement_value, 4) for movement_value in ewfd_list]

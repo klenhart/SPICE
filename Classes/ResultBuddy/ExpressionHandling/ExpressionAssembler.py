@@ -143,7 +143,7 @@ class ExpressionAssembler:
             expressions: List[float] = self.expression_assembly["data"][gene_id]["expression"]
             total: float = sum(expressions)
             if total == 0.0:
-                self.expression_assembly["data"][gene_id]["expression_rel"] = 0.0
+                self.expression_assembly["data"][gene_id]["expression_rel"] = [0.0 for expr in expressions]
             else:
                 self.expression_assembly["data"][gene_id]["expression_rel"] = [expr / total for expr in expressions]
 
