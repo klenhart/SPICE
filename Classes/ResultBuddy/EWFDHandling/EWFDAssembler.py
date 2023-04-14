@@ -22,6 +22,7 @@
 
 import json
 import math
+import numpy as np
 
 from typing import Dict, Any, List
 
@@ -72,12 +73,12 @@ class EWFDAssembler:
                     expr_rel_avg_list: List[float] = condition_data[gene_id]["expression_rel_avg"]
                     self.ewfd_assembly["data"][gene_id]["expression_rel_avg"]: List[float] = expr_rel_avg_list
 
-                    expr_rel_all_list: List[List[float]] = condition_data[gene_id]["expression_rel_all"]
+                    expr_rel_all_list: List[float] = condition_data[gene_id]["expression_rel_all"]
                     self.ewfd_assembly["data"][gene_id]["expression_rel_all"]: List[float] = expr_rel_all_list
 
                     # These need to be calculated.
                     self.ewfd_assembly["data"][gene_id]["ewfd_avg_rel_expr"]: List[float]
-                    self.ewfd_assembly["data"][gene_id]["ewfd_all"]: List[List[float]] = [[]] * transcript_count
+                    self.ewfd_assembly["data"][gene_id]["ewfd_all"]: List[List[float]] = list()
                     self.ewfd_assembly["data"][gene_id]["ewfd_max"]: List[float] = [0.0] * transcript_count
                     self.ewfd_assembly["data"][gene_id]["ewfd_min"]: List[float] = [1.0] * transcript_count
                     self.ewfd_assembly["data"][gene_id]["avg_ewfd"]: List[float] = list()
@@ -91,15 +92,12 @@ class EWFDAssembler:
                                                                                   transcript_ids)
                     self.ewfd_assembly["data"][gene_id]["ewfd_avg_rel_expr"] = ewfd_avg_rel_expr
 
-                    for i in range(self.ewfd_assembly["replicate_count"]):
-                        repl_rel_expr_list: List[float] = list()
-                        # Extract the relative expression for the replicate.
-                        for rel_expr_list in expr_rel_all_list:
-                            repl_rel_expr_list.append(rel_expr_list[i])
-                        # calculate the ewfd of the replicate. Quicker than loading the ewfd file.
+                    ewfd_all: List[List[float]] = list()
+                    for i, repl_rel_expr_list in enumerate(np.array(expr_rel_all_list).transpose()):
                         ewfd_repl_rel_expr: List[float] = EWFDAssembler.calculate_ewfd(gene_dist_matrix,
-                                                                                       repl_rel_expr_list,
+                                                                                       list(repl_rel_expr_list),
                                                                                        transcript_ids)
+                        ewfd_all.append(ewfd_repl_rel_expr)
 
                         # Check all EWFD values for this replicate if they exceed the current min max bounds.
                         for j, ewfd in enumerate(ewfd_repl_rel_expr):
@@ -107,8 +105,8 @@ class EWFDAssembler:
                                 self.ewfd_assembly["data"][gene_id]["ewfd_max"][j] = ewfd
                             elif ewfd < self.ewfd_assembly["data"][gene_id]["ewfd_min"][j]:
                                 self.ewfd_assembly["data"][gene_id]["ewfd_min"][j] = ewfd
-                            # Memorize the EWFD values for this replicate.
-                            self.ewfd_assembly["data"][gene_id]["ewfd_all"][j].append(ewfd)
+
+                    self.ewfd_assembly["data"][gene_id]["ewfd_all"] = [list(entry) for entry in list(np.array(ewfd_all).transpose())]
 
                     # Calculate the average EWFD for each transcript.
                     for ewfd_list in self.ewfd_assembly["data"][gene_id]["ewfd_all"]:
@@ -170,11 +168,11 @@ class EWFDAssembler:
     def calculate_ewfd(gene_fas_dists: Dict[str, Dict[str, float]],
                        rel_expressions: List[float],
                        transcript_ids: List[str]) -> List[float]:
+
         ewfd_list: List[float] = [0.0] * len(transcript_ids)
         # This calculates the movement.
         for s, seed_id in enumerate(transcript_ids):
             for q, query_id in enumerate(transcript_ids):
-
                 ewfd_list[s] += rel_expressions[q] * gene_fas_dists[seed_id][query_id]
 
         ewfd_list = [round(1 - movement_value, 4) for movement_value in ewfd_list]

@@ -145,6 +145,7 @@ class Transcript:
             elif field_name == "attribute":
                 attribute_dict: Dict[str, str] = GTFBoy.build_attribute_dict(entry)
                 self.set_id(attribute_dict["transcript_id"])
+                self.set_tags(attribute_dict["tag"].split(";"))
                 try:
                     self.set_name(attribute_dict["transcript_name"])
                 except KeyError:
