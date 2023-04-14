@@ -142,7 +142,10 @@ class ExpressionAssembler:
                             desc=self.expression_assembly["name"] + ": relative expression calculation progress"):
             expressions: List[float] = self.expression_assembly["data"][gene_id]["expression"]
             total: float = sum(expressions)
-            self.expression_assembly["data"][gene_id]["expression_rel"] = [expr / total for expr in expressions]
+            if total == 0.0:
+                self.expression_assembly["data"][gene_id]["expression_rel"] = 0.0
+            else:
+                self.expression_assembly["data"][gene_id]["expression_rel"] = [expr / total for expr in expressions]
 
     def load(self, input_path: str) -> None:
         with open(input_path, "r") as f:
