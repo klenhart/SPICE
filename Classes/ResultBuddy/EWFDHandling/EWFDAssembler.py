@@ -103,10 +103,11 @@ class EWFDAssembler:
                         for j, ewfd in enumerate(ewfd_repl_rel_expr):
                             if ewfd > self.ewfd_assembly["data"][gene_id]["ewfd_max"][j]:
                                 self.ewfd_assembly["data"][gene_id]["ewfd_max"][j] = ewfd
-                            elif ewfd < self.ewfd_assembly["data"][gene_id]["ewfd_min"][j]:
+                            if ewfd < self.ewfd_assembly["data"][gene_id]["ewfd_min"][j]:
                                 self.ewfd_assembly["data"][gene_id]["ewfd_min"][j] = ewfd
 
-                    self.ewfd_assembly["data"][gene_id]["ewfd_all"] = [list(entry) for entry in list(np.array(ewfd_all).transpose())]
+                    ewfd_all = list(np.array(ewfd_all).transpose())
+                    self.ewfd_assembly["data"][gene_id]["ewfd_all"] = [list(entry) for entry in ewfd_all]
 
                     # Calculate the average EWFD for each transcript.
                     for ewfd_list in self.ewfd_assembly["data"][gene_id]["ewfd_all"]:
