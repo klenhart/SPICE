@@ -1,4 +1,5 @@
 #!/bin/env python
+import sys
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -23,6 +24,7 @@
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.API.ensembl_mod.LocalEnsembl import LocalEnsembl
 from Classes.API.ensembl_mod.RemoteEnsembl import RemoteEnsembl
+from Classes.FASJobAssistant.FASModeHex import FASModeHex
 from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
@@ -301,15 +303,20 @@ def main():
     # SETUP ARGS PARSER
 
     # Set up the args parser.
-    argument_parser: ReduxArgParse = ReduxArgParse(["--outdir", "--species", "--release", "--force", "--keepgtf"],
-                                                   [str, str, str, None, None],
-                                                   ["store", "store", "store", "store_true", "store_true"],
-                                                   [1, 1, 1, None, None],
+    argument_parser: ReduxArgParse = ReduxArgParse(["--outdir", "--species", "--release", "--force",
+                                                    "--keepgtf", "--modefas", "--copylib"],
+                                                   [str, str, str, None, None, str, str],
+                                                   ["store", "store", "store", "store_true",
+                                                    "store_true", "store", "store"],
+                                                   [1, 1, 1, None, None, None, None],
                                                    ["Directory the library will be generated in.",
                                                     "Species of the library.",
                                                     "Ensembl release of the library.",
                                                     "If the specified library already exists, it will be overwritten.",
-                                                    "Keeps the ensembl GTF on the system after library setup."])
+                                                    "Keeps the ensembl GTF on the system after library setup.",
+                                                    """Path to a FAS mode file that shall be 
+                                                    used to configure FAS in this library.""",
+                                                    "Path to a library that shall be copied."])
     argument_parser.generate_parser()
     argument_parser.execute()
     argument_dict: Dict[str, Any] = argument_parser.get_args()
@@ -332,7 +339,18 @@ def main():
                                                argument_dict["outdir"],
                                                argument_dict["release"])
 
-    library_name: str = "spice_lib_" + local_ensembl.get_species_name() + "_" + argument_dict["release"]
+    fas_mode_hex: FASModeHex = FASModeHex()
+    if argument_dict["modefas"] is None:
+        fas_mode_hex.activate_all()
+    else:
+        with open(argument_dict["modefas"], "r") as f:
+            fas_mode_list: List[str] = f.read().split("\n")
+        fas_mode_list += ["#linearized", "#normal", "#checked"]
+        fas_mode_hex.activate_modes(fas_mode_list)
+
+    species_name: str = local_ensembl.get_species_name()
+    mode_hex: str = fas_mode_hex.get_mode_hex()
+    library_name: str = "spice_lib_" + species_name + "_" + argument_dict["release"] + "_" + mode_hex
 
     ####################################################################
     # DATASTRUCTURE AND PATH SETUP
@@ -341,33 +359,49 @@ def main():
                                                   local_ensembl.get_taxon_id())
 
     print("#00 Building library.")
-    # Check if already exists:
-    if os.path.exists(os.path.join(argument_dict["outdir"], library_name)) and not argument_dict["force"]:
-        print("\tLibrary \"" + os.path.join(argument_dict["outdir"], library_name) + "\" already exists.")
-        print("\tLoading existing library.")
-
+    if argument_dict["copylib"] is not None:
+        print("\tCopying old library:",
+              argument_dict["copylib"],
+              "to",
+              os.path.join(argument_dict["outdir"], library_name))
+        shutil.copytree(argument_dict["copylib"], os.path.join(argument_dict["outdir"], library_name))
         with open(os.path.join(argument_dict["outdir"], library_name, "paths.json"), "r") as f:
-            pass_path: PassPath = PassPath(json.load(f))
+            path_dict: Dict[str, str] = json.load(f)
+            path_dict["root"] = os.path.join(argument_dict["outdir"], library_name)
+            pass_path: PassPath = PassPath(path_dict)
+        library_info: LibraryInfo = LibraryInfo(pass_path["info"])
+        library_info["info"]["fas_mode"] = mode_hex
+        library_info["commandline_args"] = argument_dict
+
+        with open(pass_path["fas_annoTools"], "w") as f:
+            f.write(str(fas_mode_hex))
 
         gene_assembler.load(pass_path)
-
-        print("#01 Collecting transcripts information.")
-        print("\tTranscript information already collected.")
-
-        library_info: LibraryInfo = LibraryInfo(pass_path["info"])
+        gene_assembler.reset_fas()
+        gene_assembler.save_fas(pass_path)
         check_library_status(gene_assembler, library_info, pass_path)
         library_info["last_edit"] = str(date.today())
         library_info.save()
 
+    # Check if already exists:
+    elif os.path.exists(os.path.join(argument_dict["outdir"], library_name)) and not argument_dict["force"]:
+        print("\tLibrary \"" + os.path.join(argument_dict["outdir"], library_name) + "\" already exists.")
+        print("\tLoading existing library.")
+        with open(os.path.join(argument_dict["outdir"], library_name, "paths.json"), "r") as f:
+            pass_path: PassPath = PassPath(json.load(f))
+        gene_assembler.load(pass_path)
+        print("#01 Collecting transcripts information.")
+        print("\tTranscript information already collected.")
+        library_info: LibraryInfo = LibraryInfo(pass_path["info"])
+        check_library_status(gene_assembler, library_info, pass_path)
+        library_info["last_edit"] = str(date.today())
+        library_info.save()
     else:
         if os.path.exists(os.path.join(argument_dict["outdir"], library_name)) and argument_dict["force"]:
             shutil.rmtree(os.path.join(argument_dict["outdir"], library_name))
-
         print("#01 Collecting transcripts information.")
-
         ####################################################################
         # DIRECTORY SYSTEM BUILDING
-
         # Build the library directory system
         path_dict: Dict[str, str] = {"root": os.path.join(argument_dict["outdir"],
                                                           library_name),
@@ -376,6 +410,7 @@ def main():
                                      "fas_scores": "fas_data/fas_scores.json",
                                      "fas_temp": "fas_data/temp",
                                      "fas_annotation": "fas_data/annotation",
+                                     "fas_annoTools": "fas_data/annoTools.txt",
                                      "transcript_data": "transcript_data",
                                      "transcript_info": "transcript_data/transcript_info.json",
                                      "transcript_seq": "transcript_data/sequences.json",
@@ -383,30 +418,24 @@ def main():
                                      "transcript_pairings": "transcript_data/transcript_pairings.json",
                                      "transcript_ids": "transcript_data/phyloprofile_ids.tsv"
                                      }
-
         pass_path: PassPath = PassPath(path_dict)
         tree_grow: TreeGrow = TreeGrow(path_dict)
         tree_grow.create_folders()
         tree_grow.put_path_json()
-
+        with open(pass_path["fas_annoTools"], "w") as f:
+            f.write(str(fas_mode_hex))
         with open(pass_path["transcript_pairings"], "w") as f:
             json.dump(dict(), f, indent=4)
-
         with open(pass_path["transcript_seq"], "w") as f:
             json.dump(dict(), f, indent=4)
-
         with open(pass_path["fas_scores"], "w") as f:
             json.dump(dict(), f, indent=4)
-
         with open(pass_path["transcript_info"], "w") as f:
             json.dump(dict(), f, indent=4)
-
         ####################################################################
         # LOCAL ENSEMBL DOWNLOAD
-
         # Download the local ensembl file.
         gtf_path: str = local_ensembl.download()
-
         # Extract the file
         gene_assembler.update_inclusion_filter("gene_biotype", ["protein_coding"])
         gene_assembler.update_inclusion_filter("transcript_biotype", ["protein_coding", "nonsense_mediated_decay"])
@@ -415,15 +444,11 @@ def main():
         gene_assembler.save_seq(pass_path)
         gene_assembler.save_fas(pass_path)
         gene_assembler.save_info(pass_path)
-
         if not argument_dict["keepgtf"]:
             # Delete the file after successful extraction.
             local_ensembl.remove()
-
         print("\tSaving info.yaml at " + pass_path["info"])
-
         library_info: LibraryInfo = LibraryInfo(pass_path["info"])
-
         # Save base info
         library_info["spice_version"] = "0.1"
         library_info["init_date"] = str(date.today())
@@ -432,6 +457,7 @@ def main():
         library_info["info"] = {"species": local_ensembl.get_species_name(),
                                 "taxon_id": local_ensembl.get_taxon_id(),
                                 "release": local_ensembl.get_release_num(),
+                                "fas_mode": mode_hex,
                                 "gene_count": gene_assembler.get_gene_count(),
                                 "transcript_count": gene_assembler.get_transcript_count(),
                                 "protein_count": gene_assembler.get_protein_count(),
@@ -449,12 +475,9 @@ def main():
                                   "09_sequence_annotation": False,
                                   "10_fas_scoring": False
                                   }
-
         library_info.save()
-
     ####################################################################
     # COLLECT SEQUENCES
-
     print("#02 Collecting sequences.")
     if not library_info["status"]["02_sequence_collection"]:
         # Collect sequences.
@@ -467,61 +490,48 @@ def main():
             print("\tSequence Collection Run 2/2")
     else:
         print("\tSequences already collected.")
-
     ####################################################################
     # CLEAR SMALL PROTEINS
-
     print("#03 Removing small proteins.")
     if not library_info["status"]["03_small_protein_removing"]:
         remove_small_proteins(gene_assembler, library_info, pass_path)
     else:
         print("\tSmall proteins already removed.")
-
     ####################################################################
     # REMOVE INCORRECT ENTRIES
-
     print("#04 Removing incorrect entries.")
     if not library_info["status"]["04_incorrect_entry_removing"]:
         remove_incorrect_entries(gene_assembler, library_info, pass_path)
     else:
         print("\tIncorrect entries already removed.")
-
     ####################################################################
     # IMPLICIT FAS SCORING
-
     print("#05 Calculating implicit FAS scores.")
     if not library_info["status"]["05_implicit_fas_scoring"]:
         calculate_implicit_fas_scores(gene_assembler, library_info, pass_path)
     else:
         print("\tImplicit FAS scores already calculated.")
-
     ####################################################################
     # CREATE FASTA FILE
-
     print("#06 Generating FASTA file for all sequences.")
     if not library_info["status"]["06_fasta_generation"]:
         generate_fasta_file(gene_assembler, library_info, pass_path)
     else:
         print("\tFasta file already generated.")
-
     ####################################################################
     # CREATE PAIRINGS FOR ALL GENES
-
     print("#07 Creating protein pairings for all genes.")
     if not library_info["status"]["07_pairing_generation"]:
         generate_pairings(gene_assembler, library_info, pass_path)
     else:
         print("\tPairings already generated.")
-
     ####################################################################
     # CREATE OF ALL IDS.
-
     print("#08 Generating phyloprofile IDs for all proteins.")
     if not library_info["status"]["08_id_tsv_generation"]:
         generate_ids_tsv(gene_assembler, library_info, pass_path)
     else:
         print("\tIDs already generated.")
-
     ####################################################################
 
 

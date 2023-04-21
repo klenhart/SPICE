@@ -229,6 +229,10 @@ class GeneAssembler:
             dist_matrix[gene.get_id()] = gene.get_fas_dict()
         return dist_matrix
 
+    def reset_fas(self) -> None:
+        for gene in self.get_genes():
+            gene.reset_fas()
+
     @staticmethod
     def to_dict(gene_assembly: Dict[str, Gene], mode: str) -> Dict[str, Dict[str, Any]]:
         json_dict: Dict[str, Dict[str, Any]] = dict()

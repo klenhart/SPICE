@@ -47,6 +47,9 @@ class LibraryInfo:
         with open(self.path, "w") as f:
             yaml.dump(self.info_dict, f)
 
+    def set_self_path(self, new_path: str):
+        self.path = new_path
+
     @staticmethod
     def format_dict(dictionary: Dict[str, Any], layer: int = 0) -> str:
         output: str = ""

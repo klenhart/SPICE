@@ -7,7 +7,7 @@ from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 
 
 def main():
-    print(list(range(0, 0)))
+    print(4 // 3)
 
 
 if __name__ == "__main__":

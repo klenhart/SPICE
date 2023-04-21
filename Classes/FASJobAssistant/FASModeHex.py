@@ -46,29 +46,32 @@ class FASModeHex:
     def __update_mode_hex__(self) -> None:
         self.mode_hex = FASModeHex.bool_list_to_hex(self.mode_bits, self.mode_byte_count)
 
+    def activate_all(self):
+        self.activate_modes(list(self.mode_tuple))
+
     def activate_modes(self, mode_name_list: List[str]) -> None:
         for mode_name in mode_name_list:
             self.activate_mode(mode_name)
 
     def activate_mode(self, mode_name: str) -> None:
-        index: int = self.mode_tuple.index(mode_name) + self.blocked_bits
-        if index == -1:
-            print("Given mode name", mode_name, "not in mode list: ", self.mode_tuple)
-        else:
+        try:
+            index: int = self.mode_tuple.index(mode_name) + self.blocked_bits
             self.mode_bits[index] = True
             self.__update_mode_hex__()
+        except ValueError:
+            print("Given mode name", mode_name, "not in mode list: ", self.mode_tuple)
 
     def deactivate_modes(self, mode_name_list: List[str]) -> None:
         for mode_name in mode_name_list:
             self.deactivate_mode(mode_name)
 
     def deactivate_mode(self, mode_name: str) -> None:
-        index: int = self.mode_tuple.index(mode_name) + self.blocked_bits
-        if index == -1:
-            print("Given mode name", mode_name, "not in mode list: ", self.mode_tuple)
-        else:
+        try:
+            index: int = self.mode_tuple.index(mode_name) + self.blocked_bits
             self.mode_bits[index] = False
             self.__update_mode_hex__()
+        except ValueError:
+            print("Given mode name", mode_name, "not in mode list: ", self.mode_tuple)
 
     def __str__(self) -> str:
         output_list: List[str] = list()

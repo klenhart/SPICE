@@ -145,6 +145,12 @@ class Gene:
     def get_fas_dict(self) -> Dict[str, Dict[str, float]]:
         return self.fas_dict
 
+    def reset_fas(self) -> None:
+        for transcript_1 in self.get_transcripts():
+            for transcript_2 in self.get_transcripts():
+                if transcript_1.get_biotype() == "protein_coding" and transcript_1 != transcript_2:
+                    self.fas_dict[transcript_1.get_id()][transcript_2.get_id()] = -1.0
+
     def is_sequence_complete(self) -> bool:
         return self.sequences_complete_flag
 
