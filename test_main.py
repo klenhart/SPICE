@@ -7,8 +7,7 @@ from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 
 
 def main():
-    with open("C:\\Users\\chris\\Desktop\\git/test01/blep.txt", "w") as f:
-        f.write("Test")
+    print(list(range(0, 0)))
 
 
 if __name__ == "__main__":

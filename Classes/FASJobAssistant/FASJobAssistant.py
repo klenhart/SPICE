@@ -1,8 +1,4 @@
 #!/bin/env python
-import os
-
-from Classes.PassPath.PassPath import PassPath
-
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -23,6 +19,10 @@ from Classes.PassPath.PassPath import PassPath
 #  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
+
+import os
+
+from Classes.PassPath.PassPath import PassPath
 
 RAW_SCRIPT = """#!/bin/bash
 #SBATCH --partition={14}
