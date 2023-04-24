@@ -23,12 +23,13 @@
 import os
 import json
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 from tqdm import tqdm
 
 from Classes.GTFBoy.GTFBoy import GTFBoy
 from Classes.PassPath.PassPath import PassPath
+from Classes.ResultBuddy.ComparisonHandling.ComparisonAssembler import ComparisonAssembler
 from Classes.ResultBuddy.ExpressionHandling.ConditionAssembler import ConditionAssembler
 from Classes.ResultBuddy.ExpressionHandling.ExpressionAssembler import ExpressionAssembler
 from Classes.ResultBuddy.EWFDHandling.EWFDAssembler import EWFDAssembler
@@ -146,6 +147,12 @@ class ResultBuddy:
             self.result_info["expression_imports"]["conditions"][condition_name] = new_condition_dict
             self.__save_info()
             condition.save(self.result_info["expression_imports"]["conditions"][condition_name]["expression_path"])
+
+    def compare(self, condition_pair: Tuple[str, str]):
+        comparison: ComparisonAssembler = ComparisonAssembler(condition_pair,
+                                                              self.result_pass_path,
+                                                              self.result_info,
+                                                              True)
 
     def import_expression_gtf(self,
                               expression_path: str,

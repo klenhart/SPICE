@@ -20,7 +20,7 @@
 #
 #######################################################################
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.ResultBuddy.ResultBuddy import ResultBuddy
@@ -47,8 +47,9 @@ def condition(library_path: str, outdir: str, replicate_name_list: List[str], co
     result.generate_ewfd_file(condition_name, True)
 
 
-def compare():
-    pass
+def compare(library_path: str, outdir: str, condition_pair: Tuple[str, str]):
+    result: ResultBuddy = ResultBuddy(library_path, outdir)
+    result.compare(condition_pair)
 
 
 def main():

@@ -57,6 +57,7 @@ RAW_SLURM_2 = """; \
 -g $gene \
 -c {2}"""
 
+
 class FASJobAssistant:
 
     def __init__(self, pass_path: PassPath, fas_dir: str):
