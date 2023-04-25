@@ -43,7 +43,8 @@ class WriteGuard:
 
     def start_guard(self) -> bool:
         start_time: float = time.time()
-        time_limit: int = 1200
+        time_limit: int = 1800
+        sleep_time: float = 5.0
         # Run this until the guard could be started.
         while True:
             try:
@@ -58,7 +59,10 @@ class WriteGuard:
                     print("Establishing lock timed out. Took longer than", time_limit, "seconds.")
                     return False
                 print(self.tag, "Guard already in place. Passed time:", time.time() - start_time)
-                time.sleep(1)
+                time.sleep(sleep_time)
+                # The longer a process has to wait, the faster the request frequency becomes.
+                if sleep_time > 0.5:
+                    sleep_time = sleep_time - 0.5
         self.guarded_flag = True
         return True
 

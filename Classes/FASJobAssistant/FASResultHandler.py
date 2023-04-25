@@ -4,6 +4,7 @@ import os
 from typing import Dict, Any
 
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
+from Classes.WriteGuard.WriteGuard import WriteGuard
 
 
 #######################################################################
@@ -27,33 +28,36 @@ from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 #######################################################################
 
 def main():
-    argument_parser: ReduxArgParse = ReduxArgParse(["--pairings_path", "--gene_id", "--outdir", "--mode"],
-                                                   [str, str, str, str],
-                                                   ["store", "store", "store", "store"],
-                                                   [1, 1, 1, 1],
+    argument_parser: ReduxArgParse = ReduxArgParse(["--pairings_path", "--gene_id", "--outdir", "--mode", "--anno_dir"],
+                                                   [str, str, str, str, str],
+                                                   ["store", "store", "store", "store", "store"],
+                                                   [None, None, None, None, None],
                                                    ["Path to the pairings tsv.",
                                                     "Gene id to operate on.",
                                                     "Directory the FAS results will get stored in.",
                                                     """What operation shall be done on the results? 
-                                                    'unpack', 'concat' or 'delete'"""])
+                                                    'unpack', 'concat' or 'delete'""",
+                                                    """Annotation directory that also contains
+                                                     the concatenated FAS output."""])
 
     argument_parser.generate_parser()
     argument_parser.execute()
     argument_dict: Dict[str, Any] = argument_parser.get_args()
-    argument_dict['pairings_path'] = argument_dict['pairings_path'][0]
-    argument_dict['gene_id'] = argument_dict['gene_id'][0]
-    argument_dict['outdir'] = argument_dict['outdir'][0]
-    argument_dict['mode'] = argument_dict['mode'][0]
 
     if argument_dict['mode'] == "unpack":
         with open(argument_dict["pairings_path"], "r") as f:
-            gene_id_tsv: str = json.load(f)[argument_dict['gene_id']]
-        with open(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".tsv"), "w") as f:
-            f.write(gene_id_tsv)
+            gene_id_txt: str = json.load(f)[argument_dict['gene_id']]
+        with open(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".txt"), "w") as f:
+            f.write(gene_id_txt)
     elif argument_dict['mode'] == "delete":
-        os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".tsv"))
+        os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".txt"))
+        os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + "_forward.domains"))
+        os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + "_reverse.domains"))
+        os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".phyloprofile"))
     elif argument_dict['mode'] == "concat":
-        
+        with WriteGuard(os.path.join(argument_dict["anno_dir"], "fas.phyloprofile"), argument_dict["anno_dir"]):
+            with open(os.path.join(argument_dict["anno_dir"], "fas.phyloprofile", "a"):
+        pass
 
 
 if __name__ == "__main__":

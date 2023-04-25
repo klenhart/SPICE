@@ -28,57 +28,66 @@ from typing import Dict, Any, List
 from Classes.PassPath.PassPath import PassPath
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 
-RAW_SCRIPT = """#!/bin/bash
-#SBATCH --partition={14}
+RAW_SCRIPT_1 = """#!/bin/bash
+#SBATCH --partition={10}
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu={15}G
-#SBATCH --job-name="fas_{4}{12}"
+#SBATCH --mem-per-cpu={11}G
+#SBATCH --job-name="fas_{9}"
 #SBATCH --output=/dev/null 
 #SBATCH --error=/dev/null
-#SBATCH --array={10}-{11}
-gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{13}gene_ids{12}.txt")
+#SBATCH --array={7}-{8}
+gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{5}gene_ids{9}.txt")
 {0} {1} \
--m \
--g $gene \
--c {2} \
+--pairings_path {12} \
+--mode unpack \
+--gene_id $gene \
+--out_dir {5} \
 && \
-{3} \
---seed {5} \
---query {5} \
---annotation_dir {6} \
---out_dir {7} \
+{2} \
+--seed {3} \
+--query {3} \
+--annotation_dir {4} \
+--out_dir {5} \
 --bidirectional \
---pairwise {8}$gene.tsv \
+--pairwise {5}$gene.tsv \
 --out_name $gene \
 --tsv \
---phyloprofile {9} \
+--phyloprofile {6} \
 --empty_as_1 \
 """
 
-RAW_SLURM_2 = """; \
+RAW_SCRIPT_2 = """; \
 {0} {1} \
--r \
--g $gene \
--c {2}"""
+--mode concat \
+--gene_id $gene \
+--out_dir {2} \
+--anno_dir {3} \
+; \
+{0} {1} \
+--mode delete \
+--gene_id $gene \
+--out_dir {2}"""
 
 
 class FASJobAssistant:
 
-    def __init__(self, pass_path: PassPath, memory: str, partitions: List[str], fas_dir: str):
+    def __init__(self, pass_path: PassPath, memory: str, partitions: List[str], fas_dir: str, out_dir: str):
         self.fas_anno: str = os.path.join(fas_dir, "fas.doAnno")
         self.fas_run: str = os.path.join(fas_dir, "fas.run")
+        self.out_dir: str = out_dir
         self.python_path: str = sys.executable
+
+        self.fas_result_handler = os.path.abspath(__file__).split("/")[:-1]
+        self.fas_result_handler.append("FASResultHandler.py")
 
         self.lib_pass_path: PassPath = pass_path
 
         self.memory: str = memory
-        self.partitions: List[str] = partitions
+        self.partitions: str = ",".join(partitions)
         self.phyloprofile_path: str = self.lib_pass_path["transcript_ids"]
 
     def make_fas_run_jobs(self):
         gene_count: int = FASJobAssistant.make_gene_txt(self.lib_pass_path)
-
-        partitions = ",".join(self.partitions)
 
         with open(os.path.join(self.lib_pass_path["transcript_data"], "genes.txt"), "r") as f:
             gene_ids: List[str] = f.read().split("\n")
@@ -91,49 +100,48 @@ class FASJobAssistant:
             else:
                 stop = ((entry[1] + 1) % 1000)
             output_ids = gene_ids[entry[0]:entry[1] + 1]
-            with open(fas_lib.get_config("slurm_path") + "gene_ids{0}.txt".format(str(i)), "w") as gene_chunk:
+            with open(os.path.join(self.out_dir, "gene_ids{0}.txt".format(str(i)), "w")) as gene_chunk:
                 gene_chunk.write("\n".join(output_ids))
-            if lcr_flag:
-                outdir = fas_lib.get_config("fas_buffer_lcr_path")
-            elif tmhmm_flag:
-                outdir = fas_lib.get_config("fas_buffer_tmhmm_path")
-            else:
-                outdir = fas_lib.get_config("fas_buffer_path")
-            output = RAW_SLURM_1.format(python_path,  # 0
-                                        FAS_handler_path,  # 1
-                                        fas_lib.get_config("self_path"),  # 2
-                                        fas_path,  # 3
-                                        fas_lib.get_config("species"),  # 4
-                                        fas_lib.get_config("isoforms_path"),  # 5
-                                        fas_lib.get_config("annotation_path"),  # 6
-                                        outdir,  # 7
-                                        fas_lib.get_config("tsv_buffer_path"),  # 8
-                                        fas_lib.get_config("phyloprofile_ids_path"),  # 9
-                                        str(start),  # 10
-                                        str(stop),  # 11
-                                        str(i),  # 12
-                                        fas_lib.get_config("slurm_path"),  # 13
-                                        partitions,  # 14
-                                        mem_per_cpu)  # 15
-            output_2 = RAW_SLURM_2.format(python_path,  # 0
-                                          FAS_handler_path,  # 1
-                                          fas_lib.get_config("self_path"))  # 2
-            if lcr_flag or tmhmm_flag:
-                if lcr_flag:
-                    mod_path = fas_lib.get_config("lcr_path")
-                    job_name = "lcr_FAS_job{0}.job"
-                elif tmhmm_flag:
-                    mod_path = fas_lib.get_config("tmhmm_path")
-                    job_name = "tmhmm_FAS_job{0}.job"
-                output = output + "-d " + mod_path + " "
-            else:
-                job_name = "FAS_job{0}.job"
+
+            output = RAW_SCRIPT_1.format(self.python_path,  # 0
+                                         self.fas_result_handler,  # 1
+                                         self.fas_run,  # 2
+                                         os.path.join(self.lib_pass_path["transcript_data"], "annotations.fasta"),  # 3
+                                         self.lib_pass_path["fas_data"],  # 4
+                                         os.path.join(self.lib_pass_path["fas_data"], "tmp"),  # 5
+                                         self.phyloprofile_path,  # 6
+                                         str(start),  # 7
+                                         str(stop),  # 8
+                                         str(i),  # 9
+                                         self.partitions,  # 10
+                                         self.memory,  # 11
+                                         self.lib_pass_path["transcript_pairings"])  # 12
+
+            output_2 = RAW_SCRIPT_2.format(self.python_path,  # 0
+                                           self.fas_result_handler,  # 1
+                                           os.path.join(self.lib_pass_path["fas_data"], "tmp"),  # 2
+                                           self.lib_pass_path["fas_data"])  # 3
+
+            job_name = "FAS_job" + str(i) + ".job"
+
             output = output + output_2
-            with open(fas_lib.get_config("slurm_path") + job_name.format(str(i)), "w") as f:
+
+            with open(os.path.join(self.out_dir, job_name), "w") as f:
                 f.write(output)
 
     def make_fas_do_anno_jobs(self):
         pass
+
+    def make_fas_run_output(self) -> None:
+        if not os.path.exists(os.path.join(self.lib_pass_path["fas_data"], "forward.domains")):
+            with open(os.path.join(self.lib_pass_path["fas_data"], "forward.domains"), "w") as f:
+                f.write("")
+        if not os.path.exists(os.path.join(self.lib_pass_path["fas_data"], "reverse.domains")):
+            with open(os.path.join(self.lib_pass_path["fas_data"], "reverse.domains"), "w") as f:
+                f.write("")
+        if not os.path.exists(os.path.join(self.lib_pass_path["fas_data"], "fas.phyloprofile")):
+            with open(os.path.join(self.lib_pass_path["fas_data"], "fas.phyloprofile"), "w") as f:
+                f.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B")
 
     @staticmethod
     def make_gene_txt(pass_path: PassPath) -> int:
@@ -178,10 +186,12 @@ def main():
     fas_job_assist: FASJobAssistant = FASJobAssistant(lib_pass_path,
                                                       argument_dict['memory'],
                                                       argument_dict['partitions'],
-                                                      argument_dict['fas_dir'])
+                                                      argument_dict['fas_dir'],
+                                                      argument_dict['outdir'])
 
     if argument_dict["mode_fas"] == "run":
         fas_job_assist.make_fas_run_jobs()
+        fas_job_assist.make_fas_run_output()
     elif argument_dict["dir_fas"]:
         fas_job_assist.make_fas_do_anno_jobs()
     else:
