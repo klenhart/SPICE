@@ -1,7 +1,7 @@
 #!/bin/env python
 import json
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.WriteGuard.WriteGuard import WriteGuard
@@ -55,9 +55,41 @@ def main():
         os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + "_reverse.domains"))
         os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".phyloprofile"))
     elif argument_dict['mode'] == "concat":
-        with WriteGuard(os.path.join(argument_dict["anno_dir"], "fas.phyloprofile"), argument_dict["anno_dir"]):
-            with open(os.path.join(argument_dict["anno_dir"], "fas.phyloprofile", "a"):
-        pass
+        with WriteGuard(os.path.join(argument_dict["anno_dir"], "fas_scores.json"), argument_dict["anno_dir"]):
+            with open(os.path.join(argument_dict["anno_dir"], "fas_scores.json")) as f_out:
+                fas_scores_dict: Dict[str, Dict[str, Dict[str, float]]] = json.load(f_out)
+                with open(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".phyloprofile")) as f_in:
+                    fas_score_list: List[str] = f_in.read().split("\n")[1:]
+                for line in fas_score_list:
+                    split_line: List[str] =  line.split("\t")
+                    seed: str = split_line[0]
+                    query: str = split_line[2]
+                    fas_1: float = float(split_line[3])
+                    fas_2: float = float(split_line[4])
+
+                    split_seed: List[str] = seed.split("|")
+                    split_query: List[str] = query.split("|")
+
+                    gene_id: str = split_seed[0]
+
+                    seed_prot_id: str = split_seed[1]
+                    query_prot_id: str = split_query[1]
+
+                    fas_scores_dict[gene_id][seed_prot_id][query_prot_id] = fas_2
+                    fas_scores_dict[gene_id][seed_prot_id][query_prot_id] = fas_1
+                json.dump(fas_scores_dict, f_out, indent=4)
+        with WriteGuard(os.path.join(argument_dict["anno_dir"], "forward.domains"), argument_dict["anno_dir"]):
+            with open(os.path.join(argument_dict["outdir"],
+                                   argument_dict['gene_id'] + "_forward.domains"), "r") as f_in:
+                domains_input: str = f_in.read()
+                with open(os.path.join(argument_dict["anno_dir"], "forward.domains"), "a") as f_out:
+                    f_out.write(domains_input + "\n")
+        with WriteGuard(os.path.join(argument_dict["anno_dir"], "reverse.domains"), argument_dict["anno_dir"]):
+            with open(os.path.join(argument_dict["outdir"],
+                                   argument_dict['gene_id'] + "_reverse.domains"), "r") as f_in:
+                domains_input: str = f_in.read()
+                with open(os.path.join(argument_dict["anno_dir"], "reverse.domains"), "a") as f_out:
+                    f_out.write(domains_input + "\n")
 
 
 if __name__ == "__main__":
