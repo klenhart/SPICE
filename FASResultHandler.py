@@ -53,7 +53,7 @@ def main():
         os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".tsv"))
         os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + "_forward.domains"))
         os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + "_reverse.domains"))
-        os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + "_config.yaml"))
+        os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + "_config.yml"))
         os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".phyloprofile"))
     elif argument_dict['mode'] == "concat":
         with WriteGuard(os.path.join(argument_dict["anno_dir"], "fas_scores.json"), argument_dict["anno_dir"]):
@@ -83,13 +83,13 @@ def main():
                                    argument_dict['gene_id'] + "_forward.domains"), "r") as f_in:
                 domains_input: str = f_in.read()
                 with open(os.path.join(argument_dict["anno_dir"], "forward.domains"), "a") as f_out:
-                    f_out.write(domains_input + "\n")
+                    f_out.write(domains_input)
         with WriteGuard(os.path.join(argument_dict["anno_dir"], "reverse.domains"), argument_dict["anno_dir"]):
             with open(os.path.join(argument_dict["out_dir"],
                                    argument_dict['gene_id'] + "_reverse.domains"), "r") as f_in:
                 domains_input: str = f_in.read()
                 with open(os.path.join(argument_dict["anno_dir"], "reverse.domains"), "a") as f_out:
-                    f_out.write(domains_input + "\n")
+                    f_out.write(domains_input)
 
 
 if __name__ == "__main__":
