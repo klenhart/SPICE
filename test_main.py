@@ -1,13 +1,10 @@
-import json
-import os
-
-from Classes.API.ensembl_mod.LocalEnsembl import LocalEnsembl
-from Classes.PassPath.PassPath import PassPath
-from Classes.SequenceHandling.GeneAssembler import GeneAssembler
+import numpy as np
 
 
 def main():
-    print(4 // 3)
+    expression_vector = np.array([[0.9], [0.1]])
+    distance_matrix = np.array([[0.0, 0.25], [0.5, 0.0]])
+    print(np.dot(distance_matrix, expression_vector))
 
 
 if __name__ == "__main__":

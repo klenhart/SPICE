@@ -36,36 +36,36 @@ RAW_SCRIPT_1 = """#!/bin/bash
 #SBATCH --output=/dev/null 
 #SBATCH --error=/dev/null
 #SBATCH --array={7}-{8}
-gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{5}gene_ids{9}.txt")
-{0} {1} \
---pairings_path {12} \
---mode unpack \
---gene_id $gene \
---out_dir {5} \
-&& \
-{2} \
---seed {3} \
---query {3} \
---annotation_dir {4} \
---out_dir {5} \
---bidirectional \
---pairwise {5}$gene.tsv \
---out_name $gene \
---tsv \
---phyloprofile {6} \
---empty_as_1 \
+gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{5}/gene_ids{9}.txt")
+{0} {1} \\
+--pairings_path {12} \\
+--mode unpack \\
+--gene_id $gene \\
+--out_dir {5} \\
+&& \\
+{2} \\
+--seed {3} \\
+--query {3} \\
+--annotation_dir {4} \\
+--out_dir {5} \\
+--bidirectional \\
+--pairwise {5}$gene.tsv \\
+--out_name $gene \\
+--tsv \\
+--phyloprofile {6} \\
+--empty_as_1 \\
 """
 
-RAW_SCRIPT_2 = """; \
-{0} {1} \
---mode concat \
---gene_id $gene \
---out_dir {2} \
---anno_dir {3} \
-; \
-{0} {1} \
---mode delete \
---gene_id $gene \
+RAW_SCRIPT_2 = """; \\
+{0} {1} \\
+--mode concat \\
+--gene_id $gene \\
+--out_dir {2} \\
+--anno_dir {3} \\
+; \\
+{0} {1} \\
+--mode delete \\
+--gene_id $gene \\
 --out_dir {2}"""
 
 
@@ -100,7 +100,7 @@ class FASJobAssistant:
             else:
                 stop = ((entry[1] + 1) % 1000)
             output_ids = gene_ids[entry[0]:entry[1] + 1]
-            with open(os.path.join(self.out_dir, "gene_ids{0}.txt".format(str(i)), "w")) as gene_chunk:
+            with open(os.path.join(self.out_dir, "gene_ids{0}.txt".format(str(i))), "w") as gene_chunk:
                 gene_chunk.write("\n".join(output_ids))
 
             output = RAW_SCRIPT_1.format(self.python_path,  # 0
@@ -130,7 +130,7 @@ class FASJobAssistant:
                 f.write(output)
 
     def make_fas_do_anno_jobs(self):
-        pass
+        pass  # TODO Write this.
 
     def make_fas_run_output(self) -> None:
         if not os.path.exists(os.path.join(self.lib_pass_path["fas_data"], "forward.domains")):
@@ -139,9 +139,10 @@ class FASJobAssistant:
         if not os.path.exists(os.path.join(self.lib_pass_path["fas_data"], "reverse.domains")):
             with open(os.path.join(self.lib_pass_path["fas_data"], "reverse.domains"), "w") as f:
                 f.write("")
-        if not os.path.exists(os.path.join(self.lib_pass_path["fas_data"], "fas.phyloprofile")):
-            with open(os.path.join(self.lib_pass_path["fas_data"], "fas.phyloprofile"), "w") as f:
-                f.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B")
+        # Currently not necessary, since the FAS output gets piped directly into the fas.json dictionary.
+        # if not os.path.exists(os.path.join(self.lib_pass_path["fas_data"], "fas.phyloprofile")):
+        #     with open(os.path.join(self.lib_pass_path["fas_data"], "fas.phyloprofile"), "w") as f:
+        #         f.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B")
 
     @staticmethod
     def make_gene_txt(pass_path: PassPath) -> int:
@@ -161,7 +162,7 @@ class FASJobAssistant:
 
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--Lib_dir", "--memory", "--partitions",
-                                                    "--dir_fas", "--mode_fas", "--outdir"],
+                                                    "--dir_fas", "--fas_mode", "--outdir"],
                                                    [str, str, str, str, str, str],
                                                    ["store", "store", "store", "store", "store", "store"],
                                                    [1, 1, "*", 1, 1, 1],
@@ -177,22 +178,22 @@ def main():
     argument_dict['Lib_dir'] = argument_dict['Lib_dir'][0]
     argument_dict['memory'] = argument_dict['memory'][0]
     argument_dict['dir_fas'] = argument_dict['dir_fas'][0]
-    argument_dict['mode_fas'] = argument_dict['mode_fas'][0]
+    argument_dict['fas_mode'] = argument_dict['fas_mode'][0]
     argument_dict['outdir'] = argument_dict['outdir'][0]
 
     with open(os.path.join(argument_dict['Lib_dir'], "paths.json"), "r") as f:
-        lib_pass_path: PassPath = json.load(f)
+        lib_pass_path: PassPath = PassPath(json.load(f))
 
     fas_job_assist: FASJobAssistant = FASJobAssistant(lib_pass_path,
                                                       argument_dict['memory'],
                                                       argument_dict['partitions'],
-                                                      argument_dict['fas_dir'],
+                                                      argument_dict['dir_fas'],
                                                       argument_dict['outdir'])
 
-    if argument_dict["mode_fas"] == "run":
+    if argument_dict["fas_mode"] == "run":
         fas_job_assist.make_fas_run_jobs()
         fas_job_assist.make_fas_run_output()
-    elif argument_dict["dir_fas"]:
+    elif argument_dict["fas_mode"] == "doAnno":
         fas_job_assist.make_fas_do_anno_jobs()
     else:
         print("Chosen FAS mode not recognised. No jobs were generated.")
