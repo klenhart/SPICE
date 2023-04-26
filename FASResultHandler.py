@@ -28,7 +28,7 @@ from Classes.WriteGuard.WriteGuard import WriteGuard
 #######################################################################
 
 def main():
-    argument_parser: ReduxArgParse = ReduxArgParse(["--pairings_path", "--gene_id", "--outdir", "--mode", "--anno_dir"],
+    argument_parser: ReduxArgParse = ReduxArgParse(["--pairings_path", "--gene_id", "--out_dir", "--mode", "--anno_dir"],
                                                    [str, str, str, str, str],
                                                    ["store", "store", "store", "store", "store"],
                                                    [None, None, None, None, None],
@@ -47,18 +47,18 @@ def main():
     if argument_dict['mode'] == "unpack":
         with open(argument_dict["pairings_path"], "r") as f:
             gene_id_txt: str = json.load(f)[argument_dict['gene_id']]
-        with open(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".txt"), "w") as f:
+        with open(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".txt"), "w") as f:
             f.write(gene_id_txt)
     elif argument_dict['mode'] == "delete":
-        os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".txt"))
-        os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + "_forward.domains"))
-        os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + "_reverse.domains"))
-        os.remove(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".phyloprofile"))
+        os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".txt"))
+        os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + "_forward.domains"))
+        os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + "_reverse.domains"))
+        os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".phyloprofile"))
     elif argument_dict['mode'] == "concat":
         with WriteGuard(os.path.join(argument_dict["anno_dir"], "fas_scores.json"), argument_dict["anno_dir"]):
             with open(os.path.join(argument_dict["anno_dir"], "fas_scores.json")) as f_out:
                 fas_scores_dict: Dict[str, Dict[str, Dict[str, float]]] = json.load(f_out)
-                with open(os.path.join(argument_dict["outdir"], argument_dict['gene_id'] + ".phyloprofile")) as f_in:
+                with open(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".phyloprofile")) as f_in:
                     fas_score_list: List[str] = f_in.read().split("\n")[1:]
                 for line in fas_score_list:
                     split_line: List[str] =  line.split("\t")
@@ -79,13 +79,13 @@ def main():
                     fas_scores_dict[gene_id][seed_prot_id][query_prot_id] = fas_1
                 json.dump(fas_scores_dict, f_out, indent=4)
         with WriteGuard(os.path.join(argument_dict["anno_dir"], "forward.domains"), argument_dict["anno_dir"]):
-            with open(os.path.join(argument_dict["outdir"],
+            with open(os.path.join(argument_dict["out_dir"],
                                    argument_dict['gene_id'] + "_forward.domains"), "r") as f_in:
                 domains_input: str = f_in.read()
                 with open(os.path.join(argument_dict["anno_dir"], "forward.domains"), "a") as f_out:
                     f_out.write(domains_input + "\n")
         with WriteGuard(os.path.join(argument_dict["anno_dir"], "reverse.domains"), argument_dict["anno_dir"]):
-            with open(os.path.join(argument_dict["outdir"],
+            with open(os.path.join(argument_dict["out_dir"],
                                    argument_dict['gene_id'] + "_reverse.domains"), "r") as f_in:
                 domains_input: str = f_in.read()
                 with open(os.path.join(argument_dict["anno_dir"], "reverse.domains"), "a") as f_out:
