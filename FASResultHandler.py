@@ -75,7 +75,7 @@ def main():
                 seed_prot_id: str = split_seed[1]
                 query_prot_id: str = split_query[1]
                 fas_scores_dict[gene_id][seed_prot_id][query_prot_id] = fas_2
-                fas_scores_dict[gene_id][seed_prot_id][query_prot_id] = fas_1
+                fas_scores_dict[gene_id][query_prot_id][seed_prot_id] = fas_1
             with open(os.path.join(argument_dict["anno_dir"], "fas_scores.json"), "w") as f_out:
                 json.dump(fas_scores_dict, f_out, indent=4)
         with WriteGuard(os.path.join(argument_dict["anno_dir"], "forward.domains"), argument_dict["anno_dir"]):
