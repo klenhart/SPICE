@@ -47,7 +47,7 @@ def main():
     if argument_dict['mode'] == "unpack":
         with open(argument_dict["pairings_path"], "r") as f:
             gene_id_txt: str = json.load(f)[argument_dict['gene_id']]
-        with open(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".txt"), "w") as f:
+        with open(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".tsv"), "w") as f:
             f.write(gene_id_txt)
     elif argument_dict['mode'] == "delete":
         os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".txt"))
