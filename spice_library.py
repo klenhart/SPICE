@@ -24,7 +24,7 @@ import sys
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.API.ensembl_mod.LocalEnsembl import LocalEnsembl
 from Classes.API.ensembl_mod.RemoteEnsembl import RemoteEnsembl
-from Classes.FASJobAssistant.FASModeHex import FASModeHex
+from Classes.FASTools.FASModeHex import FASModeHex
 from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
