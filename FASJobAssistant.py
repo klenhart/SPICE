@@ -49,7 +49,7 @@ gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "{5}/gene_ids{9}.txt")
 --annotation_dir {4} \\
 --out_dir {5} \\
 --bidirectional \\
---pairwise {5}$gene.tsv \\
+--pairwise {5}/$gene.tsv \\
 --out_name $gene \\
 --tsv \\
 --phyloprofile {6} \\
