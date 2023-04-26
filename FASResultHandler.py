@@ -50,9 +50,10 @@ def main():
         with open(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".tsv"), "w") as f:
             f.write(gene_id_txt)
     elif argument_dict['mode'] == "delete":
-        os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".txt"))
+        os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".tsv"))
         os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + "_forward.domains"))
         os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + "_reverse.domains"))
+        os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + "_config.yaml"))
         os.remove(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".phyloprofile"))
     elif argument_dict['mode'] == "concat":
         with WriteGuard(os.path.join(argument_dict["anno_dir"], "fas_scores.json"), argument_dict["anno_dir"]):
