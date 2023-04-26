@@ -79,6 +79,7 @@ class FASJobAssistant:
 
         self.fas_result_handler = os.path.abspath(__file__).split("/")[:-1]
         self.fas_result_handler.append("FASResultHandler.py")
+        self.fas_result_handler = "/".join(self.fas_result_handler)
 
         self.lib_pass_path: PassPath = pass_path
 
