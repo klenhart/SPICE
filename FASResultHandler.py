@@ -62,7 +62,9 @@ def main():
                 with open(os.path.join(argument_dict["out_dir"], argument_dict['gene_id'] + ".phyloprofile")) as f_in:
                     fas_score_list: List[str] = f_in.read().split("\n")[1:]
                 for line in fas_score_list:
-                    split_line: List[str] =  line.split("\t")
+                    if len(line) == 0:
+                        continue
+                    split_line: List[str] = line.split("\t")
                     seed: str = split_line[0]
                     query: str = split_line[2]
                     fas_1: float = float(split_line[3])
