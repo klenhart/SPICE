@@ -68,6 +68,17 @@ RAW_SCRIPT_2 = """; \\
 --gene_id $gene \\
 --out_dir {2}"""
 
+RAW_SCRIPT_3 = """#!/bin/bash
+#SBATCH --partition={2}
+#SBATCH --cpus-per-task=1
+#SBATCH --job-name="fas_final"
+#SBATCH --output=/dev/null 
+#SBATCH --error=/dev/null
+{0} {1} \\
+--mode integrate \\
+--anno_dir
+"""
+
 
 class FASJobAssistant:
 
@@ -130,6 +141,11 @@ class FASJobAssistant:
 
             with open(os.path.join(self.out_dir, job_name), "w") as f:
                 f.write(output)
+        with open(os.path.join(self.out_dir, "FAS_job_final.job"), "w") as f:
+            output: str = RAW_SCRIPT_3.format(self.python_path,
+                                              self.fas_result_handler,
+                                              self.partitions)
+            f.write(output)
 
     def make_fas_do_anno_jobs(self):
         pass  # TODO Write this.
