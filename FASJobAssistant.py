@@ -76,7 +76,7 @@ RAW_SCRIPT_3 = """#!/bin/bash
 #SBATCH --error=/dev/null
 {0} {1} \\
 --mode integrate \\
---anno_dir
+--anno_dir {3}
 """
 
 
@@ -144,7 +144,8 @@ class FASJobAssistant:
         with open(os.path.join(self.out_dir, "FAS_job_final.job"), "w") as f:
             output: str = RAW_SCRIPT_3.format(self.python_path,
                                               self.fas_result_handler,
-                                              self.partitions)
+                                              self.partitions,
+                                              self.lib_pass_path["fas_data"])
             f.write(output)
 
     def make_fas_do_anno_jobs(self):
