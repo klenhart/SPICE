@@ -101,7 +101,8 @@ class FASJobAssistant:
             else:
                 stop = ((entry[1] + 1) % 1000)
             output_ids = gene_ids[entry[0]:entry[1] + 1]
-            with open(os.path.join(self.lib_pass_path["fas_temp"], "gene_ids{0}.txt".format(str(i))), "w") as gene_chunk:
+            with open(os.path.join(self.lib_pass_path["fas_temp"], "gene_ids{0}.txt".format(str(i))),
+                      "w") as gene_chunk:
                 gene_chunk.write("\n".join(output_ids))
 
             output = RAW_SCRIPT_1.format(self.python_path,  # 0
