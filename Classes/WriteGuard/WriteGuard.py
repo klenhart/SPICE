@@ -44,7 +44,8 @@ class WriteGuard:
     def start_guard(self) -> bool:
         start_time: float = time.time()
         time_limit: int = 3600
-        sleep_time: float = 5.0
+        sleep_time: float = 20.0
+        sleep_deduction: float = 1.0
         # Run this until the guard could be started.
         while True:
             try:
@@ -62,7 +63,10 @@ class WriteGuard:
                 time.sleep(sleep_time)
                 # The longer a process has to wait, the faster the request frequency becomes.
                 if sleep_time > 0.5:
-                    sleep_time = sleep_time - 0.5
+                    sleep_time = sleep_time - sleep_deduction
+                    sleep_deduction = sleep_deduction*2
+                    if sleep_time < 0.5:
+                        sleep_time = 0.5
         self.guarded_flag = True
         return True
 
