@@ -159,7 +159,7 @@ class FASJobAssistant:
                 f.write("")
         if not os.path.exists(os.path.join(self.lib_pass_path["fas_data"], "fas.phyloprofile")):
             with open(os.path.join(self.lib_pass_path["fas_data"], "fas.phyloprofile"), "w") as f:
-                f.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B")
+                f.write("geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n")
 
     @staticmethod
     def make_gene_txt(pass_path: PassPath) -> int:
