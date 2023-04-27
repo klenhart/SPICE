@@ -408,7 +408,7 @@ def main():
                                      "info": "info.yaml",
                                      "fas_data": "fas_data",
                                      "fas_scores": "fas_data/fas_scores.json",
-                                     "fas_temp": "fas_data/temp",
+                                     "fas_temp": "fas_data/tmp",
                                      "fas_annotation": "fas_data/annotation",
                                      "fas_annoTools": "fas_data/annoTools.txt",
                                      "transcript_data": "transcript_data",
