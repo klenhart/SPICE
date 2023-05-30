@@ -15,8 +15,8 @@ Spice is able to assemble all protein sequences of a species as represented in t
   * [Parse domain output](#parse-domain-output)
   * [Apply library to expression data](#apply-library-to-expression-data)
     * [Create result directory](#create-result-directory)
-    * [Identify genes of interest](#identify-genes-of-interest)
-    * [Visualize comparison](#visualize-comparison)
+    * [Import expression data](#import-expression-data)
+    * [Merge samples into conditions](#merge-samples-into-conditions)
 * [Contact](#contact)
 
 ## Requirements
@@ -127,8 +127,6 @@ parse_domain_out.py \
 ```
 
 
-
-
 ### Apply library to expression data
 
 The library is now finished. Now we want to make use of it. Grand-Trumpet uses the FAS scores for all protein coding   and nonsense-mediated-decay isoforms of a gene and combines them with the expression levels of each isoform to generate a Expression Weighted Functional Disturbance (EWFD) value for each isoform. The EWFD assumes how much of the functional diversity of the gene does not represented transcripts functional effect. 
@@ -147,33 +145,21 @@ spice_result.py \
 -o /path/to/result/parent/directory/
 ```
 
-Here is an example for the name path text file:
-
-
-```
-sample1
-sample2
-sample3
-```
-
-And here an example for the expression path text file:
+#### Import expression data
+To import expression gtf files use this command:
 
 ```
-path/to/sample1_replicate1.gtf
-path/to/sample2_replicate1.gtf
-path/to/sample3_replicate1.gtf
+python \
+spice_result.py \
+-m expression \
+-l /path/to/spice_lib_homo_sapiens_107_1ee \
+-o /path/to/parent/directory/of/result \
+-n sampleName \
+-g /path/to/expression.gtf \
+-N FPKM \
+-t 1.0
 ```
-
-You can then calculate the Movement for all expression files in the text files by running this command:
-
-```
-python fas_movement.py \
---config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
---namepath /path/to/name.txt \
---expressionpath /path/to/expressionpath.txt 
-```
-The Movement scores will be saved as tsv files within the libraries FAS_polygon directory
-
+#### Merge samples into conditions
 
 #### Calculate comparison between pair of samples
 
@@ -190,19 +176,6 @@ The input parameter takes paths to the files generated in the previous step. The
 #### Identify genes of interest
 
 Now the raw output of the comparison does not give a lot of insight about which comparisons might have yielded something interesting. You can ofcourse just visualize any gene that you are interested in - maybe you even have information from previous analysis of the data that you wanna get another perspective on. But to identify genes of interest independent of any other information we need the sorted and filtered version of the file. It has been automatically generated in the last step. It only contains genes for which any of the two samples had at least two isoforms and the roots-mean-square-deviation (RMSD) between Movement scores was higher than 0 and lower than 1. Additionally the file is sorted by unscaled RMSD first, and then by scaled RMSD. You can now manually scroll through the file from top to bottom. Look for entries where the scaled and unscaled RMSD are not equal, but still both greater than 0.5. 
-
-#### Visualize comparison
-
-To visualize a comparison you are interested in, simply use this command:
-```
-python fas_visualize.py \
---config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
---gene ENSG00000000003 \
---path /path/to/comparison.tsv
---outFormat svg
-```
-
-The scaled aswell as the unscaled version of the comparison will be output into the pictures directory of the library.
 
 ## Contact
 
