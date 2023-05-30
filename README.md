@@ -9,10 +9,8 @@ Spice is able to assemble all protein sequences of a species as represented in t
 ## Table of Contents
 * [Requirements](#requirements)
 * [Usage](#usage)
-  * [Generate FAS library](#generate-fas-library)
-    * [Initialize the FAS library and download local ensembl release](#initialize-the-fas-library-and-download-local-ensembl-release)
-    * [Install FAS](#install-fas)
-    * [Collect sequences](#collect-sequences)
+  * [Generate Spice library](#generate-spice-library)
+    * [Initialize the Spice library](#initialize-the-spice-library)
     * [Annotation](#annotation)
     * [Generate job arrays](#generate-job-arrays)
     * [Run FAS](#run-fas)
@@ -46,7 +44,7 @@ gzip
 shutil
 ```
 
-Since Spce makes use of the FAS algorithm, it should be installed beforehand. Check out the [FAS](https://github.com/BIONF/FAS) repository for further instruction on setting it up.
+Since Spice makes use of the FAS algorithm, it should be installed beforehand. Check out the [FAS](https://github.com/BIONF/FAS) repository for further instruction on setting it up.
 
 ## Usage
 
@@ -58,57 +56,47 @@ cd SPICE
 git clone https://github.com/chrisbluemel/SPICE
 ```
 
-**IMPORTANT**: Running these scripts without access to a processing cluster will be more or less impossible. You can try to calculate 200k FAS comparisons on your personal computer, but it may take a very long time. Also be aware that the helper scripts to generate job arrays are only capable of generate SLURM job arrays.
+**IMPORTANT**: Running these scripts without access to a processing cluster will be more or less impossible. You can try to calculate 200k FAS comparisons on your personal computer, but it may take a very long time. Also be aware that the helper scripts to generate job arrays are only capable of generating SLURM job arrays.
 
-### Generate Spice library
+#### Initialize the Spice library
 
-First decide on a location for your FAS library. When finished the library can take up several GB of space.
-
-#### Initialize the FAS library and download local ensembl release
-
-Now we need to download a local ensembl assembly for the required species. This will also create the entire directory structure and initialize the config.tsv file. As an output choose the directory that is supposed to contain the finished library. This is what an example command for initialiazing a library for human would look like: 
+To initialize the library, use this command:
 
 ```
-python fas_lib.py -l \
---output /parent/directory/of/the/library \
---species human
+python spice_library.py \
+--species human \
+-release 107 \
+--output parent/directory/of/the/library
 ```
 
-The path the **config.tsv** file, which can be found at
-```
-/parent/directory/of/the/library/homo_sapiens/release-num/config.tsv
-```
-will be necessary as an input for all further steps of the pipeline.
-
-
-#### Collect sequences
-
-Now we will collect the actual protein sequences from ensembl by using this command:
-
-```
-python fas_lib.py \
---config /parent/directory/of/the/library/homo_sapiens/release-num/config.tsv
-```
-
-This step has significant RAM requirements and should not be run on any old potato, but rather using a decently powerful machine or even a processing cluster. The latter will be necessary for the later steps anyway. For the human genome this one is done in about three hours.
-
-**IMPORTANT**: Sometimes it might happen that while you are collecting sequences your internet connection drops out or the ensembl servers have a major hiccup. For this reason Grand-Trumpet remembers what it was doing, if it crashes during sequence collection. Just run the command again and the requests will continue right where they were interrupted.
+There is further arguments that can be passed to spice_library.py. Descriptions can be accessed by using the --help argument.
 
 #### Annotation
 
-After having collected all the sequences, we need to annotate them. This example was written when the most recent ensembl release was 107. You could have any higher release number. (Greetings from the past!) Run this command: 
+After having initialized the library, we need to annotate them. This example was written when the most recent ensembl release was 107. You could have any higher release number. (Greetings from the past!) Run this command: 
 
 ```
 fas.doAnno \
--i /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
--o /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/annotation/ \
--n isoforms \
---cpus 16
+-i /path/to/spice_lib_homo_sapiens_107_1ee/transcript_data/transcript_set.fasta \
+-o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/ \
+-t /path/to/annoTools/ \
+-n annotations \
+--cpus 16 \
+&& \
+python \
+get_domain_importance.py \
+-i /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/annotations.json \
+-o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/ \
+&& \
+python \
+restructure_anno.py \
+-i /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/annotations.json \
+-o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/
 ```
 
 You can use as many or as few CPUs as you have access to, but remember that annotation takes a lot of time and it will take longer, if you have less workers.
 
-**IMPORTANT** The output name under the argument -n must be the same as the name of the fasta-file. This is why in my case I used isoforms as the -n argument. 
+**IMPORTANT** The output name under the argument -n must be annotations.
 
 #### Generate job arrays
 
