@@ -16,7 +16,8 @@ Spice is able to assemble all protein sequences of a species as represented in t
   * [Apply library to expression data](#apply-library-to-expression-data)
     * [Create result directory](#create-result-directory)
     * [Import expression data](#import-expression-data)
-    * [Merge samples into conditions](#merge-samples-into-conditions)
+    * [Merge samples into condition](#merge-samples-into-condition)
+    * [Compare conditions](#compare-conditions)
 * [Contact](#contact)
 
 ## Requirements
@@ -154,28 +155,31 @@ spice_result.py \
 -m expression \
 -l /path/to/spice_lib_homo_sapiens_107_1ee \
 -o /path/to/parent/directory/of/result \
--n sampleName \
+-n sample1 \
 -g /path/to/expression.gtf \
 -N FPKM \
 -t 1.0
 ```
-#### Merge samples into conditions
 
-#### Calculate comparison between pair of samples
+The samples will automatically be assumed as single-replicate conditions.
 
-If you have calculated Movement scores for at least two samples you can generate a comparison between them. At the moment comparisons between more than two samples are not possible. Simply use this command:
+#### Merge samples into condition
+
+To merge several already imported samples into a condition use this command:
 
 ```
-python fas_compare.py \
---config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
---input path/to/polygonFAS_sample1.tsv path/to/polygonFAS_sample2.tsv
+python \
+spice_result.py \
+-m condition \
+-l /path/to/spice_lib_homo_sapiens_107_1ee \
+-o /path/to/parent/directory/of/result \
+-n conditionName \
+-r sample1 sample2 sample3
 ```
 
-The input parameter takes paths to the files generated in the previous step. The fas_compare.py script generates another tsv file in the pictures directory of the library. For the example it would be called **sample1xsample2.tsv**. Additionally in will generate a sorted and filtered version of the output file, which will be important for the next step.
+#### Compare conditions
 
-#### Identify genes of interest
-
-Now the raw output of the comparison does not give a lot of insight about which comparisons might have yielded something interesting. You can ofcourse just visualize any gene that you are interested in - maybe you even have information from previous analysis of the data that you wanna get another perspective on. But to identify genes of interest independent of any other information we need the sorted and filtered version of the file. It has been automatically generated in the last step. It only contains genes for which any of the two samples had at least two isoforms and the roots-mean-square-deviation (RMSD) between Movement scores was higher than 0 and lower than 1. Additionally the file is sorted by unscaled RMSD first, and then by scaled RMSD. You can now manually scroll through the file from top to bottom. Look for entries where the scaled and unscaled RMSD are not equal, but still both greater than 0.5. 
+Not yet implemented. Will follow soon.
 
 ## Contact
 
