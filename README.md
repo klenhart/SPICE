@@ -12,8 +12,7 @@ Spice is able to assemble all protein sequences of a species as represented in t
   * [Initialize the Spice library](#initialize-the-spice-library)
   * [Annotation](#annotation)
   * [Generate job arrays](#generate-job-arrays)
-  * [Run FAS](#run-fas)
-  * [Concatenate FAS output](#concatenate-fas-output)
+  * [Parse domain output](#parse-domain-output)
   * [Apply library to expression data](#apply-library-to-expression-data)
     * [Calculate comparison between pair of samples](#calculate-comparison-between-pair-of-samples)
     * [Identify genes of interest](#identify-genes-of-interest)
@@ -64,8 +63,8 @@ To initialize the library, use this command:
 ```
 python spice_library.py \
 --species human \
--release 107 \
---output parent/directory/of/the/library
+--release 107 \
+--outdir parent/directory/of/the/library
 ```
 
 There is further arguments that can be passed to spice_library.py. Descriptions can be accessed by using the --help argument.
@@ -112,20 +111,19 @@ FASJobAssistant.py \
 --outdir /path/to/directory/that/shall/contain/job/arrays/
 ```
 
-#### Run FAS
+Run all of these job-arrays.
 
-Now that we have either created the job arrays by hand or by using the fas_bashAssist.py script, we can start running FAS. Remember that many processing clusters have limits on how many jobs you can commit at once. I made Grand-Trumpet work in such a way that it usually automatically prevents the case of too many files being generated at once, which could overburden a file system easily. During the FAS runs I did not implement such a fail save. This is why you should do the next step several times before having finished to run FAS on all genes.
+### Parse domain output
 
-
-#### Concatenate FAS Output
-
-Run this script several times. It concatenates all FAS output that is currently done into one distance_master.phyloprofile file. Use this command:
-
+Once all FAS runs have finished which can take a few days (mostly due to a few very large proteins like TITIN) only one last script needs to be run:
 
 ```
-python fas_handler.py \
---join \
---config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+python \
+parse_domain_out.py \
+-f /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/forward.domains \
+-r /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/reverse.domains \
+-m /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/annotations_map.json \
+-o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/
 ```
 
 ### Apply library to expression data
