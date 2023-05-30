@@ -99,58 +99,18 @@ You can use as many or as few CPUs as you have access to, but remember that anno
 
 #### Generate job arrays
 
-Now that all sequences are collected and annotated we can do the FAS Scoring. It is recommended to run fas.run once per gene and not all genes at once. Create a SLURM job array that references the gene_ids.txt, which was created in the directory /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/. This is an example job array to calculate the FAS-Scores for the first 1000 genes in the gene_ids.txt: 
+Now that all sequences are collected and annotated we can do the FAS Scoring. It is recommended to run fas.run once per gene and not all genes at once. Create a SLURM job array that references the gene_ids.txt, which was created in the directory /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/. This script will generate all necessary SLURM job-arrays.
 
 ```
-#!/bin/bash
-
-#SBATCH --partition=all
-#SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=2G
-#SBATCH --job-name="fas_human"
-#SBATCH --output=/dev/null 
-#SBATCH --error=/dev/null
-#SBATCH --array=1-1000
-
-gene=$(awk FNR==$SLURM_ARRAY_TASK_ID "/parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/gene_ids.txt")
-python fas_handler.py \
---maketsv \
---gene $gene \
---config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
-&& \
-fas.run \
---seed /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
---query /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/isoforms.fasta \
---annotation_dir /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/annotation/ \
---out_dir /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/FAS_buffer/ \
---bidirectional \
---pairwise /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/tsv_buffer/$gene.tsv \
---out_name $gene \
---tsv \
---phyloprofile /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/phyloprofile_ids.tsv \
---domain \
---empty_as_1 \
-; \
-python fas_handler.py \
---remove \
---gene $gene \
---config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
+python \
+FASJobAssistant.py \
+--Lib_dir /path/to/spice_lib_homo_sapiens_107_1ee/ \
+--memory 2 \
+--partitions partition1 partition2 etc \
+--dir_fas /path/to/FAS/bin/ \
+--fas_mode run \
+--outdir /path/to/directory/that/shall/contain/job/arrays/
 ```
-Since creating 20 of those files by hand to wade through all roughly 20000 protein coding genes in the human genome is pretty tedious, I created a helper script that automatically generates one job array for every 1000 protein coding genes in the library. For human this might turn into about 20 job arrays, for other species it might be less or more depending on the gene count. To automatically generate the arrays use this command:
-
-```
-python fas_bashAssist.py \
---config /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/config.tsv \
---partitions all ni nini ninini
---memory 2
-```
-
-The finished job arrays can be found in in the library in this directory:
-
-```
-/parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/SLURM/
-```
-
 
 #### Run FAS
 
