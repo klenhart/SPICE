@@ -4,10 +4,7 @@
 
 Typically gene expression levels are used as a proxy to determine protein composition and thereby functional diversity of cells or tissue samples. This disregards the fact that alternative Splicing (AS) of pre-mRNA can disrupt, delete or insert entire protein domains and thereby change the corresponding proteins functional effect. This means that using only gene expression levels as a proxy for functional diversity is not sufficient. To gain further insight about the functional diversity it is necessary to characterize the function of a protein isoform by relating it to it's domain content. Only a small set of proteins undergo experimental characterization, which is why the remaining proteins must be assessed using bioinformatics tools.
 
-Grand-Trumpet is able to assemble all protein sequences of a genome as represented in the ensembl genome browser and quantify the functional similarity between each isoform of each protein coding gene using the Feature Architecture Similarity (FAS) algorithm. FAS makes use of databases that contain all known protein domains like PFAM.
-
-Additionally the pipeline is able to apply the quantification of functional similarity to a set of expression data, thereby generating a map of functional diversity among all genes while also being able to visualize the difference of functional diversity between two given samples.
-
+Spice is able to assemble all protein sequences of a species as represented in the ensembl genome browser and quantify the functional similarity between each isoform of each protein coding gene using the Feature Architecture Similarity (FAS) algorithm. FAS makes use of databases that contain protein domains like PFAM or TMHMM.
 
 ## Table of Contents
 * [Requirements](#requirements)
@@ -28,35 +25,42 @@ Additionally the pipeline is able to apply the quantification of functional simi
 
 ## Requirements
 
-Grand-Trumpet has been implemented for python 3.7. To run the scripts the following python modules are required:
+Spice has been implemented for python 3.7. To run the scripts the following python modules are required:
 
 ```
-argparse
-gzip
-itertools
-json
-plotly
+greedyFAS
 pyranges
 requests
+json
+argparse
+itertools
+plotly
+pathlib
+tqdm
+numpy
+matplotlib
+scipy
+yaml
+pandas
+gzip
 shutil
-urllib
 ```
 
-Since Grand-Trumpet makes use of the FAS algorithm, it should be installed beforehand. Check out the [FAS](https://github.com/BIONF/FAS) repository for further instruction on setting it up.
+Since Spce makes use of the FAS algorithm, it should be installed beforehand. Check out the [FAS](https://github.com/BIONF/FAS) repository for further instruction on setting it up.
 
 ## Usage
 
-In order to simply get all Grand-Trumpet scripts in this GitHub repository use this set of commands in the terminal:
+In order to simply get all Spice scripts in this GitHub repository use this set of commands in the terminal:
 
 ```
-mkdir grand-trumpet
-cd grand-trumpet
-git clone https://github.com/chrisbluemel/grand-trumpet
+mkdir SPICE
+cd SPICE
+git clone https://github.com/chrisbluemel/SPICE
 ```
 
-**IMPORTANT**: Running these scripts without access to a processing cluster will be more or less impossible. You can try to calculate one million FAS comparisons on your home computer, but do not say I didn't warn you. Also be aware that the helper scripts to generate job arrays are only capable of generate SLURM job arrays.
+**IMPORTANT**: Running these scripts without access to a processing cluster will be more or less impossible. You can try to calculate 200k FAS comparisons on your personal computer, but it may take a very long time. Also be aware that the helper scripts to generate job arrays are only capable of generate SLURM job arrays.
 
-### Generate FAS library
+### Generate Spice library
 
 First decide on a location for your FAS library. When finished the library can take up several GB of space.
 
