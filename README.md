@@ -14,7 +14,7 @@ Spice is able to assemble all protein sequences of a species as represented in t
   * [Generate job arrays](#generate-job-arrays)
   * [Parse domain output](#parse-domain-output)
   * [Apply library to expression data](#apply-library-to-expression-data)
-    * [Calculate comparison between pair of samples](#calculate-comparison-between-pair-of-samples)
+    * [Create result directory](#create-result-directory)
     * [Identify genes of interest](#identify-genes-of-interest)
     * [Visualize comparison](#visualize-comparison)
 * [Contact](#contact)
@@ -124,10 +124,20 @@ parse_domain_out.py \
 -r /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/reverse.domains \
 -m /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/annotations_map.json \
 -o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/
+```
 
 
 
-### Create result directory
+
+### Apply library to expression data
+
+The library is now finished. Now we want to make use of it. Grand-Trumpet uses the FAS scores for all protein coding   and nonsense-mediated-decay isoforms of a gene and combines them with the expression levels of each isoform to generate a Expression Weighted Functional Disturbance (EWFD) value for each isoform. The EWFD assumes how much of the functional diversity of the gene does not represented transcripts functional effect. 
+
+To calculate the EWFD scores for any number of samples you need to create two text files. One that contains the names of the samples (one name per row) and one that contains the corresponding paths to the expression GTF files.
+
+#### Create result directory
+
+To initialize a result directory from the Spice library execute this script:
 
 ```
 python \
@@ -136,12 +146,6 @@ spice_result.py \
 -l /path/to/spice_lib_homo_sapiens_107/ \
 -o /path/to/result/parent/directory/
 ```
-
-### Apply library to expression data
-
-The library is now finished. Now we want to make use of it. Grand-Trumpet uses the FAS scores for all protein coding   and nonsense-mediated-decay isoforms of a gene and combines them with the expression levels of each isoform to generate a Expression Weighted Functional Disturbance (EWFD) value for each isoform. The EWFD assumes how much of the functional diversity of the gene does not represented transcripts functional effect. 
-
-To calculate the EWFD scores for any number of samples you need to create two text files. One that contains the names of the samples (one name per row) and one that contains the corresponding paths to the expression GTF files.
 
 Here is an example for the name path text file:
 
