@@ -3,7 +3,7 @@
 #######################################################################
 # Copyright (C) 2022 Julian Dosch
 #
-# This file is part of Spice.
+# This file is part of main.
 #
 #  get_domain_importance is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
+#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
@@ -67,15 +67,17 @@ def read_input(inpaths, mapfile):
                 if line == '\n':
                     continue
                 cells = line.rstrip('\n').split('\t')
-                p1, p2 = cells[0].split('#')
+                if i == 0:
+                    p1, p2 = cells[0].split('#')
+                else:
+                    p2, p1 = cells[0].split('#')
+                if p1 == p2:
+                    continue
                 gid, p1, tax = p1.split('|')
                 p2 = p2.split('|')[1]
                 if gid not in lin:
                     lin[gid] = {}
-                if not i:
-                    pkey = '@'.join((p1, p2))
-                else:
-                    pkey = '@'.join((p2, p1))
+                pkey = '@'.join((p1, p2))
                 if pkey not in lin[gid]:
                     lin[gid][pkey] = [[], []]
                 rp = cells[1].split('|')[1]
@@ -83,13 +85,13 @@ def read_input(inpaths, mapfile):
                     fid = None
                     x = 0
                     while fid == None:
-                        if mapfile[gid][rp]['fmap'][str(x)][0] == cells[3]:
+                        if mapfile[gid][rp]['fmap'][str(x)][0] == cells[3] and mapfile[gid][rp]['fmap'][str(x)][1] == int(cells[4]) and mapfile[gid][rp]['fmap'][str(x)][2] == int(cells[5]):
                             fid = str(x)
                         x += 1
                     if rp == p1:
                         lin[gid][pkey][0].append(fid)
                     elif rp == p2:
-                        lin[gid][pkey][1].append(fid)      
+                        lin[gid][pkey][1].append(fid)
     return lin
                         
 
