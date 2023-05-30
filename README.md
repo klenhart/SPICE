@@ -56,7 +56,7 @@ git clone https://github.com/chrisbluemel/SPICE
 
 **IMPORTANT**: Running these scripts without access to a processing cluster will be more or less impossible. You can try to calculate 200k FAS comparisons on your personal computer, but it may take a very long time. Also be aware that the helper scripts to generate job arrays are only capable of generating SLURM job arrays.
 
-#### Initialize the Spice library
+### Initialize the Spice library
 
 To initialize the library, use this command:
 
@@ -69,7 +69,7 @@ python spice_library.py \
 
 There is further arguments that can be passed to spice_library.py. Descriptions can be accessed by using the --help argument.
 
-#### Annotation
+### Annotation
 
 After having initialized the library, we need to annotate them. This example was written when the most recent ensembl release was 107. You could have any higher release number. (Greetings from the past!) Run this command: 
 
@@ -96,7 +96,7 @@ You can use as many or as few CPUs as you have access to, but remember that anno
 
 **IMPORTANT** The output name under the argument -n must be annotations.
 
-#### Generate job arrays
+### Generate job arrays
 
 Now that all sequences are collected and annotated we can do the FAS Scoring. It is recommended to run fas.run once per gene and not all genes at once. Create a SLURM job array that references the gene_ids.txt, which was created in the directory /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/. This script will generate all necessary SLURM job-arrays.
 
@@ -124,13 +124,24 @@ parse_domain_out.py \
 -r /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/reverse.domains \
 -m /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/annotations_map.json \
 -o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/
+
+
+
+### Create result directory
+
+```
+python \
+spice_result.py \
+-m setup \
+-l /path/to/spice_lib_homo_sapiens_107/ \
+-o /path/to/result/parent/directory/
 ```
 
 ### Apply library to expression data
 
-The library is now finished. Now we want to make use of it. Grand-Trumpet uses the FAS scores for all protein coding  isoforms of a gene and combines them with the expression levels of each isofrom to generate a Movement score for each isoform. The movement score assumes how much of the functional diversity of the isoform is represented in the transcript composition of the gene. 
+The library is now finished. Now we want to make use of it. Grand-Trumpet uses the FAS scores for all protein coding   and nonsense-mediated-decay isoforms of a gene and combines them with the expression levels of each isoform to generate a Expression Weighted Functional Disturbance (EWFD) value for each isoform. The EWFD assumes how much of the functional diversity of the gene does not represented transcripts functional effect. 
 
-To calculate the Movement scores for any number of samples you need to make two textfiles. One that contains the names of the samples (one name per row) and one that contains the corresponding paths to the expression GTF files. Several expression files can be joined together by writing them into the same line and seperating them with a semicolon (;). At the moment the expression files will be joined by calculating the mean of all FPKM values between expression files.
+To calculate the EWFD scores for any number of samples you need to create two text files. One that contains the names of the samples (one name per row) and one that contains the corresponding paths to the expression GTF files.
 
 Here is an example for the name path text file:
 
@@ -144,9 +155,9 @@ sample3
 And here an example for the expression path text file:
 
 ```
-path/to/sample1_replicate1.gtf;path/to/sample1_replicate2.gtf
+path/to/sample1_replicate1.gtf
 path/to/sample2_replicate1.gtf
-path/to/sample3_replicate1.gtf;path/to/sample3_replicate2.gtf;path/to/sample3_replicate3.gtf
+path/to/sample3_replicate1.gtf
 ```
 
 You can then calculate the Movement for all expression files in the text files by running this command:
