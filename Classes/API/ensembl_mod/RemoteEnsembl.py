@@ -43,7 +43,7 @@ class RemoteEnsembl:
         for chunk in request_chunks:
             ensembl_requests.append(make_request_data(chunk))
 
-        server: str = f"https://rest.ensembl.org/{release}/sequence/id"
+        server: str = f"https://rest.ensembl.org/sequence/id/{release}"
         headers: Dict[str, str] = {"Content-Type": "application/json", "Accept": "application/json"}
 
         output_list: List[Dict[str, str]] = list()
@@ -66,7 +66,10 @@ class RemoteEnsembl:
                         sys.exit()
                 sleep(0.1)
             for result in decoded:
-                if "error" not in result.keys():
+                if isinstance(result, str):
+                    if result != "error":
+                        output_list.append(result)
+                elif "error" not in result.keys():
                     output_list.append(result)
             if len(output_list) == 0 and error_flag:
                 output_list.append({"error": "No results found"})
