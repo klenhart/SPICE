@@ -95,6 +95,10 @@ class GTFBoy:
     @staticmethod
     def has_attribute_value(attribute_key: str, attribute_value: str, attribute_entry: str):
         attribute_dict: Dict[str, str] = GTFBoy.build_attribute_dict(attribute_entry)
+        if attribute_key not in attribute_dict.keys():
+            print("TEST MARKER")
+            print(attribute_dict)
+            return False
         return attribute_dict[attribute_key] == attribute_value
 
     @staticmethod

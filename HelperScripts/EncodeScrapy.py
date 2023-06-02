@@ -55,6 +55,11 @@ def extract_experiment_ids_from_links(experiment_file_path: str) -> List[str]:
     return [extract_id(line) for line in lines]
 
 
+
+def download_annotation(url: str, out_path: str):
+    pass
+
+
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--mode", "--input", "--outdir"],
                                                    [str, str, str],
