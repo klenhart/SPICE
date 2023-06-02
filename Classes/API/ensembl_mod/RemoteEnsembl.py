@@ -34,7 +34,7 @@ from Classes.SequenceHandling.Protein import Protein
 class RemoteEnsembl:
 
     @staticmethod
-    def collect_sequences(proteins: List[Protein]) -> List[Dict[str, str]]:
+    def collect_sequences(proteins: List[Protein], release: str) -> List[Dict[str, str]]:
         error_flag: bool = False
 
         request_chunks: List[List[str]] = list(chunks([protein.get_id() for protein in proteins], 50))
@@ -43,7 +43,7 @@ class RemoteEnsembl:
         for chunk in request_chunks:
             ensembl_requests.append(make_request_data(chunk))
 
-        server: str = "https://rest.ensembl.org/sequence/id"
+        server: str = f"https://rest.ensembl.org/{release}/sequence/id"
         headers: Dict[str, str] = {"Content-Type": "application/json", "Accept": "application/json"}
 
         output_list: List[Dict[str, str]] = list()

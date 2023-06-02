@@ -174,7 +174,8 @@ def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, 
 
         save_marker += 1
         incomplete_proteins_list: List[Protein] = gene.get_proteins(True)
-        results: List[Dict[str, str]] = RemoteEnsembl.collect_sequences(incomplete_proteins_list)
+        results: List[Dict[str, str]] = RemoteEnsembl.collect_sequences(incomplete_proteins_list,
+                                                                        str(library_info["info"]["release"]))
         for result in results:
             if "error" in result.keys():
                 for protein in incomplete_proteins_list:
