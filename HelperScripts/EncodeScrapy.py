@@ -62,7 +62,22 @@ def download_gtf_gz(url: str, file_id: str, exp_id: str, out_path: str):
 
 
 def download_filtered_alignment(exp_id, out_path: str):
-    pass
+    url: str = URL.format(exp_id)
+    response_files = requests.get(url)
+    if response_files.status_code == 200:
+        download_link_list: List[str] = response_files.content.decode('utf-8').split("\n")
+        download_link_list = [link for link in download_link_list if check_link_meta(link, "alignment")]
+        for download_link in download_link_list:
+            file_id: str = download_link.split("@@download/")[1].split(".")[0]
+            download_gtf_gz(download_link, file_id, exp_id, out_path)
+
+        with open(os.path.join(out_path, exp_id, "info.json"), "r") as f:
+            info_dict: Dict[str, Any] = json.load(f)
+        info_dict["annotation_urls"] = download_link_list
+        with open(os.path.join(out_path, exp_id, "info.json"), "w") as f:
+            json.dump(info_dict, f, indent=4)
+    else:
+        print(f"Error: {response_files.status_code} - {response_files.text}")
 
 
 def download_annotation(exp_id: str, out_path: str):
@@ -71,7 +86,6 @@ def download_annotation(exp_id: str, out_path: str):
     if response_files.status_code == 200:
         download_link_list: List[str] = response_files.content.decode('utf-8').split("\n")
         download_link_list = [link for link in download_link_list if check_link_meta(link, "annotation")]
-
         for download_link in download_link_list:
             file_id: str = download_link.split("@@download/")[1].split(".")[0]
             download_gtf_gz(download_link, file_id, exp_id, out_path)
@@ -93,7 +107,9 @@ def check_link_meta(url: str, output_category: str) -> bool:
         response = requests.get(meta_url)
         if response.status_code == 200:
             meta_json = response.json()
-            if meta_json["output_category"] == output_category:
+            # for key in meta_json:
+            #     print(key, ":", meta_json[key])
+            if meta_json["output_category"] == output_category and meta_json["status"] == "released":
                 return True
             else:
                 return False
@@ -102,7 +118,6 @@ def check_link_meta(url: str, output_category: str) -> bool:
 
     # output_type == "alignments"
     # url = "https://www.encodeproject.org/files/ID/?format=json"
-
 
 
 def make_log_file(exp_id: str, out_path: str):
@@ -129,8 +144,13 @@ def make_experiment_list_file(experiment_ids: List[str], out_path: str):
         with open(list_path, "w") as f:
             f.write("\n".join(experiment_ids))
     else:
-        with open(list_path, "a") as f:
-            f.write("\n".join(experiment_ids))
+        with open(list_path, "r") as f:
+            experiment_ids_old = set(f.read().split("\n"))
+
+        experiment_list: str = "\n".join(list(set(experiment_ids).union(experiment_ids_old)))
+
+        with open(list_path, "w") as f:
+            f.write(experiment_list)
 
 
 def main():
@@ -150,7 +170,11 @@ def main():
     argument_dict["outdir"] = argument_dict["outdir"][0]
 
     if argument_dict["mode"] == "alignment":
-        pass
+        experiment_ids: List[str] = extract_experiment_ids_from_links(argument_dict["input"])
+
+        make_experiment_list_file(experiment_ids, argument_dict["outdir"])
+
+
     elif argument_dict["mode"] == "annotation":
         experiment_ids: List[str] = extract_experiment_ids_from_links(argument_dict["input"])
 
