@@ -484,11 +484,11 @@ def main():
         # Collect sequences.
         with WriteGuard(pass_path["transcript_seq"], pass_path["transcript_data"]):
             # Collect the sequences for each incomplete gene.
-            print("\tSequence Collection Run 0/2")
-            collect_sequences(gene_assembler, library_info, pass_path)
             print("\tSequence Collection Run 1/2")
             collect_sequences(gene_assembler, library_info, pass_path)
             print("\tSequence Collection Run 2/2")
+            collect_sequences(gene_assembler, library_info, pass_path)
+            print("\tSequence Collection complete!")
     else:
         print("\tSequences already collected.")
     ####################################################################
