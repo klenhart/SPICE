@@ -21,7 +21,6 @@ import sys
 #######################################################################
 
 from typing import Dict, Any, List
-import sys
 import json
 import requests
 import os
