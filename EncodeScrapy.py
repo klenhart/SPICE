@@ -28,7 +28,6 @@ import os
 import shutil
 import datetime
 from pathlib import Path
-sys.path.append("../")
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 
 URL: str = "https://www.encodeproject.org/batch_download/?type=Experiment&@id=/experiments/{0}/&files.processed=true"
