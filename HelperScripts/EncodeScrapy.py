@@ -52,16 +52,29 @@ def open_url_file(in_path: str) -> List[str]:
     return file.split("\n")
 
 
-def download(url: str, file_id: str, exp_id: str, out_path: str, suffix: str):
+def download(url: str, file_id: str, exp_id: str, out_path: str, suffix: str, log_path: str):
+    print("\tDownloading", file_id + suffix)
+
     response = requests.get(url, stream=True)
     if response.status_code == 200:
         Path(os.path.join(out_path, exp_id)).mkdir(parents=True, exist_ok=True)
-        with open(os.path.join(out_path, exp_id, file_id + suffix), 'wb') as file:
+        file_path: str = os.path.join(out_path, exp_id, file_id + suffix)
+        with open(file_path, 'wb') as f:
             response.raw.decode_content = True
-            shutil.copyfileobj(response.raw, file)
+            shutil.copyfileobj(response.raw, f)
+        with open(log_path, "r") as f:
+            file_paths: set = set(f.read().split("\n"))
+        if len(file_paths) == 1:
+            if len(list(file_paths)[0]) == 0:
+                file_paths = set()
+        file_paths.add(file_path)
+        file_paths: str = "\n".join(list(file_paths))
+
+        with open(log_path, "w") as f:
+            f.write(file_paths)
 
 
-def download_filtered_alignment(exp_id, out_path: str):
+def download_filtered_alignment(exp_id, out_path: str, log_path: str):
     url: str = URL.format(exp_id)
     response_files = requests.get(url)
     if response_files.status_code == 200:
@@ -71,7 +84,7 @@ def download_filtered_alignment(exp_id, out_path: str):
                                                                                      "alignments")]
         for download_link in download_link_list:
             file_id: str = download_link.split("@@download/")[1].split(".")[0]
-            download(download_link, file_id, exp_id, out_path, ".bam")
+            download(download_link, file_id, exp_id, out_path, ".bam", log_path)
 
         with open(os.path.join(out_path, exp_id, "info.json"), "r") as f:
             info_dict: Dict[str, Any] = json.load(f)
@@ -83,7 +96,7 @@ def download_filtered_alignment(exp_id, out_path: str):
         print(f"Error: {response_files.status_code} - {response_files.text}")
 
 
-def download_annotation(exp_id: str, out_path: str):
+def download_annotation(exp_id: str, out_path: str, log_path: str):
     url: str = URL.format(exp_id)
     response_files = requests.get(url)
     if response_files.status_code == 200:
@@ -93,7 +106,7 @@ def download_annotation(exp_id: str, out_path: str):
                                                                                      "transcriptome annotations")]
         for download_link in download_link_list:
             file_id: str = download_link.split("@@download/")[1].split(".")[0]
-            download(download_link, file_id, exp_id, out_path, ".gtf.gz")
+            download(download_link, file_id, exp_id, out_path, ".gtf.gz", log_path)
 
         with open(os.path.join(out_path, exp_id, "info.json"), "r") as f:
             info_dict: Dict[str, Any] = json.load(f)
@@ -161,9 +174,6 @@ def check_link_meta(url: str, output_category: str, output_type: str) -> bool:
         else:
             print(f"Error: {response.status_code} - {response.text}")
 
-    # output_type == "alignments"
-    # url = "https://www.encodeproject.org/files/ID/?format=json"
-
 
 def make_log_file(exp_id: str, out_path: str):
     experiment_meta: Dict[str, str] = get_experiment_meta(exp_id)
@@ -201,6 +211,28 @@ def make_experiment_list_file(experiment_ids: List[str], out_path: str):
             f.write(experiment_list)
 
 
+def timestamp_print(i: int, id_count: int, exp_id: str, keyword: str):
+    time = datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp())
+    timestamp = time.strftime('%H:%M:%S')
+    print(str(i + 1) + "/" + str(id_count) + ":", "Downloading", keyword, "for", exp_id, "|", timestamp)
+
+
+def make_alignment_log_file(out_path: str) -> str:
+    list_path: str = os.path.join(out_path, "alignment_list.txt")
+    if not Path(list_path).exists():
+        with open(list_path, "w") as f:
+            pass
+    return list_path
+
+
+def make_annotation_log_file(out_path: str) -> str:
+    list_path: str = os.path.join(out_path, "annotation_list.txt")
+    if not Path(list_path).exists():
+        with open(list_path, "w") as f:
+            pass
+    return list_path
+
+
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--outdir"],
                                                    [str, str],
@@ -217,18 +249,20 @@ def main():
     experiment_ids: List[str] = extract_experiment_ids_from_links(argument_dict["input"])
 
     make_experiment_list_file(experiment_ids, argument_dict["outdir"])
+    annotation_log_path: str = make_annotation_log_file(argument_dict["outdir"])
+    alignment_log_path: str = make_alignment_log_file(argument_dict["outdir"])
 
     id_count: int = len(experiment_ids)
     for i, exp_id in enumerate(experiment_ids):
 
         make_log_file(exp_id, argument_dict["outdir"])
 
-        time = datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp())
-        timestamp = time.strftime('%H:%M:%S')
-        print(str(i+1) + "/" + str(id_count) + ":", "Downloading annotation for", exp_id, "|", timestamp)
+        timestamp_print(i, id_count, exp_id, "annotation")
+        download_annotation(exp_id, argument_dict["outdir"], annotation_log_path)
 
-        download_annotation(exp_id, argument_dict["outdir"])
-        download_filtered_alignment(exp_id, argument_dict["outdir"])
+        timestamp_print(i, id_count, exp_id, "alignment")
+        download_filtered_alignment(exp_id, argument_dict["outdir"], alignment_log_path)
+
     print("All done!")
 
 
