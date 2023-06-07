@@ -57,7 +57,7 @@ class ReduxArgParse:
                                          nargs=self.parse_nargs[i],
                                          help=self.parse_help[i])
 
-    def execute(self) -> None:
+    def execute(self):
         args: Any = self.parser.parse_args()
         return args
 

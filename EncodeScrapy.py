@@ -1,5 +1,5 @@
 #!/bin/env python
-import sys
+
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #

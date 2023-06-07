@@ -21,7 +21,9 @@
 #######################################################################
 
 from typing import Iterator, Dict, List
-
+import argparse
+import os
+from pathlib import Path
 
 class GTFBoy:
 
@@ -41,6 +43,12 @@ class GTFBoy:
         with open(self.gtf_path, "r") as f:
             for line in f:
                 yield line
+
+    def filter_gtf(self):
+        pass
+
+    def process_gtf(self):
+        pass
 
     @staticmethod
     def build_attribute_dict(attribute_entry: str) -> Dict[str, str]:
@@ -113,16 +121,48 @@ class GTFBoy:
         return flag
 
 
-def main() -> None:
-    gtf_boy: GTFBoy = GTFBoy("C:/Users/chris/Desktop/git/root/Homo_sapiens.GRCh38.107.gtf")
-    index: int = 0
-    for line in gtf_boy:
-        if "\texon\t" in line or "\tgene\t" in line or "\tCDS\t":
-            print(line)
-        index += 1
-        if index == 1000:
-            break
+def discriminate_line_dict(line_dict: Dict[str, str]) -> bool:
+    seqname_flag: bool = line_dict["seqname"].startswith("chr")
+    gene_id_flag: bool = line_dict["gene_id"].startswith("ENS")
+    return seqname_flag and gene_id_flag
 
+
+def make_memory_dict_entry(line_dict: Dict[str, str]) -> str:
+    return "#".join([line_dict["gene_id"].split(".")[0],
+                     line_dict["seqname"],
+                     line_dict["feature"],
+                     line_dict["start"],
+                     line_dict["end"]])
+
+
+def main() -> None:
+    parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", action="store", help="""File path to the txt containing all file
+     paths to the GTFs that shall get merged.""")
+    parser.add_argument("-o", "--out_path", action="store", help="""Path to the directory that shall
+     contain the merged annotation file.""")
+
+    args_dict: Dict[str, str] = vars(parser.parse_args())
+
+    with open(args_dict["input"], "r") as f:
+        annotation_files: List[str] = f.read().split("\n")
+
+    Path(os.path.join(args_dict["out_path"], "temp")).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(args_dict["out_path"], "temp", "memory.temp")).touch()
+    Path(os.path.join(args_dict["out_path"], "merged_annotation.gtf")).touch()
+
+    memory_set: set = set()  # gene_id#seqname#feature#start#end
+
+    for gtf_path in annotation_files:
+        gtf_boy: GTFBoy = GTFBoy(gtf_path)
+        for line in gtf_boy:
+            if line.startswith("#"):
+                pass
+            else:
+                line_dict: Dict[str, str] = GTFBoy.build_dict(line.split("\t"))
+                if discriminate_line_dict(line_dict, memory_set):
+
+        break
 
 if __name__ == "__main__":
     main()
