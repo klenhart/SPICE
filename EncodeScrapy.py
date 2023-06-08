@@ -300,7 +300,7 @@ def make_aligned_gtf_bam_logs(exp_id: str, out_path: str):
 
 def make_aligned_coverage_name_logs(out_path: str):
     name_log_path = os.path.join(out_path, "name_list.txt")
-    coverage_log_path = os.path.join(out_path, "coverage_list")
+    coverage_log_path = os.path.join(out_path, "coverage_list.txt")
 
     Path(name_log_path).touch()
     Path(coverage_log_path).touch()
@@ -321,7 +321,7 @@ def make_aligned_coverage_name_logs(out_path: str):
         for key in info_dict["replicate_coverage_relation"].keys():
             name: str = condition_name + "rep" + key + "_" + info_dict["replicate_file_relation"][key][1]
             replicate_name_list.append(name)
-            coverage_path_list.append(info_dict["replicate_coverage_relation"][key])
+            coverage_path_list.append(info_dict["replicate_coverage_relation"][key][0])
 
     with open(name_log_path, "w") as f:
         f.write("\n".join(replicate_name_list))
