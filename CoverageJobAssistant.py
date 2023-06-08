@@ -47,14 +47,14 @@ RAW_SCRIPT: str = "{0} -eB -G {1} -o {2}.gtf {4} -p 8"
 class CoverageJobAssistant:
 
     def __init__(self, aligner_path: str, out_path: str, alignment_id: str, annotation_id: str):
-        bam_file_path: str = os.path.join(out_path, alignment_id + ".bam")
-        gtf_file_path: str = os.path.join(out_path, annotation_id + ".gtf")
-        out_file_path: str = os.path.join(out_path, "coverage_" + alignment_id, alignment_id)
+        self.bam_file_path: str = os.path.join(out_path, alignment_id + ".bam")
+        self.gtf_file_path: str = os.path.join(out_path, annotation_id + ".gtf")
+        self.out_file_path: str = os.path.join(out_path, "coverage_" + alignment_id, alignment_id)
 
         self.command = RAW_SCRIPT.format(aligner_path,
-                                         gtf_file_path,
-                                         out_file_path,
-                                         bam_file_path)
+                                         self.gtf_file_path,
+                                         self.out_file_path,
+                                         self.bam_file_path)
 
     def __str__(self):
         return self.command
@@ -83,6 +83,10 @@ def main():
     with open(os.path.join(argument_dict["input_data"], "experiment_list.txt"), "r") as f:
         experiment_id_list: List[str] = f.read().split("\n")
 
+    coverage_list_path: str = os.path.join(argument_dict["input_data"], "coverage_list.txt")
+    if not Path(coverage_list_path).exists():
+        Path(coverage_list_path).touch()
+
     for exp_id in experiment_id_list:
         experiment_directory: str = os.path.join(argument_dict["input_data"], exp_id)
 
@@ -96,10 +100,13 @@ def main():
 
         for i, annotation_id in enumerate(annotation_list):
             alignment_id = alignment_list[i]
-            job_list.append(str(CoverageJobAssistant(argument_dict["aligner_path"],
-                                                     experiment_directory,
-                                                     alignment_id,
-                                                     annotation_id)))
+            coverage_job: CoverageJobAssistant = CoverageJobAssistant(argument_dict["aligner_path"],
+                                                                      experiment_directory,
+                                                                      alignment_id,
+                                                                      annotation_id)
+            job_list.append(str(coverage_job))
+            with open(coverage_list_path, "a") as f:
+                f.write(coverage_job.out_file_path)
 
     alignment_job_list_path: str = os.path.join(argument_dict['out_path'], "coverage_job_list.txt")
     with open(alignment_job_list_path, "w") as f:
