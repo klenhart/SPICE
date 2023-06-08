@@ -23,6 +23,7 @@
 
 import os
 from typing import Dict, Any, List
+from pathlib import Path
 
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 
@@ -40,7 +41,7 @@ $alignment_job
 
 """
 
-RAW_SCRIPT: str = "{0} -eB -G {1} -o {2}.coverage.gtf {2} -p 8"
+RAW_SCRIPT: str = "{0} -eB -G {1} -o {2}.gtf {4} -p 8"
 
 
 class CoverageJobAssistant:
@@ -48,9 +49,11 @@ class CoverageJobAssistant:
     def __init__(self, aligner_path: str, out_path: str, alignment_id: str, annotation_id: str):
         bam_file_path: str = os.path.join(out_path, alignment_id + ".bam")
         gtf_file_path: str = os.path.join(out_path, annotation_id + ".gtf")
+        out_file_path: str = os.path.join(out_path, "coverage_" + alignment_id, alignment_id)
 
         self.command = RAW_SCRIPT.format(aligner_path,
                                          gtf_file_path,
+                                         out_file_path,
                                          bam_file_path)
 
     def __str__(self):
@@ -82,6 +85,8 @@ def main():
 
     for exp_id in experiment_id_list:
         experiment_directory: str = os.path.join(argument_dict["input_data"], exp_id)
+
+        Path(os.path.join(experiment_directory, "coverage")).mkdir(parents=True, exist_ok=True)
 
         with open(os.path.join(experiment_directory, "annotation_list.txt"), "r") as f:
             annotation_list: List[str] = f.read().split("\n")
