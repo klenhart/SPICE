@@ -104,8 +104,8 @@ def download_filtered_alignment(exp_id, out_path: str, log_path: str, download_f
             info_dict: Dict[str, Any] = json.load(f)
         info_dict["alignment_urls"] = download_link_list
         info_dict["replicate_count"] = max(len(info_dict["annotation_urls"]), len(info_dict["annotation_urls"]))
-        if "replicate_file_relation" not in info_dict.keys():
-            info_dict["replicate_file_relation"] = dict()
+        if "replicate_align_relation" not in info_dict.keys():
+            info_dict["replicate_align_relation"] = dict()
         if "replicate_coverage_relation" not in info_dict.keys():
             info_dict["replicate_coverage_relation"] = dict()
         for download_link in download_link_list:
@@ -114,17 +114,14 @@ def download_filtered_alignment(exp_id, out_path: str, log_path: str, download_f
 
             file_id: str = download_link.split("@@download/")[1].split(".")[0]
             replicate_id = get_replicate_id(download_link)
-            if replicate_id not in info_dict["replicate_file_relation"].keys():
-                info_dict["replicate_file_relation"][replicate_id] = list()
-            if file_id not in info_dict["replicate_file_relation"][replicate_id]:
-                info_dict["replicate_file_relation"][replicate_id].append(file_id)
+            if replicate_id in info_dict["replicate_align_relation"].keys():
+                replicate_id += "*"
+            info_dict["replicate_align_relation"][replicate_id] = file_id
 
-            if replicate_id not in info_dict["replicate_coverage_relation"]:
-                info_dict["replicate_coverage_relation"][replicate_id] = list()
-            info_dict["replicate_coverage_relation"][replicate_id].append(os.path.join(out_path,
-                                                                                       exp_id,
-                                                                                       "coverage_" + file_id,
-                                                                                       file_id + ".gtf"))
+            info_dict["replicate_coverage_relation"][replicate_id] = os.path.join(out_path,
+                                                                                  exp_id,
+                                                                                  "coverage_" + file_id,
+                                                                                  file_id + ".gtf")
 
         with open(os.path.join(out_path, exp_id, "info.json"), "w") as f:
             json.dump(info_dict, f, indent=4)
@@ -148,18 +145,17 @@ def download_annotation(exp_id: str, out_path: str, log_path: str, download_flag
             info_dict: Dict[str, Any] = json.load(f)
         info_dict["annotation_urls"] = download_link_list
         info_dict["replicate_count"] = max(len(info_dict["annotation_urls"]), len(info_dict["annotation_urls"]))
-        if "replicate_file_relation" not in info_dict.keys():
-            info_dict["replicate_file_relation"] = dict()
+        if "replicate_anno_relation" not in info_dict.keys():
+            info_dict["replicate_anno_relation"] = dict()
         for download_link in download_link_list:
 
             sleep(0.1)
 
             file_id: str = download_link.split("@@download/")[1].split(".")[0]
             replicate_id = get_replicate_id(download_link)
-            if replicate_id not in info_dict["replicate_file_relation"].keys():
-                info_dict["replicate_file_relation"][replicate_id] = list()
-            if file_id not in info_dict["replicate_file_relation"][replicate_id]:
-                info_dict["replicate_file_relation"][replicate_id].append(file_id)
+            if replicate_id in info_dict["replicate_anno_relation"].keys():
+                replicate_id += "*"
+            info_dict["replicate_anno_relation"][replicate_id] = file_id
 
         with open(os.path.join(out_path, exp_id, "info.json"), "w") as f:
             json.dump(info_dict, f, indent=4)
@@ -223,20 +219,20 @@ def make_log_file(exp_id: str, out_path: str):
     directory: str = os.path.join(out_path, exp_id)
     info_file: str = os.path.join(directory, "info.json")
     Path(directory).mkdir(parents=True, exist_ok=True)
-    if not Path(info_file).exists():
-        info_dict: Dict[str, Any] = {
-            "experiment_id": exp_id,
-            "replicate_count": 0,
-            "replicate_file_relation": dict(),
-            "experiment_url": EXP_URL.format(exp_id),
-            "annotation_urls": list(),
-            "alignment_urls": list(),
-            "description": experiment_meta["description"],
-            "biosample_summary": experiment_meta["biosample_summary"],
-            "assembly": experiment_meta["assembly"]
-        }
-        with open(info_file, "w") as f:
-            json.dump(info_dict, f, indent=4)
+    info_dict: Dict[str, Any] = {
+        "experiment_id": exp_id,
+        "replicate_count": 0,
+        "replicate_anno_relation": dict(),
+        "replicate_align_relation": dict(),
+        "experiment_url": EXP_URL.format(exp_id),
+        "annotation_urls": list(),
+        "alignment_urls": list(),
+        "description": experiment_meta["description"],
+        "biosample_summary": experiment_meta["biosample_summary"],
+        "assembly": experiment_meta["assembly"]
+    }
+    with open(info_file, "w") as f:
+        json.dump(info_dict, f, indent=4)
 
 
 def make_experiment_list_file(experiment_ids: List[str], out_path: str):
@@ -287,9 +283,9 @@ def make_aligned_gtf_bam_logs(exp_id: str, out_path: str):
     anno_list: List[str] = list()
     align_list: List[str] = list()
 
-    for key in info_dict["replicate_file_relation"].keys():
-        anno_list.append(info_dict["replicate_file_relation"][key][0])
-        align_list.append(info_dict["replicate_file_relation"][key][1])
+    for key in info_dict["replicate_anno_relation"].keys():
+        anno_list.append(info_dict["replicate_anno_relation"][key])
+        align_list.append(info_dict["replicate_align_relation"][key])
 
     with open(anno_file, "w") as f:
         f.write("\n".join(anno_list))
@@ -319,16 +315,15 @@ def make_aligned_coverage_name_logs(out_path: str):
         condition_name = str(info_dict["description"]).replace(" ", "_").replace("\"", "")
 
         for key in info_dict["replicate_coverage_relation"].keys():
-            name: str = condition_name + "rep" + key + "_" + info_dict["replicate_file_relation"][key][1]
+            name: str = condition_name + "_rep" + key + "_" + info_dict["replicate_align_relation"][key]
             replicate_name_list.append(name)
-            coverage_path_list.append(info_dict["replicate_coverage_relation"][key][0])
+            coverage_path_list.append(info_dict["replicate_coverage_relation"][key])
 
     with open(name_log_path, "w") as f:
         f.write("\n".join(replicate_name_list))
 
     with open(coverage_log_path, "w") as f:
         f.write("\n".join(coverage_path_list))
-
 
 
 def main():
