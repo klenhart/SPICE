@@ -104,6 +104,8 @@ def download_filtered_alignment(exp_id, out_path: str, log_path: str, download_f
             info_dict: Dict[str, Any] = json.load(f)
         info_dict["alignment_urls"] = download_link_list
         info_dict["replicate_count"] = max(len(info_dict["annotation_urls"]), len(info_dict["annotation_urls"]))
+        if "replicate_file_relation" not in info_dict.keys():
+            info_dict["replicate_file_relation"] = dict()
         for download_link in download_link_list:
 
             sleep(0.1)
@@ -136,6 +138,8 @@ def download_annotation(exp_id: str, out_path: str, log_path: str, download_flag
             info_dict: Dict[str, Any] = json.load(f)
         info_dict["annotation_urls"] = download_link_list
         info_dict["replicate_count"] = max(len(info_dict["annotation_urls"]), len(info_dict["annotation_urls"]))
+        if "replicate_file_relation" not in info_dict.keys():
+            info_dict["replicate_file_relation"] = dict()
         for download_link in download_link_list:
 
             sleep(0.1)
