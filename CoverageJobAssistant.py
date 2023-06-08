@@ -41,7 +41,7 @@ $alignment_job
 
 """
 
-RAW_SCRIPT: str = "{0} -eB -G {1} -o {2}.gtf {4} -p 8"
+RAW_SCRIPT: str = "{0} -eB -G {1} -o {2}.gtf {3} -p 8"
 
 
 class CoverageJobAssistant:
