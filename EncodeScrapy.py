@@ -20,6 +20,7 @@
 #
 #######################################################################
 
+from time import sleep
 from typing import Dict, Any, List
 import json
 import requests
@@ -51,16 +52,31 @@ def open_url_file(in_path: str) -> List[str]:
     return file.split("\n")
 
 
-def download(url: str, file_id: str, exp_id: str, out_path: str, suffix: str, log_path: str):
+def download(url: str, file_id: str, exp_id: str, out_path: str, suffix: str, log_path: str, download_flag: bool):
     print("\tDownloading", file_id + suffix)
+    file_path: str = os.path.join(out_path, exp_id, file_id + suffix)
 
-    response = requests.get(url, stream=True)
-    if response.status_code == 200:
-        Path(os.path.join(out_path, exp_id)).mkdir(parents=True, exist_ok=True)
-        file_path: str = os.path.join(out_path, exp_id, file_id + suffix)
-        with open(file_path, 'wb') as f:
-            response.raw.decode_content = True
-            shutil.copyfileobj(response.raw, f)
+    sleep(0.1)
+
+    if download_flag:
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            Path(os.path.join(out_path, exp_id)).mkdir(parents=True, exist_ok=True)
+
+            with open(file_path, 'wb') as f:
+                response.raw.decode_content = True
+                shutil.copyfileobj(response.raw, f)
+
+            with open(log_path, "r") as f:
+                file_paths: set = set(f.read().split("\n"))
+            if len(file_paths) == 1:
+                if len(list(file_paths)[0]) == 0:
+                    file_paths = set()
+            file_paths.add(file_path)
+            file_paths: str = "\n".join(list(file_paths))
+            with open(log_path, "w") as f:
+                f.write(file_paths)
+    else:
         with open(log_path, "r") as f:
             file_paths: set = set(f.read().split("\n"))
         if len(file_paths) == 1:
@@ -68,12 +84,11 @@ def download(url: str, file_id: str, exp_id: str, out_path: str, suffix: str, lo
                 file_paths = set()
         file_paths.add(file_path)
         file_paths: str = "\n".join(list(file_paths))
-
         with open(log_path, "w") as f:
             f.write(file_paths)
 
 
-def download_filtered_alignment(exp_id, out_path: str, log_path: str):
+def download_filtered_alignment(exp_id, out_path: str, log_path: str, download_flag: bool):
     url: str = URL.format(exp_id)
     response_files = requests.get(url)
     if response_files.status_code == 200:
@@ -83,19 +98,29 @@ def download_filtered_alignment(exp_id, out_path: str, log_path: str):
                                                                                      "alignments")]
         for download_link in download_link_list:
             file_id: str = download_link.split("@@download/")[1].split(".")[0]
-            download(download_link, file_id, exp_id, out_path, ".bam", log_path)
+            download(download_link, file_id, exp_id, out_path, ".bam", log_path, download_flag)
 
         with open(os.path.join(out_path, exp_id, "info.json"), "r") as f:
             info_dict: Dict[str, Any] = json.load(f)
         info_dict["alignment_urls"] = download_link_list
         info_dict["replicate_count"] = max(len(info_dict["annotation_urls"]), len(info_dict["annotation_urls"]))
+        for download_link in download_link_list:
+
+            sleep(0.1)
+
+            file_id: str = download_link.split("@@download/")[1].split(".")[0]
+            replicate_id = get_replicate_id(download_link)
+            if replicate_id not in info_dict["replicate_file_relation"].keys():
+                info_dict["replicate_file_relation"][replicate_id] = list()
+            info_dict["replicate_file_relation"][replicate_id].append(file_id)
+
         with open(os.path.join(out_path, exp_id, "info.json"), "w") as f:
             json.dump(info_dict, f, indent=4)
     else:
         print(f"Error: {response_files.status_code} - {response_files.text}")
 
 
-def download_annotation(exp_id: str, out_path: str, log_path: str):
+def download_annotation(exp_id: str, out_path: str, log_path: str, download_flag: bool):
     url: str = URL.format(exp_id)
     response_files = requests.get(url)
     if response_files.status_code == 200:
@@ -105,12 +130,22 @@ def download_annotation(exp_id: str, out_path: str, log_path: str):
                                                                                      "transcriptome annotations")]
         for download_link in download_link_list:
             file_id: str = download_link.split("@@download/")[1].split(".")[0]
-            download(download_link, file_id, exp_id, out_path, ".gtf.gz", log_path)
+            download(download_link, file_id, exp_id, out_path, ".gtf.gz", log_path, download_flag)
 
         with open(os.path.join(out_path, exp_id, "info.json"), "r") as f:
             info_dict: Dict[str, Any] = json.load(f)
         info_dict["annotation_urls"] = download_link_list
         info_dict["replicate_count"] = max(len(info_dict["annotation_urls"]), len(info_dict["annotation_urls"]))
+        for download_link in download_link_list:
+
+            sleep(0.1)
+
+            file_id: str = download_link.split("@@download/")[1].split(".")[0]
+            replicate_id = get_replicate_id(download_link)
+            if replicate_id not in info_dict["replicate_file_relation"].keys():
+                info_dict["replicate_file_relation"][replicate_id] = list()
+            info_dict["replicate_file_relation"][replicate_id].append(file_id)
+
         with open(os.path.join(out_path, exp_id, "info.json"), "w") as f:
             json.dump(info_dict, f, indent=4)
     else:
@@ -134,25 +169,18 @@ def get_experiment_meta(exp_id: str) -> Dict[str, str]:
         return dict()
 
 
-def get_link_meta(url: str) -> Dict[str, str]:
+def get_replicate_id(url: str) -> str:
     if "processed=true" in url or len(url) == 0:
-        return dict()
+        return "."
     else:
         meta_url: str = url.split("@@download")[0] + "?format=json"
         response = requests.get(meta_url)
         if response.status_code == 200:
             meta_json = response.json()
-            output_dict: Dict[str, str] = dict()
-            output_dict["assembly"] = meta_json["assembly"]
-            output_dict["genome_annotation"] = meta_json["genome_annotation"]
-            output_dict["mapped_run_type"] = meta_json["mapped_run_type"]
-            output_dict["output_category"] = meta_json["output_category"]
-            output_dict["output_type"] = meta_json["output_type"]
-            output_dict["status"] = meta_json["status"]
-
+            return str(meta_json["biological_replicates"][0])
         else:
             print(f"Error: {response.status_code} - {response.text}")
-            return dict()
+            return "."
 
 
 def check_link_meta(url: str, output_category: str, output_type: str) -> bool:
@@ -184,6 +212,7 @@ def make_log_file(exp_id: str, out_path: str):
         info_dict: Dict[str, Any] = {
             "experiment_id": exp_id,
             "replicate_count": 0,
+            "replicate_file_relation": dict(),
             "experiment_url": EXP_URL.format(exp_id),
             "annotation_urls": list(),
             "alignment_urls": list(),
@@ -232,18 +261,46 @@ def make_annotation_log_file(out_path: str) -> str:
     return list_path
 
 
+def make_aligned_gtf_bam_logs(exp_id: str, out_path: str):
+    directory: str = os.path.join(out_path, exp_id)
+    anno_file: str = os.path.join(directory, "annotation_list.txt")
+    align_file: str = os.path.join(directory, "alignment_list.txt")
+    info_file: str = os.path.join(directory, "info.json")
+
+    with open(info_file, "r") as f:
+        info_dict: Dict[str, Any] = json.load(f)
+
+    anno_list: List[str] = list()
+    align_list: List[str] = list()
+
+    for key in info_dict["replicate_file_relation"].keys():
+        anno_list.append(info_dict["replicate_file_relation"][key][0])
+        align_list.append(info_dict["replicate_file_relation"][key][1])
+
+    with open(anno_file, "w") as f:
+        f.write("\n".join(anno_list))
+
+    with open(align_file, "w") as f:
+        f.write("\n".join(align_list))
+
+
 def main():
-    argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--outdir"],
+    argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--outdir", "--no_download"],
                                                    [str, str],
-                                                   ["store", "store"],
-                                                   [1, 1],
+                                                   ["store", "store", "store_true"],
+                                                   [1, 1, None],
                                                    ["Path to the file containing the encode links.",
-                                                    "Path to the directory that shall contain the downloaded files."])
+                                                    "Path to the directory that shall contain the downloaded files.",
+                                                    "Flag to not download the files, but just create the logs."])
     argument_parser.generate_parser()
     argument_parser.execute()
     argument_dict: Dict[str, Any] = argument_parser.get_args()
     argument_dict["input"] = argument_dict["input"][0]
     argument_dict["outdir"] = argument_dict["outdir"][0]
+    if argument_dict["no_download"]:
+        argument_dict["download_flag"] = False
+    else:
+        argument_dict["download_flag"] = True
 
     experiment_ids: List[str] = extract_experiment_ids_from_links(argument_dict["input"])
 
@@ -257,10 +314,12 @@ def main():
         make_log_file(exp_id, argument_dict["outdir"])
 
         timestamp_print(i, id_count, exp_id, "annotation")
-        download_annotation(exp_id, argument_dict["outdir"], annotation_log_path)
+        download_annotation(exp_id, argument_dict["outdir"], annotation_log_path, argument_dict["download_flag"])
 
         timestamp_print(i, id_count, exp_id, "alignment")
-        download_filtered_alignment(exp_id, argument_dict["outdir"], alignment_log_path)
+        download_filtered_alignment(exp_id, argument_dict["outdir"], alignment_log_path, argument_dict["download_flag"])
+
+        make_aligned_gtf_bam_logs(exp_id, argument_dict["outdir"])
 
     print("All done!")
 
