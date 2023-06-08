@@ -105,8 +105,6 @@ def main():
                                                                       alignment_id,
                                                                       annotation_id)
             job_list.append(str(coverage_job))
-            with open(coverage_list_path, "a") as f:
-                f.write(coverage_job.out_file_path)
 
     alignment_job_list_path: str = os.path.join(argument_dict['out_path'], "coverage_job_list.txt")
     with open(alignment_job_list_path, "w") as f:

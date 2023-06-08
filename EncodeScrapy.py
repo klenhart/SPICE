@@ -106,6 +106,8 @@ def download_filtered_alignment(exp_id, out_path: str, log_path: str, download_f
         info_dict["replicate_count"] = max(len(info_dict["annotation_urls"]), len(info_dict["annotation_urls"]))
         if "replicate_file_relation" not in info_dict.keys():
             info_dict["replicate_file_relation"] = dict()
+        if "replicate_coverage_relation" not in info_dict.keys():
+            info_dict["replicate_coverage_relation"] = dict()
         for download_link in download_link_list:
 
             sleep(0.1)
@@ -114,7 +116,15 @@ def download_filtered_alignment(exp_id, out_path: str, log_path: str, download_f
             replicate_id = get_replicate_id(download_link)
             if replicate_id not in info_dict["replicate_file_relation"].keys():
                 info_dict["replicate_file_relation"][replicate_id] = list()
-            info_dict["replicate_file_relation"][replicate_id].append(file_id)
+            if file_id not in info_dict["replicate_file_relation"][replicate_id]:
+                info_dict["replicate_file_relation"][replicate_id].append(file_id)
+
+            if replicate_id not in info_dict["replicate_coverage_relation"]:
+                info_dict["replicate_coverage_relation"][replicate_id] = list()
+            info_dict["replicate_coverage_relation"][replicate_id].append(os.path.join(out_path,
+                                                                                       exp_id,
+                                                                                       "coverage_" + file_id,
+                                                                                       file_id + ".gtf"))
 
         with open(os.path.join(out_path, exp_id, "info.json"), "w") as f:
             json.dump(info_dict, f, indent=4)
@@ -148,7 +158,8 @@ def download_annotation(exp_id: str, out_path: str, log_path: str, download_flag
             replicate_id = get_replicate_id(download_link)
             if replicate_id not in info_dict["replicate_file_relation"].keys():
                 info_dict["replicate_file_relation"][replicate_id] = list()
-            info_dict["replicate_file_relation"][replicate_id].append(file_id)
+            if file_id not in info_dict["replicate_file_relation"][replicate_id]:
+                info_dict["replicate_file_relation"][replicate_id].append(file_id)
 
         with open(os.path.join(out_path, exp_id, "info.json"), "w") as f:
             json.dump(info_dict, f, indent=4)
@@ -260,8 +271,7 @@ def make_alignment_log_file(out_path: str) -> str:
 def make_annotation_log_file(out_path: str) -> str:
     list_path: str = os.path.join(out_path, "annotation_list.txt")
     if not Path(list_path).exists():
-        with open(list_path, "w") as f:
-            pass
+        Path(list_path).touch()
     return list_path
 
 
@@ -286,6 +296,39 @@ def make_aligned_gtf_bam_logs(exp_id: str, out_path: str):
 
     with open(align_file, "w") as f:
         f.write("\n".join(align_list))
+
+
+def make_aligned_coverage_name_logs(out_path: str):
+    name_log_path = os.path.join(out_path, "name_list.txt")
+    coverage_log_path = os.path.join(out_path, "coverage_list")
+
+    Path(name_log_path).touch()
+    Path(coverage_log_path).touch()
+
+    replicate_name_list: List[str] = list()
+    coverage_path_list: List[str] = list()
+
+    with open(os.path.join(out_path, "experiment_list.txt"), "r") as f:
+        experiment_list: List[str] = f.read().split("\n")
+
+    for exp_id in experiment_list:
+
+        with open(os.path.join(out_path, exp_id, "info.json"), "r") as f:
+            info_dict: Dict[str, Any] = json.load(f)
+
+        condition_name = str(info_dict["description"]).replace(" ", "_").replace("\"", "")
+
+        for key in info_dict["replicate_coverage_relation"].keys():
+            name: str = condition_name + "rep" + key + "_" + info_dict["replicate_file_relation"][key][1]
+            replicate_name_list.append(name)
+            coverage_path_list.append(info_dict["replicate_coverage_relation"][key])
+
+    with open(name_log_path, "w") as f:
+        f.write("\n".join(replicate_name_list))
+
+    with open(coverage_log_path, "w") as f:
+        f.write("\n".join(coverage_path_list))
+
 
 
 def main():
@@ -324,6 +367,8 @@ def main():
         download_filtered_alignment(exp_id, argument_dict["outdir"], alignment_log_path, argument_dict["download_flag"])
 
         make_aligned_gtf_bam_logs(exp_id, argument_dict["outdir"])
+
+    make_aligned_coverage_name_logs(argument_dict["outdir"])
 
     print("All done!")
 
