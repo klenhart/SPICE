@@ -96,11 +96,11 @@ def main():
                                                      alignment_id,
                                                      annotation_id)))
 
-    alignment_job_list_path: str = os.path.join(argument_dict['out_path'], "alignment_job_list.txt")
+    alignment_job_list_path: str = os.path.join(argument_dict['out_path'], "coverage_job_list.txt")
     with open(alignment_job_list_path, "w") as f:
         f.write("\n".join(job_list))
 
-    alignment_job_array_path: str = os.path.join(argument_dict['out_path'], "alignment_job_array.job")
+    alignment_job_array_path: str = os.path.join(argument_dict['out_path'], "coverage_job_array.job")
     alignment_job_array: str = JOB_ARRAY.format(",".join(argument_dict["partitions"]),
                                                 str(len(job_list)),
                                                 alignment_job_list_path)
