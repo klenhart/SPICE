@@ -57,7 +57,6 @@ class CoverageJobAssistant:
                                          self.out_file_path,
                                          self.bam_file_path)
 
-
     def __str__(self):
         return self.command
 

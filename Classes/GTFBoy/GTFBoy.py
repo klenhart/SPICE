@@ -93,12 +93,33 @@ class GTFBoy:
         return full_dict
 
     @staticmethod
+    def line_dict_to_gtf_line(line_dict: Dict[str, str]) -> str:
+        gtf_line = ""
+        gtf_line += line_dict["seqname"] + "\t"
+        gtf_line += "SPICE\t"
+        gtf_line += line_dict["feature"] + "\t"
+        gtf_line += line_dict["start"] + "\t"
+        gtf_line += line_dict["end"] + "\t"
+        gtf_line += line_dict["score"] + "\t"
+        gtf_line += line_dict["strand"] + "\t"
+        gtf_line += line_dict["frame"] + "\t"
+        gtf_line += "gene_id \"" + line_dict["gene_id"] + "\"; "
+        gtf_line += "transcript_id \"" + line_dict["transcript_id"] + "\"; "
+        gtf_line += "gene_biotype \"" + line_dict["gene_type"] + "\"; "
+        gtf_line += "transcript_biotype \"protein_coding\"; "
+        gtf_line += "gene_status \"" + line_dict["gene_status"] + "\"; "
+        gtf_line += "gene_name \"" + line_dict["gene_name"] + "\"; "
+        if line_dict["feature"] == "exon":
+            gtf_line += "exon_id \"" + line_dict["exon_id"] + "\"; "
+        return gtf_line
+
+    @staticmethod
     def has_attribute_value(attribute_key: str, attribute_value: str, attribute_entry: str):
         attribute_dict: Dict[str, str] = GTFBoy.build_attribute_dict(attribute_entry)
-        #if attribute_key not in attribute_dict.keys():
-        #    print("TEST MARKER")
-        #    print(attribute_dict)
-        #    return False
+        # if attribute_key not in attribute_dict.keys():
+        #     print("TEST MARKER")
+        #     print(attribute_dict)
+        #     return False
         return attribute_dict[attribute_key] == attribute_value
 
     @staticmethod
@@ -113,50 +134,9 @@ class GTFBoy:
         return flag
 
 
-#def discriminate_line_dict(line_dict: Dict[str, str]) -> bool:
-#    seqname_flag: bool = line_dict["seqname"].startswith("chr")
-#    gene_id_flag: bool = line_dict["gene_id"].startswith("ENS")
-#    return seqname_flag and gene_id_flag
-#
-#
-#def make_memory_dict_entry(line_dict: Dict[str, str]) -> str:
-#    return "#".join([line_dict["gene_id"].split(".")[0],
-#                     line_dict["seqname"],
-#                     line_dict["feature"],
-#                     line_dict["start"],
-#                     line_dict["end"]])
-#
-
 def main() -> None:
     pass
 
-    #parser: argparse.ArgumentParser = argparse.ArgumentParser()
-    #parser.add_argument("-i", "--input", action="store", help="""File path to the txt containing all file
-    # paths to the GTFs that shall get merged.""")
-    #parser.add_argument("-o", "--out_path", action="store", help="""Path to the directory that shall
-    # contain the merged annotation file.""")
-#
-    #args_dict: Dict[str, str] = vars(parser.parse_args())
-#
-    #with open(args_dict["input"], "r") as f:
-    #    annotation_files: List[str] = f.read().split("\n")
-#
-    #Path(os.path.join(args_dict["out_path"], "temp")).mkdir(parents=True, exist_ok=True)
-    #Path(os.path.join(args_dict["out_path"], "temp", "memory.temp")).touch()
-    #Path(os.path.join(args_dict["out_path"], "merged_annotation.gtf")).touch()
-#
-    #memory_set: set = set()  # gene_id#seqname#feature#start#end
-#
-    #for gtf_path in annotation_files:
-    #    gtf_boy: GTFBoy = GTFBoy(gtf_path)
-    #    for line in gtf_boy:
-    #        if line.startswith("#"):
-    #            pass
-    #        else:
-    #            line_dict: Dict[str, str] = GTFBoy.build_dict(line.split("\t"))
-    #            if discriminate_line_dict(line_dict, memory_set):
-#
-    #    break
 
 if __name__ == "__main__":
     main()
