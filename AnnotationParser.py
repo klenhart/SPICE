@@ -1,4 +1,5 @@
 #!/bin/env python
+import json
 import sys
 
 #######################################################################
@@ -94,6 +95,10 @@ class AnnotationParser:
             for line in self:
                 f.write(line)
 
+    def save_json(self, out_path: str):
+        with open(out_path, "w") as f:
+            json.dump(self.transcript_dict, f, indent=4)
+
     @staticmethod
     def check_if_candidate(line_dict: Dict[str, str]) -> bool:
         if line_dict["feature"] not in ["exon", "transcript"]:
@@ -111,13 +116,15 @@ class AnnotationParser:
 
 
 def main():
-    argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path"],
-                                                   [str, str],
-                                                   ["store", "store"],
-                                                   [1, 1],
+    argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--json"],
+                                                   [str, str, str],
+                                                   ["store", "store", "store"],
+                                                   [1, 1, None],
                                                    ["""Path to a text file containing the paths to all
                                                    gtfs that shall be merged. One path per line.""",
-                                                    "Path to the output file.gtf."])
+                                                    "Path to the output file.gtf.",
+                                                    """If a json version of the annotation is required
+                                                     a path needs to be added to this argument."""])
     argument_parser.generate_parser()
     argument_parser.execute()
     argument_dict: Dict[str, str] = argument_parser.get_args()
@@ -130,6 +137,9 @@ def main():
     annotation_parser: AnnotationParser = AnnotationParser(anno_list)
     annotation_parser.parse_annotations()
     annotation_parser.save(argument_dict["out_path"])
+
+    if argument_dict["json"] is not None:
+        annotation_parser.save_json(argument_dict["json"])
 
 
 if __name__ == "__main__":
