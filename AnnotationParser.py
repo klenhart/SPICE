@@ -100,6 +100,9 @@ class AnnotationParser:
             return False
         elif line_dict["gene_status"] == "NOVEL":
             return False
+        elif "gene_type" not in line_dict.keys():
+            print(line_dict)
+            sys.exit()
         elif line_dict["gene_type"] != "protein_coding":
             return False
         elif line_dict["transcript_status"] == "NOVEL":
