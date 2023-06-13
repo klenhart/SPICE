@@ -62,19 +62,24 @@ class AnnotationParser:
                             self.transcript_dict[gene_id][transcript_id][exon_id] = gtf_line
                         else:
                             self.transcript_dict[gene_id][transcript_id]["GTF_line"] = gtf_line
+        print("Done with parsing.")
+        print("Updating stats of the merged annoation.")
         self.__update__()
+        print("Done with update.")
 
-    def __str__(self) -> str:
-        output_string: str = "# Spice Annotation Parser Collection of Novel transcripts\n"
-        output_string += "# " + str(self.novel_transcript_count) + " new transcripts\n"
-        output_string += "# across " + str(self.gene_count) + " genes."
-        for gene_id in self.transcript_dict.keys():
+    def __iter__(self):
+        yield "# Spice Annotation Parser Collection of Novel transcripts\n"
+        yield "# " + str(self.novel_transcript_count) + " new transcripts\n"
+        yield "# across " + str(self.gene_count) + " genes.\n"
+        total = len(self.transcript_dict.keys())
+        for i, gene_id in enumerate(self.transcript_dict.keys()):
+            if i % 1000 == 0:
+                print("Gene:", str(i) + "/" + str(total))
             for transcript_id in self.transcript_dict[gene_id].keys():
-                output_string += self.transcript_dict[gene_id][transcript_id]["GTF_line"] + "\n"
+                yield self.transcript_dict[gene_id][transcript_id]["GTF_line"]  + "\n"
                 for exon_id in self.transcript_dict[gene_id][transcript_id].keys():
                     if exon_id != "GTF_line":
-                        output_string += self.transcript_dict[gene_id][transcript_id][exon_id] + "\n"
-        return output_string
+                        yield self.transcript_dict[gene_id][transcript_id][exon_id] + "\n"
 
     def __update__(self):
         self.gene_count = len(self.transcript_dict.keys())
@@ -84,7 +89,10 @@ class AnnotationParser:
 
     def save(self, out_path: str):
         with open(out_path, "w") as f:
-            f.write(self.__str__())
+            f.write("")
+        with open(out_path, "a") as f:
+            for line in self:
+                f.write(line)
 
     @staticmethod
     def check_if_candidate(line_dict: Dict[str, str]) -> bool:
