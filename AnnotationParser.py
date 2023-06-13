@@ -98,11 +98,10 @@ class AnnotationParser:
     def check_if_candidate(line_dict: Dict[str, str]) -> bool:
         if line_dict["feature"] not in ["exon", "transcript"]:
             return False
+        elif not line_dict["seqname"].startswith("chr"):
+            return False
         elif line_dict["gene_status"] == "NOVEL":
             return False
-        elif "gene_type" not in line_dict.keys():
-            print(line_dict)
-            sys.exit()
         elif line_dict["gene_type"] != "protein_coding":
             return False
         elif line_dict["transcript_status"] == "NOVEL":
