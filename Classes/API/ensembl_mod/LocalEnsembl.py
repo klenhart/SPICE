@@ -108,16 +108,7 @@ class LocalEnsembl:
 
 
 def main():
-    local_ensembl1 = LocalEnsembl("human", "C:/Users/chris/Desktop/git/root/", "107")
-    print(local_ensembl1.ping)
-    print(local_ensembl1.release_num)
-    print(local_ensembl1.taxon_id)
-    print(local_ensembl1.download())
-
-    local_ensembl2 = LocalEnsembl("human", "C:/Users/chris/Desktop/git/root/")
-    print(local_ensembl2.ping)
-    print(local_ensembl2.release_num)
-    print(local_ensembl2.taxon_id)
+    pass
 
 
 if __name__ == "__main__":
