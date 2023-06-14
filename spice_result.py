@@ -26,8 +26,8 @@ from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.ResultBuddy.ResultBuddy import ResultBuddy
 
 
-def setup(library_path: str, outdir: str):
-    ResultBuddy(library_path, outdir, True)
+def setup(library_path: str, outdir: str, suffix: str):
+    ResultBuddy(library_path, outdir, True, suffix)
 
 
 def expression(library_path: str,
@@ -35,20 +35,21 @@ def expression(library_path: str,
                gtf_path: str,
                expression_name: str,
                normalization: str,
-               normalization_threshold: float = 1.0):
-    result: ResultBuddy = ResultBuddy(library_path, outdir)
+               normalization_threshold: float = 1.0,
+               suffix: str = ""):
+    result: ResultBuddy = ResultBuddy(library_path, outdir, False, suffix)
     result.import_expression_gtf(gtf_path, expression_name, normalization, normalization_threshold)
     result.generate_ewfd_file(expression_name)
 
 
-def condition(library_path: str, outdir: str, replicate_name_list: List[str], condition_name: str):
-    result: ResultBuddy = ResultBuddy(library_path, outdir)
+def condition(library_path: str, outdir: str, replicate_name_list: List[str], condition_name: str, suffix: str = ""):
+    result: ResultBuddy = ResultBuddy(library_path, outdir, False, suffix)
     result.build_condition(condition_name, replicate_name_list)
     result.generate_ewfd_file(condition_name, True)
 
 
-def compare(library_path: str, outdir: str, condition_pair: Tuple[str, str]):
-    result: ResultBuddy = ResultBuddy(library_path, outdir)
+def compare(library_path: str, outdir: str, condition_pair: Tuple[str, str], suffix: str = ""):
+    result: ResultBuddy = ResultBuddy(library_path, outdir, False, suffix)
     result.compare(condition_pair)
 
 
@@ -58,16 +59,16 @@ def main():
 
     argument_parser: ReduxArgParse = ReduxArgParse(["--mode", "--library", "--outdir", "--gtf",
                                                     "--name", "--replicates", "--compared", "--Normalization",
-                                                    "--threshold"],
+                                                    "--threshold", "--suffix"],
                                                    [str, str, str, str,
                                                     str, str, str, str,
-                                                    float],
+                                                    float, str],
                                                    ["store", "store", "store", "store",
                                                     "store", "store", "store", "store",
-                                                    "store"],
+                                                    "store", "store"],
                                                    [1, 1, 1, "?",
                                                     "?", "*", "*", "?",
-                                                    "?"],
+                                                    "?", "?"],
                                                    ["""Mode: Either 'setup', 'expression', 'condition' or 'compare'.
                                                    'setup' creates the result directory system.
                                                    'expression' loads a gtf expression file into results as replicate.
@@ -88,11 +89,16 @@ def main():
                                                     """Normalization method referencing expression entry in gtf file.
                                                     Usually TPM or FPKM. Required for 'expression' mode.""",
                                                     """Any expression entry below this threshold will be set to 0.0.
-                                                    Optional for 'expression' mode. 1.0 by default."""
+                                                    Optional for 'expression' mode. 1.0 by default.""",
+                                                    """Suffix of the result directory that will either be manipulated
+                                                    or created."""
                                                     ])
     argument_parser.generate_parser()
     argument_parser.execute()
     argument_dict: Dict[str, Any] = argument_parser.get_args()
+
+    if argument_dict["suffix"] is None:
+        argument_dict["suffix"] = ""
 
     ####################################################################
     # CHECK THE COMMANDLINE ARGUMENTS FOR THE INTEGRITY.
@@ -101,7 +107,7 @@ def main():
         if any(argument_dict[key] is None for key in ["library", "outdir"]):
             print("'setup' mode failed. Either 'library' or 'outdir' missing from commandline arguments.\nAborting.")
         else:
-            setup(argument_dict["library"][0], argument_dict["outdir"][0])
+            setup(argument_dict["library"][0], argument_dict["outdir"][0], argument_dict["suffix"])
 
     elif argument_dict["mode"][0] == "expression":
 
@@ -117,7 +123,8 @@ def main():
                        argument_dict["gtf"],
                        argument_dict["name"],
                        argument_dict["Normalization"],
-                       argument_dict["threshold"])
+                       argument_dict["threshold"],
+                       argument_dict["suffix"])
 
     elif argument_dict["mode"][0] == "condition":
 
@@ -132,7 +139,8 @@ def main():
             condition(argument_dict["library"][0],
                       argument_dict["outdir"][0],
                       argument_dict["replicates"],
-                      argument_dict["name"])
+                      argument_dict["name"],
+                      argument_dict["suffix"])
 
     elif argument_dict["mode"][0] == "compare":
         print("'compare' mode not yet implemented in this version of spice.")

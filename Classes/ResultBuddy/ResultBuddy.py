@@ -43,14 +43,18 @@ from Classes.WriteGuard.WriteGuard import WriteGuard
 
 class ResultBuddy:
 
-    def __init__(self, library_path: str, output_path: str, initial_flag: bool = False):
+    def __init__(self, library_path: str, output_path: str, initial_flag: bool = False, suffix: str = ""):
         self.library_path: str = library_path
         with open(os.path.join(library_path, "paths.json"), "r") as f:
             self.library_pass_path: PassPath = PassPath(json.load(f))
         library_info: LibraryInfo = LibraryInfo(self.library_pass_path["info"])
         species: str = library_info["info"]["species"]
         release: str = library_info["info"]["release"]
-        filename: str = "spice_result_" + species + "_" + release
+        fas_hex: str = library_info["info"]["fas_mode"]
+        if len(suffix) > 0:
+            filename: str = "spice_result_" + species + "_" + release + "_" + fas_hex + "_" + suffix
+        else:
+            filename: str = "spice_result_" + species + "_" + release + "_" + fas_hex
         self.result_path: str = output_path + "/" + filename
 
         if initial_flag:
