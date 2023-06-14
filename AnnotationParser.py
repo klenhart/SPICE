@@ -88,7 +88,7 @@ class AnnotationParser:
 
                     for key in current_transcript_dict.keys():
                         if key != "transcript":
-                            current_transcript_dict[key][transcript_id] = hash_coord_id
+                            current_transcript_dict[key]["transcript_id"] = hash_coord_id
 
                     if hash_coord_id not in self.transcript_dict[gene_id].keys():
                         self.transcript_dict[gene_id][hash_coord_id] = current_transcript_dict
