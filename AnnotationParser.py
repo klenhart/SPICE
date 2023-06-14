@@ -1,6 +1,4 @@
 #!/bin/env python
-import json
-import sys
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -24,7 +22,8 @@ import sys
 
 from Classes.GTFBoy.GTFBoy import GTFBoy
 from typing import List, Dict, Any
-
+import json
+import hashlib
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 
 
@@ -47,6 +46,7 @@ class AnnotationParser:
                 continue
             print(str(i+1) + "/" + str(total), "Parsing ", annotation_path)
             gtf_iterator: GTFBoy = GTFBoy(annotation_path)
+            current_anno_dict: Dict[str, Dict[str, Any]] = dict()
             for line in gtf_iterator:
                 if not line.startswith("#"):
                     line_dict: Dict[str, str] = GTFBoy.build_dict(line.split("\t"))
@@ -57,18 +57,45 @@ class AnnotationParser:
                         gene_id: str = line_dict["gene_id"]
                         transcript_id: str = line_dict["transcript_id"]
                         feature: str = line_dict["feature"]
-                        if gene_id not in self.transcript_dict.keys():
-                            self.transcript_dict[gene_id] = dict()
-                        if transcript_id not in self.transcript_dict[gene_id].keys():
-                            self.transcript_dict[gene_id][transcript_id] = dict()
+                        if gene_id not in current_anno_dict.keys():
+                            current_anno_dict[gene_id] = dict()
+                        if transcript_id not in current_anno_dict[gene_id].keys():
+                            current_anno_dict[gene_id][transcript_id] = dict()
 
-                        gtf_line = GTFBoy.line_dict_to_gtf_line(line_dict)
+                        # gtf_line = GTFBoy.line_dict_to_gtf_line(line_dict)
                         if feature == "exon":
                             exon_id: str = line_dict["exon_id"]
-                            self.transcript_dict[gene_id][transcript_id][exon_id] = gtf_line
+                            current_anno_dict[gene_id][transcript_id][exon_id] = line_dict
                         else:
-                            self.transcript_dict[gene_id][transcript_id]["GTF_line"] = gtf_line
-        print("Done with parsing.")
+                            current_anno_dict[gene_id][transcript_id]["transcript"] = line_dict
+
+            print("\tGenerating unique genome coordinate strings.")
+            for gene_id in current_anno_dict.keys():
+                if gene_id not in self.transcript_dict.keys():
+                    self.transcript_dict[gene_id] = dict()
+                gene_dict = current_anno_dict[gene_id]
+
+                for transcript_id in gene_dict.keys():
+                    current_transcript_dict = gene_dict[transcript_id]
+
+                    transcript_coord_id: str = AnnotationParser.make_coord_string(current_transcript_dict)
+                    hash_coord_id: str = md5_hash(transcript_coord_id)
+
+                    synonym_field: List[str] = [current_transcript_dict["transcript"]["transcript_id"]]
+                    current_transcript_dict["transcript"]["synonyms"] = synonym_field
+                    current_transcript_dict["transcript"]["transcript_id"] = hash_coord_id
+                    current_transcript_dict["transcript"]["coord_id"] = transcript_coord_id
+
+                    for key in current_transcript_dict.keys():
+                        if key != "transcript":
+                            current_transcript_dict[key][transcript_id] = hash_coord_id
+
+                    if hash_coord_id not in self.transcript_dict[gene_id].keys():
+                        self.transcript_dict[gene_id][hash_coord_id] = current_transcript_dict
+                    else:
+                        if transcript_id not in self.transcript_dict[gene_id][hash_coord_id]["transcript"]["synonyms"]:
+                            self.transcript_dict[gene_id][hash_coord_id]["transcript"]["synonyms"].append(transcript_id)
+
         print("Updating stats of the merged annoation.")
         self.__update__()
         print("Done with update.")
@@ -82,10 +109,10 @@ class AnnotationParser:
             if i % 1000 == 0:
                 print("Gene:", str(i) + "/" + str(total))
             for transcript_id in self.transcript_dict[gene_id].keys():
-                yield self.transcript_dict[gene_id][transcript_id]["GTF_line"]  + "\n"
+                yield GTFBoy.line_dict_to_gtf_line(self.transcript_dict[gene_id][transcript_id]["transcript"]) + "\n"
                 for exon_id in self.transcript_dict[gene_id][transcript_id].keys():
-                    if exon_id != "GTF_line":
-                        yield self.transcript_dict[gene_id][transcript_id][exon_id] + "\n"
+                    if exon_id != "transcript":
+                        yield GTFBoy.line_dict_to_gtf_line(self.transcript_dict[gene_id][transcript_id][exon_id]) + "\n"
 
     def __update__(self):
         self.gene_count = len(self.transcript_dict.keys())
@@ -118,6 +145,25 @@ class AnnotationParser:
             return True
         else:
             return False
+
+    @staticmethod
+    def make_coord_string(transcript_dict: Dict[str, Any]):
+        chromosome: str = ""
+        exon_list = list()
+        for key in transcript_dict.keys():
+            if key == "transcript":
+                chromosome = transcript_dict[key]["seqname"]
+            else:
+                exon = transcript_dict[key]["start"] + "-" + transcript_dict[key]["end"]
+                exon_list.append(exon)
+        return "_".join(sorted(exon_list)) + "_" + chromosome
+
+
+def md5_hash(data):
+    hasher = hashlib.md5()
+    hasher.update(data.encode("utf-8"))
+    hash_string = hasher.hexdigest()
+    return hash_string
 
 
 def main():
