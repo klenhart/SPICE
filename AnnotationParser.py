@@ -40,6 +40,11 @@ class AnnotationParser:
     def parse_annotations(self):
         total: int = len(self.annotation_path_list)
         for i, annotation_path in enumerate(self.annotation_path_list):
+            if annotation_path == "":
+                print("Encountered empty entry. This is the whole list of gtf paths:\n",
+                      self.annotation_path_list,
+                      "\nThe current index of annotation parsing is", i)
+                continue
             print(str(i+1) + "/" + str(total), "Parsing ", annotation_path)
             gtf_iterator: GTFBoy = GTFBoy(annotation_path)
             for line in gtf_iterator:
