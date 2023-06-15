@@ -29,9 +29,12 @@ from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 
 class AnnotationParser:
 
-    def __init__(self, annotation_path_list: List[str]):
-        self.header: str = "# " + "Merged annotation of novel transcripts of protein coding genes."
+    def __init__(self, annotation_path_list: List[str], expression_path_list: List[str], threshold: float):
         self.annotation_path_list: List[str] = annotation_path_list
+        self.expression_path_list: List[str] = expression_path_list
+        self.threshold = threshold
+        if self.threshold is None:
+            self.threshold: float = 1.0
         self.transcript_dict: Dict[str, Dict[str, Any]] = dict()
         self.novel_transcript_count: int = 0
         self.gene_count: int = 0
@@ -62,7 +65,6 @@ class AnnotationParser:
                         if transcript_id not in current_anno_dict[gene_id].keys():
                             current_anno_dict[gene_id][transcript_id] = dict()
 
-                        # gtf_line = GTFBoy.line_dict_to_gtf_line(line_dict)
                         if feature == "exon":
                             exon_id: str = line_dict["exon_id"]
                             current_anno_dict[gene_id][transcript_id][exon_id] = line_dict
@@ -73,6 +75,7 @@ class AnnotationParser:
             for gene_id in current_anno_dict.keys():
                 if gene_id not in self.transcript_dict.keys():
                     self.transcript_dict[gene_id] = dict()
+                    self.transcript_dict[gene_id]["id_map"] = dict()
                 gene_dict = current_anno_dict[gene_id]
 
                 for transcript_id in gene_dict.keys():
@@ -83,22 +86,65 @@ class AnnotationParser:
 
                     synonym_field: List[str] = [current_transcript_dict["transcript"]["transcript_id"]]
                     current_transcript_dict["transcript"]["synonyms"] = synonym_field
-                    current_transcript_dict["transcript"]["transcript_id"] = hash_coord_id
                     current_transcript_dict["transcript"]["coord_id"] = transcript_coord_id
+                    current_transcript_dict["transcript"]["FPKM"] = 0.0
 
                     for key in current_transcript_dict.keys():
-                        if key != "transcript":
-                            current_transcript_dict[key]["transcript_id"] = hash_coord_id
+                        current_transcript_dict[key]["transcript_id"] = hash_coord_id
 
                     if hash_coord_id not in self.transcript_dict[gene_id].keys():
                         self.transcript_dict[gene_id][hash_coord_id] = current_transcript_dict
                     else:
                         if transcript_id not in self.transcript_dict[gene_id][hash_coord_id]["transcript"]["synonyms"]:
                             self.transcript_dict[gene_id][hash_coord_id]["transcript"]["synonyms"].append(transcript_id)
+                    self.transcript_dict[gene_id]["id_map"][transcript_id] = hash_coord_id
 
+        if len(self.expression_path_list) > 0:
+            print("Filtering transcripts. Expression (FPKM) must be greater than", str(self.threshold) + ".")
+            print("Assigning maximum FPKMs.")
+            for i, path in enumerate(self.expression_path_list):
+                if path == "":
+                    print("Encountered empty expression path entry. This is the whole list of gtf paths:\n",
+                          self.annotation_path_list,
+                          "\nThe current index of annotation parsing is", i)
+                    continue
+                gtf_iterator: GTFBoy = GTFBoy(path)
+                for line in gtf_iterator:
+                    if line.startswith("#") or line == "":
+                        continue
+                    line_dict: Dict[str, str] = GTFBoy.build_dict(line.split("\t"))
+                    if line_dict["feature"] == "transcript":
+                        gene_id = line_dict["gene_id"].split(".")[0]
+                        if gene_id in self.transcript_dict.keys():
+                            if line_dict["transcript_id"] in self.transcript_dict[gene_id]["id_map"].keys():
+                                hash_id = self.transcript_dict[gene_id]["id_map"][line_dict["transcript_id"]]
+                                new_fpkm: float = float(line_dict["FPKM"])
+                                if self.transcript_dict[gene_id][hash_id]["transcript"]["FPKM"] < new_fpkm:
+                                    self.transcript_dict[gene_id][hash_id]["transcript"]["FPKM"] = new_fpkm
+            print("Deleting transcripts below FPKM threshold.")
+            gene_delete_list: List[str] = list()
+            for gene_id in self.transcript_dict.keys():
+                delete_list: List[str] = list()
+                for transcript_id in self.transcript_dict[gene_id].keys():
+                    if transcript_id != "id_map":
+                        if self.transcript_dict[gene_id][transcript_id]["transcript"]["FPKM"] < self.threshold:
+                            delete_list.append(transcript_id)
+                for transcript_id in delete_list:
+                    self.remove_transcript(gene_id, transcript_id)
+                if len(self.transcript_dict[gene_id].keys()) == 1:
+                    gene_delete_list.append(gene_id)
+            for gene_id in gene_delete_list:
+                del self.transcript_dict[gene_id]
+            print("Done.")
         print("Updating stats of the merged annoation.")
         self.__update__()
         print("Done with update.")
+
+    def remove_transcript(self, gene_id, transcript_id):
+        synonym_list: List[str, str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["synonyms"]
+        for synonym in synonym_list:
+            del self.transcript_dict[gene_id]["id_map"][synonym]
+        del self.transcript_dict[gene_id][transcript_id]
 
     def __iter__(self):
         yield "# Spice Annotation Parser Collection of Novel transcripts\n"
@@ -109,6 +155,8 @@ class AnnotationParser:
             if i % 1000 == 0:
                 print("Gene:", str(i) + "/" + str(total))
             for transcript_id in self.transcript_dict[gene_id].keys():
+                if transcript_id == "id_map":
+                    continue
                 yield GTFBoy.line_dict_to_gtf_line(self.transcript_dict[gene_id][transcript_id]["transcript"]) + "\n"
                 for exon_id in self.transcript_dict[gene_id][transcript_id].keys():
                     if exon_id != "transcript":
@@ -167,25 +215,38 @@ def md5_hash(data):
 
 
 def main():
-    argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--json"],
-                                                   [str, str, str],
-                                                   ["store", "store", "store"],
-                                                   [1, 1, None],
+    argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--json", "--expression", "--threshold"],
+                                                   [str, str, str, str, float],
+                                                   ["store", "store", "store", "store", "store"],
+                                                   [1, 1, None, "?", "?"],
                                                    ["""Path to a text file containing the paths to all
                                                    gtfs that shall be merged. One path per line.""",
                                                     "Path to the output file.gtf.",
                                                     """If a json version of the annotation is required
-                                                     a path needs to be added to this argument."""])
+                                                     a path needs to be added to this argument.""",
+                                                    """Path to a text file containing the paths to gtf files
+                                                     including transcript abundances. Only transcripts will be kept
+                                                     which exceed the float given in the --threshold parameter.""",
+                                                    "Expression threshold, which will be used for transcript curation."
+                                                    ])
     argument_parser.generate_parser()
     argument_parser.execute()
-    argument_dict: Dict[str, str] = argument_parser.get_args()
+    argument_dict: Dict[str, Any] = argument_parser.get_args()
     argument_dict["input"] = argument_dict["input"][0]
     argument_dict["out_path"] = argument_dict["out_path"][0]
 
     with open(argument_dict["input"], "r") as f:
         anno_list: List[str] = f.read().split("\n")
 
-    annotation_parser: AnnotationParser = AnnotationParser(anno_list)
+    if argument_dict["expression"] is None:
+        expression_list: List[str] = list()
+    else:
+        with open(argument_dict["expression"], "r") as f:
+            expression_list: List[str] = f.read().split("\n")
+
+    annotation_parser: AnnotationParser = AnnotationParser(anno_list,
+                                                           expression_list,
+                                                           argument_dict["threshold"])
     annotation_parser.parse_annotations()
     annotation_parser.save(argument_dict["out_path"])
 
