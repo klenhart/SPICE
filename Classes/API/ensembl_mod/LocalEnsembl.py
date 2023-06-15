@@ -32,12 +32,15 @@ from Classes.API.ensembl_mod.EnsemblUtils import ping_ensembl, get_current_relea
 
 class LocalEnsembl:
     ftp_template: str = "http://ftp.ensembl.org/pub/release-{0}/gtf/{1}/{2}.{3}.{4}.gtf.gz"
-    filename_template: str = "{0}.{1}.{2}.gtf.gz"
+    ftp_cds_template: str = "http://ftp.ensembl.org/pub/release-{0}/fasta/{1}/cds/{2}.{3}.cds.all.fa.gz"
     # 0=release_num
     # 1=species_name
     # 2=url_species_name
-    # 3=assembly_default_species_name
+    # 3=assembly_default_name
     # 4=release_num
+
+    filename_template: str = "{0}.{1}.{2}.gtf.gz" # url_species_name, assembly_default_name, release_num
+    filename_cds_template: str = "{0}.{1}.cds.all.fa.gz" # url_species_name, assembly_default_name
 
     def __init__(self, raw_species: str, goal_directory: str, release_num: str = "default") -> None:
         self.goal_directory: str = goal_directory
@@ -58,14 +61,24 @@ class LocalEnsembl:
         self.local_zipname: str = self.filename_template.format(self.url_species_name,
                                                                 self.assembly_default_species_name,
                                                                 self.release_num)
+        self.local_cds_zipname: str = self.filename_template.format(self.url_species_name,
+                                                                    self.assembly_default_species_name)
 
         self.local_filename: str = self.local_zipname[:-3]
+        self.local_cds_filename: str = self.local_zipname[:-3]
 
         self.ftp_address: str = self.ftp_template.format(self.release_num,
                                                          self.species_name,
                                                          self.url_species_name,
                                                          self.assembly_default_species_name,
                                                          self.release_num)
+
+        self.ftp_cds_address: str = self.ftp_template.format(self.release_num,
+                                                             self.species_name,
+                                                             self.url_species_name,
+                                                             self.assembly_default_species_name)
+
+    # EVERYTHING BELOW THIS NEEDS TO BE FIXED:
 
     def get_species_name(self) -> str:
         return self.species_name
