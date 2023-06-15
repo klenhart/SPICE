@@ -185,6 +185,12 @@ class AnnotationParser:
             return False
         elif not line_dict["seqname"].startswith("chr"):
             return False
+        elif line_dict["seqname"].startswith("chrM"):
+            return False
+        elif line_dict["seqname"].endswith("random"):
+            return False
+        elif line_dict["seqname"].startswith("chrU"):
+            return False
         elif line_dict["gene_status"] == "NOVEL":
             return False
         elif line_dict["gene_type"] != "protein_coding":
