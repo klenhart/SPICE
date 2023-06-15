@@ -60,6 +60,12 @@ class GeneAssembler:
         self.taxon_id: str = taxon_id
         self.inclusion_filter_dict: Dict[str, List[str]] = dict()
 
+    def __getitem__(self, gene_id) -> Gene:
+        return self.gene_assembly[gene_id]
+
+    def __contains__(self, gene_id) -> bool:
+        return gene_id in self.gene_assembly.keys()
+
     def update_inclusion_filter(self, key: str, possible_values: List[str]) -> None:
         self.inclusion_filter_dict.update({key: possible_values})
 
@@ -95,7 +101,7 @@ class GeneAssembler:
                                 ncols=100,
                                 total=len(list(distance_dict.keys())),
                                 desc="Integrating FAS process"):
-            if self.contains_gene(key_gene_id):
+            if key_gene_id in self:
                 gene: Gene = self.gene_assembly[key_gene_id]
                 for key_prot_id1 in distance_dict[key_gene_id].keys():
                     if key_prot_id1 in gene.get_fas_dict().keys():
@@ -115,8 +121,8 @@ class GeneAssembler:
 
     def extract(self, gtf_path: str) -> None:
         """
-        Method that extracts all genes, proteins, transcripts and exons from a gtf file and sorts them into
-        a SearchTree class object.
+        Method that extracts all genes, proteins, transcripts and exons from a gtf file and sorts them into the
+        GeneAssembler.
 
         :param gtf_path: The absolute path to a gtf file.
         """
@@ -188,9 +194,6 @@ class GeneAssembler:
                 gene: Gene = self.gene_assembly[key]
                 output_list.append(gene)
         return output_list
-
-    def contains_gene(self, gene_id) -> bool:
-        return gene_id in self.gene_assembly
 
     def get_transcripts(self) -> List[Transcript]:
         output_list: List[Transcript] = list()

@@ -166,44 +166,51 @@ def check_library_status(gene_assembler: GeneAssembler, library_info: LibraryInf
     library_info.save()
 
 
-def collect_sequences(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath) -> None:
-    incomplete_gene_list: List[Gene] = gene_assembler.get_genes(True)
-    save_marker: int = 0
-    for gene in tqdm(incomplete_gene_list, ncols=100,
-                     total=len(incomplete_gene_list), desc="Sequence collection progress"):
+def collect_sequences(gene_assembler: GeneAssembler,
+                      library_info: LibraryInfo,
+                      pass_path: PassPath,
+                      protein_fasta: str) -> None:
+    # incomplete_gene_list: List[Gene] = gene_assembler.get_genes(True)
+    # save_marker: int = 0
 
-        save_marker += 1
-        incomplete_proteins_list: List[Protein] = gene.get_proteins(True)
-        results: List[Dict[str, str]] = RemoteEnsembl.collect_sequences(incomplete_proteins_list,
-                                                                        str(library_info["info"]["release"]))
-        for result in results:
-            if "error" in result.keys():
-                for protein in incomplete_proteins_list:
-                    print("\n\t", protein.get_id(), " is deprecated. Removing from library.")
-                    gene.delete_transcript(protein.get_id())
-                    library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
-                    library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
+    gene_assembler
 
-                    library_info.save()
-                break
-            else:
-                gene.set_sequence_of_transcript(result["query"], result["seq"])
-        if save_marker % 250 == 0:
-            gene_assembler.save_seq(pass_path)
-            gene_assembler.save_fas(pass_path)
-            gene_assembler.save_info(pass_path)
-            library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
-            library_info.save()
-    gene_assembler.clear_empty_genes()
-    gene_assembler.save_seq(pass_path)
-    gene_assembler.save_fas(pass_path)
-    gene_assembler.save_info(pass_path)
-    info: Dict[str, Any] = library_info["info"]
-    library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
-    sequence_collection_flag: bool = info["protein_count"] == info["collected_sequences_count"]
-    library_info["status"]["02_sequence_collection"] = sequence_collection_flag
-    library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
-    library_info.save()
+
+    # for gene in tqdm(incomplete_gene_list, ncols=100,
+    #                  total=len(incomplete_gene_list), desc="Sequence collection progress"):
+#
+    #     save_marker += 1
+    #     incomplete_proteins_list: List[Protein] = gene.get_proteins(True)
+    #     results: List[Dict[str, str]] = RemoteEnsembl.collect_sequences(incomplete_proteins_list,
+    #                                                                     str(library_info["info"]["release"]))
+    #     for result in results:
+    #         if "error" in result.keys():
+    #             for protein in incomplete_proteins_list:
+    #                 print("\n\t", protein.get_id(), " is deprecated. Removing from library.")
+    #                 gene.delete_transcript(protein.get_id())
+    #                 library_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
+    #                 library_info["info"]["protein_count"] = gene_assembler.get_protein_count()
+#
+    #                 library_info.save()
+    #             break
+    #         else:
+    #             gene.set_sequence_of_transcript(result["query"], result["seq"])
+    #     if save_marker % 250 == 0:
+    #         gene_assembler.save_seq(pass_path)
+    #         gene_assembler.save_fas(pass_path)
+    #         gene_assembler.save_info(pass_path)
+    #         library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
+    #         library_info.save()
+    # gene_assembler.clear_empty_genes()
+    # gene_assembler.save_seq(pass_path)
+    # gene_assembler.save_fas(pass_path)
+    # gene_assembler.save_info(pass_path)
+    # info: Dict[str, Any] = library_info["info"]
+    # library_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
+    # sequence_collection_flag: bool = info["protein_count"] == info["collected_sequences_count"]
+    # library_info["status"]["02_sequence_collection"] = sequence_collection_flag
+    # library_info["info"]["gene_count"] = gene_assembler.get_gene_count()
+    # library_info.save()
 
 
 def remove_small_proteins(gene_assembler: GeneAssembler, library_info: LibraryInfo, pass_path: PassPath):
@@ -437,17 +444,22 @@ def main():
         # LOCAL ENSEMBL DOWNLOAD
         # Download the local ensembl file.
         gtf_path: str = local_ensembl.download()
+        gtf_pep_path: str = local_ensembl.download_pep()
         # Extract the file
         gene_assembler.update_inclusion_filter("gene_biotype", ["protein_coding"])
         gene_assembler.update_inclusion_filter("transcript_biotype", ["protein_coding", "nonsense_mediated_decay"])
         gene_assembler.extract(gtf_path)
         gene_assembler.clear_empty_genes()
+
         gene_assembler.save_seq(pass_path)
         gene_assembler.save_fas(pass_path)
         gene_assembler.save_info(pass_path)
+
         if not argument_dict["keepgtf"]:
             # Delete the file after successful extraction.
             local_ensembl.remove()
+            local_ensembl.remove_pep()
+
         print("\tSaving info.yaml at " + pass_path["info"])
         library_info: LibraryInfo = LibraryInfo(pass_path["info"])
         # Save base info
@@ -485,10 +497,11 @@ def main():
         with WriteGuard(pass_path["transcript_seq"], pass_path["transcript_data"]):
             # Collect the sequences for each incomplete gene.
             print("\tSequence Collection Run 1/2")
-            collect_sequences(gene_assembler, library_info, pass_path)
-            print("\tSequence Collection Run 2/2")
-            collect_sequences(gene_assembler, library_info, pass_path)
-            print("\tSequence Collection complete!")
+            sys.exit()
+            collect_sequences(gene_assembler, library_info, pass_path, local_ensembl.local_pep_filename)
+            # print("\tSequence Collection Run 2/2")
+            # collect_sequences(gene_assembler, library_info, pass_path)
+            # print("\tSequence Collection complete!")
     else:
         print("\tSequences already collected.")
     ####################################################################

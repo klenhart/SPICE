@@ -32,7 +32,7 @@ from Classes.API.ensembl_mod.EnsemblUtils import ping_ensembl, get_current_relea
 
 class LocalEnsembl:
     ftp_template: str = "http://ftp.ensembl.org/pub/release-{0}/gtf/{1}/{2}.{3}.{4}.gtf.gz"
-    ftp_cds_template: str = "http://ftp.ensembl.org/pub/release-{0}/fasta/{1}/cds/{2}.{3}.cds.all.fa.gz"
+    ftp_pep_template: str = "http://ftp.ensembl.org/pub/release-{0}/fasta/{1}/pep/{2}.{3}.pep.all.fa.gz"
     # 0=release_num
     # 1=species_name
     # 2=url_species_name
@@ -40,7 +40,7 @@ class LocalEnsembl:
     # 4=release_num
 
     filename_template: str = "{0}.{1}.{2}.gtf.gz" # url_species_name, assembly_default_name, release_num
-    filename_cds_template: str = "{0}.{1}.cds.all.fa.gz" # url_species_name, assembly_default_name
+    filename_pep_template: str = "{0}.{1}.pep.all.fa.gz" # url_species_name, assembly_default_name
 
     def __init__(self, raw_species: str, goal_directory: str, release_num: str = "default") -> None:
         self.goal_directory: str = goal_directory
@@ -61,11 +61,11 @@ class LocalEnsembl:
         self.local_zipname: str = self.filename_template.format(self.url_species_name,
                                                                 self.assembly_default_species_name,
                                                                 self.release_num)
-        self.local_cds_zipname: str = self.filename_template.format(self.url_species_name,
-                                                                    self.assembly_default_species_name)
+        self.local_pep_zipname: str = self.filename_pep_template.format(self.url_species_name,
+                                                                        self.assembly_default_species_name)
 
         self.local_filename: str = self.local_zipname[:-3]
-        self.local_cds_filename: str = self.local_zipname[:-3]
+        self.local_pep_filename: str = self.local_pep_zipname[:-3]
 
         self.ftp_address: str = self.ftp_template.format(self.release_num,
                                                          self.species_name,
@@ -73,12 +73,10 @@ class LocalEnsembl:
                                                          self.assembly_default_species_name,
                                                          self.release_num)
 
-        self.ftp_cds_address: str = self.ftp_template.format(self.release_num,
+        self.ftp_pep_address: str = self.ftp_pep_template.format(self.release_num,
                                                              self.species_name,
                                                              self.url_species_name,
                                                              self.assembly_default_species_name)
-
-    # EVERYTHING BELOW THIS NEEDS TO BE FIXED:
 
     def get_species_name(self) -> str:
         return self.species_name
@@ -102,6 +100,23 @@ class LocalEnsembl:
             print("Ensembl file already downloaded. (" + os.path.join(self.goal_directory, self.local_filename) + ")")
         return os.path.join(self.goal_directory, self.local_filename)
 
+    def download_pep(self) -> str:
+        if not self.is_pep_downloaded():
+            print("\tDownloading " + self.ftp_pep_address + ".")
+            with closing(request.urlopen(self.ftp_pep_address)) as r:
+                with open(os.path.join(self.goal_directory, self.local_pep_zipname), 'wb') as f:
+                    shutil.copyfileobj(r, f)
+
+            # Unpacking file
+            with gzip.open(os.path.join(self.goal_directory, self.local_pep_zipname), 'rb') as f_in:
+                with open(os.path.join(self.goal_directory, self.local_pep_filename), "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            os.remove(os.path.join(self.goal_directory, self.local_pep_zipname))
+        else:
+            print("Coding sequences already downloaded. (" + os.path.join(self.goal_directory,
+                                                                          self.local_pep_filename) + ")")
+        return os.path.join(self.goal_directory, self.local_pep_filename)
+
     def get_release_num(self) -> str:
         return self.release_num
 
@@ -109,12 +124,22 @@ class LocalEnsembl:
         if self.is_downloaded():
             os.remove(os.path.join(self.goal_directory, self.local_filename))
 
+    def remove_pep(self) -> None:
+        if self.is_pep_downloaded():
+            os.remove(os.path.join(self.goal_directory, self.local_pep_filename))
+
     @property
     def ping(self) -> bool:
         return ping_ensembl()
 
     def is_downloaded(self) -> bool:
         if os.path.isfile(os.path.join(self.goal_directory, self.local_filename)):
+            return True
+        else:
+            return False
+
+    def is_pep_downloaded(self) -> bool:
+        if os.path.isfile(os.path.join(self.goal_directory, self.local_pep_filename)):
             return True
         else:
             return False
