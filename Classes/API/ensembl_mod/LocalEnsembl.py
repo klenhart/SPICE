@@ -84,9 +84,6 @@ class LocalEnsembl:
     def get_taxon_id(self) -> str:
         return self.taxon_id
 
-    def get_fasta_path(self) -> str:
-        return os.path.join(self.goal_directory, self.local_pep_filename)
-
     def download(self) -> str:
         if not self.is_downloaded():
             print("\tDownloading " + self.ftp_address + ".")

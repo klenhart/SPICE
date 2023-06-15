@@ -440,7 +440,6 @@ def main():
         if not argument_dict["keepgtf"]:
             # Delete the file after successful extraction.
             local_ensembl.remove()
-            local_ensembl.remove_pep()
 
         print("\tSaving info.yaml at " + pass_path["info"])
         library_info: LibraryInfo = LibraryInfo(pass_path["info"])
@@ -478,7 +477,10 @@ def main():
         # Collect sequences.
         with WriteGuard(pass_path["transcript_seq"], pass_path["transcript_data"]):
             print("\tSequence Collection.")
-            collect_sequences(gene_assembler, library_info, pass_path, local_ensembl.get_fasta_path())
+            collect_sequences(gene_assembler, library_info, pass_path, gtf_pep_path)
+        if not argument_dict["keepgtf"]:
+            # Delete the file after successful extraction.
+            local_ensembl.remove_pep()
     else:
         print("\tSequences already collected.")
     ####################################################################
