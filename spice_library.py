@@ -348,6 +348,8 @@ def main():
     gene_assembler: GeneAssembler = GeneAssembler(local_ensembl.get_species_name(),
                                                   local_ensembl.get_taxon_id())
 
+    gtf_pep_path: str = local_ensembl.download_pep()
+
     print("#00 Building library.")
     if argument_dict["copylib"] is not None:
         print("\tCopying old library:",
@@ -426,7 +428,6 @@ def main():
         # LOCAL ENSEMBL DOWNLOAD
         # Download the local ensembl file.
         gtf_path: str = local_ensembl.download()
-        gtf_pep_path: str = local_ensembl.download_pep()
         # Extract the file
         gene_assembler.update_inclusion_filter("gene_biotype", ["protein_coding"])
         gene_assembler.update_inclusion_filter("transcript_biotype", ["protein_coding", "nonsense_mediated_decay"])
