@@ -27,29 +27,38 @@ from typing import Dict, Any, List
 
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--expression", "--threshold", "--mode",
-                                                    "--name", "--json"],
-                                                   [str, str, str, float, str, str, str],
-                                                   ["store", "store", "store", "store", "store", "store", "store"],
-                                                   [1, 1, None, "?", 1, 1, "?"],
+                                                    "--name", "--json", "--diamond"],
+                                                   [str, str, str, float, str, str, str, str],
+                                                   ["store", "store", "store", "store", "store", "store", "store",
+                                                    "store"],
+                                                   [1, 1, None, "?", 1, 1, "?", "?"],
                                                    ["""Path to the input file. Depends on the mode. 
                                                     'merge': .txt-file containing the paths to all annotation-gtfs
                                                      that shall be merged. One path per line.
-                                                    'transD': longest_orfs.pep-file containing predicted translated
-                                                    ORFs of the transcripts.
-                                                    'dmnd': path to diamond output.""",
+                                                    'prep': LongOrf.pep output of TransDecoder.
+                                                    'novlib': Generate a spice_novlib from a .fasta an already
+                                                    exisiting complete spice_lib. The .fasta file requires a
+                                                    header structure like this:
+                                                    ><GENE_ID>|<TRANSCRIPT_ID>|<TAG1> ... <TAGn>|<SYN1> ... <SYNn>
+                                                    SYN stands for synonyms that shall all be recognised as valid
+                                                    identifiers for the transcript. If no tags are required just add 
+                                                    nothing after the | symbol.
+                                                    Same for SYN. (>gene1|trans1||)""",
                                                     """Path to the output directory for <name>.gtf,
-                                                     <name>.json, <name>.fasta, <name>_idMap.json etc.""",
+                                                    <name>.json, <name>.fasta, <name>_complete.fasta etc.""",
                                                     """Only used in 'merge'-mode. Path to a text file containing 
                                                     the paths to gtf files including transcript abundances. Only 
                                                     transcripts will be kept which exceed the float given in 
                                                     the --threshold parameter.""",
                                                     "Expression threshold, which will be used for transcript curation.",
-                                                    """Either 1:'merge', 2:'transD' or 3:'diamond' depending on the
+                                                    """Either 1:'merge', 2:'prep' or 3:'novlib' depending on the
                                                     stage of the workflow.""",
                                                     "Name for the output file.",
-                                                    """Path to the <name>_idMap.json file that was output during merge
+                                                    """Path to the <name>.json file that was output during merge
                                                     mode. This argument is only required for
-                                                    'transD' and 'dmnd' mode."""
+                                                    'prep' mode.""",
+                                                    """Path to the .tsv file output by DIAMOND. Only required for 'prep'
+                                                    mode."""
                                                     ])
     argument_parser.generate_parser()
     argument_parser.execute()
@@ -78,9 +87,9 @@ def main():
         annotation_parser.save(argument_dict["out_path"])
         annotation_parser.save_json(argument_dict["out_path"])
 
-    elif argument_dict["mode"] == "transD":
+    elif argument_dict["mode"] == "prep":
         pass
-    elif argument_dict["mode"] == "dmnd":
+    elif argument_dict["mode"] == "novlib":
         pass
 
 

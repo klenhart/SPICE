@@ -150,19 +150,18 @@ class AnnotationParser:
         print("Done with update.")
 
     def remove_transcript(self, gene_id, transcript_id):
-        synonym_list: List[str, str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["synonyms"]
-        for synonym in synonym_list:
-            del self.old_id_map[gene_id][synonym]
         del self.transcript_dict[gene_id][transcript_id]
 
     def __generate_id_map__(self):
         for gene_id in self.transcript_dict.keys():
             for transcript_id in self.transcript_dict[gene_id].keys():
                 strand: str = self.transcript_dict[gene_id][transcript_id]["transcript"]["strand"]
+                synonyms: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["synonyms"]
                 self.new_id_map[transcript_id] = dict()
                 self.new_id_map[transcript_id]["gene_id"] = gene_id
                 self.new_id_map[transcript_id]["strand"] = strand
-                self.new_id_map[transcript_id]["peptides"] = list()
+                self.new_id_map[transcript_id]["synonyms"] = synonyms
+                self.new_id_map[transcript_id]["peptides"] = dict()
 
     def __iter__(self):
         yield "# Spice Annotation Parser Collection of Novel transcripts\n"
@@ -192,10 +191,10 @@ class AnnotationParser:
                 f.write(line)
 
     def save_json(self, out_path: str):
-        with open(os.path.join(out_path, self.name + "_idMap.json"), "w") as f:
-            json.dump(self.old_id_map, f, indent=4)
+        output_list: List[Dict[str, Any]] = list()
+        output_list.append(self.new_id_map)
         with open(os.path.join(out_path, self.name + ".json"), "w") as f:
-            json.dump(self.new_id_map, f, indent=4)
+            json.dump(output_list, f, indent=4)
 
     @staticmethod
     def check_if_candidate(line_dict: Dict[str, str]) -> bool:
