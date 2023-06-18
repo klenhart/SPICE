@@ -185,9 +185,9 @@ class AnnotationParser:
             self.novel_transcript_count += len(self.transcript_dict[gene_id].keys())
 
     def save(self, out_path: str):
-        with open(os.path.join(out_path, self.name + ".fasta"), "w") as f:
+        with open(os.path.join(out_path, self.name + ".gtf"), "w") as f:
             f.write("")
-        with open(os.path.join(out_path, self.name + ".fasta"), "a") as f:
+        with open(os.path.join(out_path, self.name + ".gtf"), "a") as f:
             for line in self:
                 f.write(line)
 
