@@ -24,7 +24,59 @@ from typing import Dict, List, Tuple, Iterator
 import argparse
 
 
-class FastaBoy:
+class TransDecoderFastaBoy:
+
+
+# seq
+
+    def __init__(self, fasta_path: str):
+        self.fasta_path = fasta_path
+        self.fasta_dict: Dict[str, List[Dict[str, str]]] = dict()
+
+    def __iter__(self) -> Iterator[str]:
+        with open(self.fasta_path, "r") as f:
+            for line in f:
+                yield line
+
+    def get_fasta_dict(self) -> Dict[str, List[Dict[str, str]]]:
+        return self.fasta_dict
+
+    def parse_fasta(self):
+        transcript_id: str = ""
+        for line in self:
+            if line.startswith(">"):
+                fasta_header_dict: Dict[str, str] = TransDecoderFastaBoy.make_fasta_header_dict(line)
+                transcript_id: str = fasta_header_dict["transcript_id"]
+                del fasta_header_dict["transcript_id"]
+                fasta_header_dict["sequence"] = ""
+                if transcript_id not in self.fasta_dict.keys():
+                    self.fasta_dict[transcript_id] = list()
+                self.fasta_dict[transcript_id].append(fasta_header_dict)
+                continue
+            self.fasta_dict[transcript_id][-1]["sequence"] += line.strip().replace("*", "")
+
+    @staticmethod
+    def make_fasta_header_dict(fasta_header: str) -> Dict[str, str]:
+        entry_list: List[str] = [entry for entry in fasta_header.split(" ")]
+        fasta_header_dict: Dict[str, str] = dict()
+
+        for entry in entry_list:
+            if entry.startswith(">"):
+                fasta_header_dict["transcript_id"] = entry[1:].split(".")[0]
+                fasta_header_dict["transcript_tag"] = entry[1:].split(".")[1]
+            elif entry.startswith("type:"):
+                fasta_header_dict["orf_type"] = entry.split(":")[1]
+            elif entry.startswith("gc:"):
+                fasta_header_dict["orf_type"] = entry.split(":")[1]
+            elif entry.startswith(fasta_header_dict["transcript_id"]):
+                indices: List[str] = entry.split(":")[1].split("-")
+                fasta_header_dict["start_orf"] = indices[0]
+                fasta_header_dict["end_orf"] = indices[1].split("(")[0]
+                fasta_header_dict["strand"] = entry.split(":")[1].split("(")[1][0]
+        return fasta_header_dict
+
+
+class EnsemblFastaBoy:
 
     def __init__(self, fasta_path: str):
         self.fasta_path = fasta_path
@@ -44,7 +96,7 @@ class FastaBoy:
         for line in self:
             if line.startswith(">"):
                 found_flag = False
-                fasta_header_dict: Dict[str, str] = FastaBoy.make_fasta_header_dict(line)
+                fasta_header_dict: Dict[str, str] = EnsemblFastaBoy.make_fasta_header_dict(line)
                 if self.__apply_filter(fasta_header_dict):
                     found_flag = True
                     gene_id: str = fasta_header_dict["gene_id"]
@@ -63,7 +115,7 @@ class FastaBoy:
 
     @staticmethod
     def make_fasta_header_dict(fasta_header: str) -> Dict[str, str]:
-        entry_list: List[str] = [entry for entry in fasta_header.split(" ") if FastaBoy.discriminate_header(entry)]
+        entry_list: List[str] = [entry for entry in fasta_header.split(" ") if EnsemblFastaBoy.discriminate_header(entry)]
         fasta_header_dict: Dict[str, str] = dict()
         for entry in entry_list:
             if entry.startswith(">"):
@@ -111,17 +163,29 @@ def main():
                         type=str,
                         action="store",
                         help="Path to json output file.")
+    parser.add_argument("-m",
+                        "--mode",
+                        type=str,
+                        action="store",
+                        help="Either ensembl or transdecoder.")
 
     argument_dict: Dict[str, str] = vars(parser.parse_args())
 
-    fasta_iterator: FastaBoy = FastaBoy(argument_dict["input"])
-    fasta_iterator.set_filter("transcript_biotype", "protein_coding")
-    fasta_iterator.set_filter("gene_biotype", "protein_coding")
+    if argument_dict["mode"] == "ensembl":
+        fasta_iterator: EnsemblFastaBoy = EnsemblFastaBoy(argument_dict["input"])
+        fasta_iterator.set_filter("transcript_biotype", "protein_coding")
+        fasta_iterator.set_filter("gene_biotype", "protein_coding")
 
-    fasta_iterator.parse_fasta()
+        fasta_iterator.parse_fasta()
 
-    with open(argument_dict["output"], "w") as f:
-        json.dump(fasta_iterator.get_fasta_dict(), f, indent=4)
+        with open(argument_dict["output"], "w") as f:
+            json.dump(fasta_iterator.get_fasta_dict(), f, indent=4)
+    elif argument_dict["mode"] == "transdecoder":
+        fasta_iterator: TransDecoderFastaBoy = TransDecoderFastaBoy(argument_dict["input"])
+        fasta_iterator.parse_fasta()
+
+        with open(argument_dict["output"], "w") as f:
+            json.dump(fasta_iterator.get_fasta_dict(), f, indent=4)
 
 
 if __name__ == "__main__":

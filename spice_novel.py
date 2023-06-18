@@ -46,7 +46,7 @@ def merge_mode(argument_dict: Dict[str, Any]):
 
 def prep_mode(argument_dict: Dict[str, Any]):
     with open(argument_dict["input"], "r") as f:
-        anno_list: List[str] = f.read().split("\n")
+        pep_fasta: List[str] = f.read().split("\n")
 
 
 def main():
