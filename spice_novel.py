@@ -25,6 +25,30 @@ from Classes.GTFBoy.AnnotationParser import AnnotationParser
 from typing import Dict, Any, List
 
 
+def merge_mode(argument_dict: Dict[str, Any]):
+    with open(argument_dict["input"], "r") as f:
+        anno_list: List[str] = f.read().split("\n")
+
+    if argument_dict["expression"] is None:
+        expression_list: List[str] = list()
+    else:
+        with open(argument_dict["expression"], "r") as f:
+            expression_list: List[str] = f.read().split("\n")
+
+    annotation_parser: AnnotationParser = AnnotationParser(anno_list,
+                                                           expression_list,
+                                                           argument_dict["threshold"],
+                                                           argument_dict["name"])
+    annotation_parser.parse_annotations()
+    annotation_parser.save(argument_dict["out_path"])
+    annotation_parser.save_json(argument_dict["out_path"])
+
+
+def prep_mode(argument_dict: Dict[str, Any]):
+    with open(argument_dict["input"], "r") as f:
+        anno_list: List[str] = f.read().split("\n")
+
+
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--expression", "--threshold", "--mode",
                                                     "--name", "--json", "--diamond"],
@@ -70,25 +94,11 @@ def main():
     argument_dict["name"] = argument_dict["name"][0]
 
     if argument_dict["mode"] == "merge":
-        with open(argument_dict["input"], "r") as f:
-            anno_list: List[str] = f.read().split("\n")
-
-        if argument_dict["expression"] is None:
-            expression_list: List[str] = list()
-        else:
-            with open(argument_dict["expression"], "r") as f:
-                expression_list: List[str] = f.read().split("\n")
-
-        annotation_parser: AnnotationParser = AnnotationParser(anno_list,
-                                                               expression_list,
-                                                               argument_dict["threshold"],
-                                                               argument_dict["name"])
-        annotation_parser.parse_annotations()
-        annotation_parser.save(argument_dict["out_path"])
-        annotation_parser.save_json(argument_dict["out_path"])
+        merge_mode(argument_dict)
 
     elif argument_dict["mode"] == "prep":
-        pass
+        prep_mode(argument_dict)
+
     elif argument_dict["mode"] == "novlib":
         pass
 

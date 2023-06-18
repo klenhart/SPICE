@@ -157,9 +157,19 @@ class AnnotationParser:
             for transcript_id in self.transcript_dict[gene_id].keys():
                 strand: str = self.transcript_dict[gene_id][transcript_id]["transcript"]["strand"]
                 synonyms: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["synonyms"]
+                start: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["start"]
+                end: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["end"]
+                chromosome: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["seqname"]
+                start_orf: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["start_orf"]
+                end_orf: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["end_orf"]
                 self.new_id_map[transcript_id] = dict()
                 self.new_id_map[transcript_id]["gene_id"] = gene_id
                 self.new_id_map[transcript_id]["strand"] = strand
+                self.new_id_map[transcript_id]["start"] = start
+                self.new_id_map[transcript_id]["end"] = end
+                self.new_id_map[transcript_id]["start_orf"] = start_orf
+                self.new_id_map[transcript_id]["end_orf"] = end_orf
+                self.new_id_map[transcript_id]["chromosome"] = chromosome
                 self.new_id_map[transcript_id]["synonyms"] = synonyms
                 self.new_id_map[transcript_id]["peptides"] = dict()
 
