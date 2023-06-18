@@ -39,8 +39,8 @@ class AnnotationParser:
             self.threshold: float = 1.0
         self.transcript_dict: Dict[str, Dict[str, Any]] = dict()
 
-        self.new_id_map: Dict[str, Any] = dict() # Maps from new IDs to their genes and sequences.
-        self.old_id_map: Dict[str, Any] = dict() # Maps from old ids to their new IDs.
+        self.new_id_map: Dict[str, Any] = dict()  # Maps from new IDs to their genes and sequences.
+        self.old_id_map: Dict[str, Any] = dict()  # Maps from old ids to their new IDs.
         self.novel_transcript_count: int = 0
 
         self.gene_count: int = 0
@@ -145,7 +145,7 @@ class AnnotationParser:
             print("Done.")
         print("Generating transcript id to gene id map.")
         self.__generate_id_map__()
-        print("Updating stats of the merged annoation.")
+        print("Updating stats of the merged annotation.")
         self.__update__()
         print("Done with update.")
 
@@ -160,15 +160,13 @@ class AnnotationParser:
                 start: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["start"]
                 end: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["end"]
                 chromosome: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["seqname"]
-                start_orf: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["start_orf"]
-                end_orf: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["end_orf"]
                 self.new_id_map[transcript_id] = dict()
                 self.new_id_map[transcript_id]["gene_id"] = gene_id
                 self.new_id_map[transcript_id]["strand"] = strand
                 self.new_id_map[transcript_id]["start"] = start
                 self.new_id_map[transcript_id]["end"] = end
-                self.new_id_map[transcript_id]["start_orf"] = start_orf
-                self.new_id_map[transcript_id]["end_orf"] = end_orf
+                self.new_id_map[transcript_id]["start_orf"] = None
+                self.new_id_map[transcript_id]["end_orf"] = None
                 self.new_id_map[transcript_id]["chromosome"] = chromosome
                 self.new_id_map[transcript_id]["synonyms"] = synonyms
                 self.new_id_map[transcript_id]["peptides"] = dict()
