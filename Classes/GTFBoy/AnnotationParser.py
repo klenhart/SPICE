@@ -199,10 +199,8 @@ class AnnotationParser:
                 f.write(line)
 
     def save_json(self, out_path: str):
-        output_list: List[Dict[str, Any]] = list()
-        output_list.append(self.new_id_map)
         with open(os.path.join(out_path, self.name + ".json"), "w") as f:
-            json.dump(output_list, f, indent=4)
+            json.dump(self.new_id_map, f, indent=4)
 
     @staticmethod
     def check_if_candidate(line_dict: Dict[str, str]) -> bool:
