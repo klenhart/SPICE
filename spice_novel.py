@@ -1,4 +1,5 @@
 #!/bin/env python
+import os
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -57,14 +58,14 @@ def prep_mode(argument_dict: Dict[str, Any]):
     with open(argument_dict["json"], "r") as f:
         novel_transcript_map: Dict[str, Dict[str, Any]] = json.load(f)
 
-    # also load the diamond tsv from argument_dict["diamond"] and then work the three datastructures into a single fasta
     tsv_iterator: DiamondTSVBoy = DiamondTSVBoy(argument_dict["diamond"])
     tsv_iterator.parse_tsv()
     diamond_dict: Dict[str, Dict[str, List[Dict[str, Any]]]] = tsv_iterator.get_dict()
 
     for transcript_id in novel_transcript_map.keys():
         if transcript_id not in transdecoder_dict.keys():
-            print(transcript_id, "not found in TransDecoder peptides.")
+            print(transcript_id, "not found in TransDecoder peptides. Determining as non_coding.")
+            novel_transcript_map[transcript_id]["biotype"] = "non_coding"
         else:
             best_hit_dict: Dict[str, str] = dict()
             best_hit_score: float = float("-inf")
@@ -82,9 +83,26 @@ def prep_mode(argument_dict: Dict[str, Any]):
                         best_hit_dict = peptide_dict
             if not found_flag:
                 print("No coding sequence identified for", transcript_id + ". Determining as non-coding.")
-                novel_transcript_map[transcript_id]["peptides"] = "non-coding"
+                novel_transcript_map[transcript_id]["biotype"] = "non_coding"
+            else:
+                novel_transcript_map[transcript_id]["biotype"] = "protein_coding"
+                novel_transcript_map[transcript_id]["peptide"] = best_hit_dict["sequence"]
+                novel_transcript_map[transcript_id]["start_orf"] = best_hit_dict["start_orf"]
+                novel_transcript_map[transcript_id]["end_orf"] = best_hit_dict["end_orf"]
 
+    output_filepath: str = os.path.join(argument_dict["out_path"], argument_dict["name"] + "complete.fasta")
 
+    with open(output_filepath, "w") as f:
+        pass
+
+    for transcript_id in novel_transcript_map.keys():
+        gene_id: str = novel_transcript_map[transcript_id]["gene_id"]
+        tag_list: str = " ".join(["biotype:" + novel_transcript_map[transcript_id]["biotype"], "NOVEL"])
+        synonym_list: str = " ".join(novel_transcript_map[transcript_id]["synonyms"])
+        fasta_header: str = transcript_id + "|" + gene_id + "|" + tag_list + "|" + synonym_list
+        fasta_entry: str = fasta_header + "\n" + novel_transcript_map[transcript_id]["sequence"] + "\n"
+        with open(output_filepath, "a") as f:
+            f.write(fasta_entry)
 
 
 def main():
