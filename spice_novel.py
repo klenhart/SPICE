@@ -43,8 +43,7 @@ def merge_mode(argument_dict: Dict[str, Any]):
     annotation_parser: AnnotationParser = AnnotationParser(anno_list,
                                                            expression_list,
                                                            argument_dict["threshold"],
-                                                           argument_dict["name"],
-                                                           18)
+                                                           argument_dict["name"])
     annotation_parser.parse_annotations()
     annotation_parser.save(argument_dict["out_path"])
     annotation_parser.save_json(argument_dict["out_path"])

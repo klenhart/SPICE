@@ -233,15 +233,17 @@ class AnnotationParser:
     def make_coord_string(transcript_dict: Dict[str, Any]):
         chromosome: str = ""
         strand: str = ""
+        name: str = ""
         exon_list = list()
         for key in transcript_dict.keys():
             if key == "transcript":
                 chromosome = transcript_dict[key]["seqname"]
                 strand = transcript_dict[key]["strand"]
+                name = transcript_dict[key]["gene_name"]
             else:
                 exon = transcript_dict[key]["start"] + "-" + transcript_dict[key]["end"]
                 exon_list.append(exon)
-        return "_".join(sorted(exon_list)) + "_" + chromosome + "_" + strand
+        return "_".join(sorted(exon_list)) + "_" + chromosome + "_" + strand + "_" + name
 
 
 def md5_hash(data, length: int = 32):
