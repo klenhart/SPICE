@@ -1,7 +1,5 @@
 #!/bin/env python
-import json
 
-from Classes.FastaBoy.FastaBoy import TransDecoderFastaBoy
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
@@ -24,7 +22,11 @@ from Classes.FastaBoy.FastaBoy import TransDecoderFastaBoy
 
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.GTFBoy.AnnotationParser import AnnotationParser
+from Classes.FastaBoy.FastaBoy import TransDecoderFastaBoy
 from typing import Dict, Any, List
+import json
+
+from Classes.TSVBoy.TSVBoy import DiamondTSVBoy
 
 
 def merge_mode(argument_dict: Dict[str, Any]):
@@ -53,9 +55,36 @@ def prep_mode(argument_dict: Dict[str, Any]):
     transdecoder_dict: Dict[str, List[Dict, str]] = fasta_iterator.get_fasta_dict()
 
     with open(argument_dict["json"], "r") as f:
-        new_id_map: Dict[str, Dict[str, Any]] = json.load(f)
+        novel_transcript_map: Dict[str, Dict[str, Any]] = json.load(f)
 
     # also load the diamond tsv from argument_dict["diamond"] and then work the three datastructures into a single fasta
+    tsv_iterator: DiamondTSVBoy = DiamondTSVBoy(argument_dict["diamond"])
+    tsv_iterator.parse_tsv()
+    diamond_dict: Dict[str, Dict[str, List[Dict[str, Any]]]] = tsv_iterator.get_dict()
+
+    for transcript_id in novel_transcript_map.keys():
+        if transcript_id not in transdecoder_dict.keys():
+            print(transcript_id, "not found in TransDecoder peptides.")
+        else:
+            best_hit_dict: Dict[str, str] = dict()
+            best_hit_score: float = float("-inf")
+            found_flag: bool = False
+            for peptide_dict in transdecoder_dict[transcript_id]:
+                if peptide_dict["strand"] == novel_transcript_map[transcript_id]["strand"]:
+                    bit_score: float = diamond_dict[transcript_id][peptide_dict["transcript_tag"]][0]["bit_score"]
+                    if found_flag:
+                        if bit_score > best_hit_score:
+                            best_hit_score = bit_score
+                            best_hit_dict = peptide_dict
+                    else:
+                        found_flag = True
+                        best_hit_score = bit_score
+                        best_hit_dict = peptide_dict
+            if not found_flag:
+                print("No coding sequence identified for", transcript_id + ". Determining as non-coding.")
+                novel_transcript_map[transcript_id]["peptides"] = "non-coding"
+
+
 
 
 def main():

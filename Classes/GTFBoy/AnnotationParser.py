@@ -169,7 +169,9 @@ class AnnotationParser:
                 self.new_id_map[transcript_id]["end_orf"] = None
                 self.new_id_map[transcript_id]["chromosome"] = chromosome
                 self.new_id_map[transcript_id]["synonyms"] = synonyms
-                self.new_id_map[transcript_id]["peptides"] = dict()
+                self.new_id_map[transcript_id]["biotype"] = ""
+                self.new_id_map[transcript_id]["peptide"] = ""
+
 
     def __iter__(self):
         yield "# Spice Annotation Parser Collection of Novel transcripts\n"
