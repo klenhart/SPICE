@@ -160,18 +160,22 @@ class AnnotationParser:
                 start: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["start"]
                 end: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["end"]
                 chromosome: List[str] = self.transcript_dict[gene_id][transcript_id]["transcript"]["seqname"]
-                self.new_id_map[transcript_id] = dict()
-                self.new_id_map[transcript_id]["gene_id"] = gene_id
-                self.new_id_map[transcript_id]["strand"] = strand
-                self.new_id_map[transcript_id]["start"] = start
-                self.new_id_map[transcript_id]["end"] = end
-                self.new_id_map[transcript_id]["start_orf"] = None
-                self.new_id_map[transcript_id]["end_orf"] = None
-                self.new_id_map[transcript_id]["chromosome"] = chromosome
-                self.new_id_map[transcript_id]["synonyms"] = synonyms
-                self.new_id_map[transcript_id]["biotype"] = ""
-                self.new_id_map[transcript_id]["peptide"] = ""
-
+                if transcript_id in self.new_id_map.keys():
+                    print("ERROR:", transcript_id, "already given out to", self.new_id_map[transcript_id])
+                    print("Wanted to write", self.transcript_dict[gene_id][transcript_id]["transcript"], "to key.")
+                    raise KeyError
+                else:
+                    self.new_id_map[transcript_id] = dict()
+                    self.new_id_map[transcript_id]["gene_id"] = gene_id
+                    self.new_id_map[transcript_id]["strand"] = strand
+                    self.new_id_map[transcript_id]["start"] = start
+                    self.new_id_map[transcript_id]["end"] = end
+                    self.new_id_map[transcript_id]["start_orf"] = None
+                    self.new_id_map[transcript_id]["end_orf"] = None
+                    self.new_id_map[transcript_id]["chromosome"] = chromosome
+                    self.new_id_map[transcript_id]["synonyms"] = synonyms
+                    self.new_id_map[transcript_id]["biotype"] = ""
+                    self.new_id_map[transcript_id]["peptide"] = ""
 
     def __iter__(self):
         yield "# Spice Annotation Parser Collection of Novel transcripts\n"
@@ -228,14 +232,16 @@ class AnnotationParser:
     @staticmethod
     def make_coord_string(transcript_dict: Dict[str, Any]):
         chromosome: str = ""
+        strand: str = ""
         exon_list = list()
         for key in transcript_dict.keys():
             if key == "transcript":
                 chromosome = transcript_dict[key]["seqname"]
+                strand = transcript_dict[key]["strand"]
             else:
                 exon = transcript_dict[key]["start"] + "-" + transcript_dict[key]["end"]
                 exon_list.append(exon)
-        return "_".join(sorted(exon_list)) + "_" + chromosome
+        return "_".join(sorted(exon_list)) + "_" + chromosome + "_" + strand
 
 
 def md5_hash(data, length: int = 32):

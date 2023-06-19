@@ -1,5 +1,4 @@
 #!/bin/env python
-import os
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -26,6 +25,7 @@ from Classes.GTFBoy.AnnotationParser import AnnotationParser
 from Classes.FastaBoy.FastaBoy import TransDecoderFastaBoy
 from typing import Dict, Any, List
 import json
+import os
 
 from Classes.TSVBoy.TSVBoy import DiamondTSVBoy
 
@@ -43,7 +43,8 @@ def merge_mode(argument_dict: Dict[str, Any]):
     annotation_parser: AnnotationParser = AnnotationParser(anno_list,
                                                            expression_list,
                                                            argument_dict["threshold"],
-                                                           argument_dict["name"])
+                                                           argument_dict["name"],
+                                                           18)
     annotation_parser.parse_annotations()
     annotation_parser.save(argument_dict["out_path"])
     annotation_parser.save_json(argument_dict["out_path"])
