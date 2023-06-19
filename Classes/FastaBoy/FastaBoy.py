@@ -1,5 +1,5 @@
 #!/bin/env python
-import json
+
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
@@ -22,12 +22,10 @@ import json
 
 from typing import Dict, List, Tuple, Iterator
 import argparse
+import json
 
 
 class TransDecoderFastaBoy:
-
-
-# seq
 
     def __init__(self, fasta_path: str):
         self.fasta_path = fasta_path

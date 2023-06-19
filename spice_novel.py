@@ -49,12 +49,14 @@ def merge_mode(argument_dict: Dict[str, Any]):
 def prep_mode(argument_dict: Dict[str, Any]):
     fasta_iterator: TransDecoderFastaBoy = TransDecoderFastaBoy(argument_dict["input"])
     fasta_iterator.parse_fasta()
+
     transdecoder_dict: Dict[str, List[Dict, str]] = fasta_iterator.get_fasta_dict()
 
     with open(argument_dict["json"], "r") as f:
         new_id_map: Dict[str, Dict[str, Any]] = json.load(f)
 
     # also load the diamond tsv from argument_dict["diamond"] and then work the three datastructures into a single fasta
+
 
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--expression", "--threshold", "--mode",
