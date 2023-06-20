@@ -3,7 +3,7 @@
 #######################################################################
 # Copyright (C) 2022 Julian Dosch
 #
-# This file is part of Spice.
+# This file is part of main.
 #
 #  get_domain_importance is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
+#  along with PathwayTrace.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
 
@@ -35,21 +35,38 @@ def option_parse():
                           help="path to input json")
     required.add_argument("-o", "--outPath", default='.', type=str, required=True,
                           help="path to output directory. Name will be based on input file.")
+    optional.add_argument("-c", "--genesPerFile", default=100, type=int, required=False,
+                          help="Number of genes in one file. Higher number result in less file with bigger size. ")
     args = parser.parse_args()
-    main(args.inPath, args.outPath)
+    main(args.inPath, args.outPath, args.genesPerFile)
 
 
-def main(inpath, outpath):
-    output = read_input(inpath)
-    name = '.'.join(inpath.split('/')[-1].split('.')[0:-1])
+def main(inpath, outpath, filesize):
+    arc = read_input(inpath)
+    index = 0
+    count = 0
+    output = {}
+    indexout = {'genes': {}}
+    for gene in arc:
+        output[gene] = arc[gene]
+        indexout['genes'][gene] = index
+        count += 1
+        if count > filesize:
+            name = str(index).rjust(9, '0')
+            save2json(output, name, outpath)
+            output = {}
+            index += 1
+            count = 0
+    name = str(index).rjust(9, '0')
     save2json(output, name, outpath)
-
+    indexout['#files'] = index
+    save2json(indexout, 'index', outpath)
 
     
 def save2json(dict2save, name, directory):
     Path(directory).mkdir(parents=True, exist_ok=True)
     jsonOut = json.dumps(dict2save, ensure_ascii=False)
-    out = open(directory + '/' + name + '_map.json', 'w')
+    out = open(directory + '/' + name + '.json', 'w')
     out.write(jsonOut)
     out.close()
 
@@ -57,8 +74,7 @@ def save2json(dict2save, name, directory):
 def read_input(inpath):    # reads input json that contains the isoform annotations and restructures the data in a gene centric fashion
     fa_map = {}
     with open(inpath, 'r') as infile:
-        in_dict = json.loads(infile.read())
-        features = in_dict['feature']
+        features = json.loads(infile.read())['feature']
         for protid in features:
             gid, pid, tid = protid.split('|')
             if not gid in fa_map:

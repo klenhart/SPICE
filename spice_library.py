@@ -31,7 +31,7 @@ from Classes.SequenceHandling.Transcript import Transcript
 from Classes.TreeGrow.TreeGrow import TreeGrow
 from Classes.WriteGuard.WriteGuard import WriteGuard
 from Classes.PassPath.PassPath import PassPath
-from Classes.FastaBoy.FastaBoy import FastaBoy
+from Classes.FastaBoy.FastaBoy import EnsemblFastaBoy
 
 from typing import Dict, Any, List
 from tqdm import tqdm
@@ -170,7 +170,7 @@ def collect_sequences(gene_assembler: GeneAssembler,
                       pass_path: PassPath,
                       protein_fasta: str) -> None:
 
-    fasta_iterator: FastaBoy = FastaBoy(protein_fasta)
+    fasta_iterator: EnsemblFastaBoy = EnsemblFastaBoy(protein_fasta)
     fasta_iterator.set_filter("transcript_biotype", "protein_coding")
     fasta_iterator.set_filter("gene_biotype", "protein_coding")
     fasta_iterator.parse_fasta()
@@ -403,6 +403,7 @@ def main():
                                      "fas_temp": "fas_data/tmp",
                                      "fas_annotation": "fas_data/annotation",
                                      "fas_annoTools": "fas_data/annoTools.txt",
+                                     "fas_architectures": "fas_data/architectures/",
                                      "transcript_data": "transcript_data",
                                      "transcript_info": "transcript_data/transcript_info.json",
                                      "transcript_seq": "transcript_data/sequences.json",
