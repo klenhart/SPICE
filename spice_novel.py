@@ -50,59 +50,110 @@ def merge_mode(argument_dict: Dict[str, Any]):
 
 
 def prep_mode(argument_dict: Dict[str, Any]):
+    no_complete_orf_count: int = 0
+    no_diamond_match_count: int = 0
+    seq_identified_count: int = 0
+
+    print("Parsing TransDecoder input.", flush=True)
     fasta_iterator: TransDecoderFastaBoy = TransDecoderFastaBoy(argument_dict["input"])
     fasta_iterator.parse_fasta()
-
     transdecoder_dict: Dict[str, List[Dict, str]] = fasta_iterator.get_fasta_dict()
 
+    print("Parsing Spice merge input.", flush=True)
     with open(argument_dict["json"], "r") as f:
         novel_transcript_map: Dict[str, Dict[str, Any]] = json.load(f)
 
+    print("Parsing Diamond input.", flush=True)
     tsv_iterator: DiamondTSVBoy = DiamondTSVBoy(argument_dict["diamond"])
     tsv_iterator.parse_tsv()
     diamond_dict: Dict[str, Dict[str, List[Dict[str, Any]]]] = tsv_iterator.get_dict()
 
+    print("Assigning sequences.", flush=True)
     for transcript_id in novel_transcript_map.keys():
         if transcript_id not in transdecoder_dict.keys():
-            print(transcript_id, "not found in TransDecoder peptides. Determining as non_coding.")
+            no_complete_orf_count += 1
+            # print(transcript_id, "not found in TransDecoder peptides. Determining as non_coding.")
             novel_transcript_map[transcript_id]["biotype"] = "non_coding"
         else:
-            best_hit_dict: Dict[str, str] = dict()
-            best_hit_score: float = float("-inf")
-            found_flag: bool = False
-            for peptide_dict in transdecoder_dict[transcript_id]:
-                if peptide_dict["strand"] == novel_transcript_map[transcript_id]["strand"]:
-                    bit_score: float = diamond_dict[transcript_id][peptide_dict["transcript_tag"]][0]["bit_score"]
-                    if found_flag:
-                        if bit_score > best_hit_score:
-                            best_hit_score = bit_score
-                            best_hit_dict = peptide_dict
-                    else:
-                        found_flag = True
-                        best_hit_score = bit_score
-                        best_hit_dict = peptide_dict
-            if not found_flag:
-                print("No coding sequence identified for", transcript_id + ". Determining as non-coding.")
+            real_strand: str = novel_transcript_map[transcript_id]["strand"]
+            keep_list: List[int] = list()
+            for i, peptide_dict in enumerate(transdecoder_dict[transcript_id]):
+                if peptide_dict["strand"] == real_strand:
+                    keep_list.append(i)
+
+            peptide_list: List[Dict[str, Any]] = [transdecoder_dict[transcript_id][i] for i in keep_list]
+
+            if len(peptide_list) == 0:
+                no_complete_orf_count += 1
                 novel_transcript_map[transcript_id]["biotype"] = "non_coding"
             else:
-                novel_transcript_map[transcript_id]["biotype"] = "protein_coding"
-                novel_transcript_map[transcript_id]["peptide"] = best_hit_dict["sequence"]
-                novel_transcript_map[transcript_id]["start_orf"] = best_hit_dict["start_orf"]
-                novel_transcript_map[transcript_id]["end_orf"] = best_hit_dict["end_orf"]
+                best_hit_dict: Dict[str, str] = dict()
+                best_hit_score: float = float("-inf")
+                found_flag: bool = False
 
-    output_filepath: str = os.path.join(argument_dict["out_path"], argument_dict["name"] + "complete.fasta")
+                for peptide_dict in transdecoder_dict[transcript_id]:
+                    if peptide_dict["strand"] == novel_transcript_map[transcript_id]["strand"]:
+                        if transcript_id in diamond_dict.keys():  # Was any alignment for the transcript found?
+                            diamond_trans_dict: Dict[str, List[Dict[str, Any]]] = diamond_dict[transcript_id]
+                            if peptide_dict["transcript_tag"] in diamond_trans_dict.keys():  # Was this seq aligned?
+                                bit_score: float = diamond_trans_dict[peptide_dict["transcript_tag"]][0]["bit_score"]
+                                e_value: float = diamond_trans_dict[peptide_dict["transcript_tag"]][0]["e-value"]
+                                if found_flag:
+                                    if bit_score > best_hit_score:
+                                        best_hit_score = bit_score
+                                        best_hit_dict = peptide_dict
+                                        best_hit_dict["bit_score"] = str(bit_score)
+                                        best_hit_dict["e-value"] = str(e_value)
+                                else:
+                                    found_flag = True
+                                    best_hit_score = bit_score
+                                    best_hit_dict = peptide_dict
+                                    best_hit_dict["bit_score"] = str(bit_score)
+                                    best_hit_dict["e-value"] = str(e_value)
+                if not found_flag:
+                    no_diamond_match_count += 1
+                    # print("No coding sequence identified for", transcript_id + ". Determining as non-coding.")
+                    novel_transcript_map[transcript_id]["biotype"] = "non_coding"
+                else:
+                    seq_identified_count += 1
+                    novel_transcript_map[transcript_id]["biotype"] = "protein_coding"
+                    novel_transcript_map[transcript_id]["peptide"] = best_hit_dict["sequence"]
+                    novel_transcript_map[transcript_id]["start_orf"] = best_hit_dict["start_orf"]
+                    novel_transcript_map[transcript_id]["end_orf"] = best_hit_dict["end_orf"]
+                    novel_transcript_map[transcript_id]["e-value"] = best_hit_dict["e-value"]
+                    novel_transcript_map[transcript_id]["bit_score"] = best_hit_dict["bit_score"]
+
+    output_filepath: str = os.path.join(argument_dict["out_path"], argument_dict["name"] + "_complete.fasta")
 
     with open(output_filepath, "w") as f:
         pass
 
     for transcript_id in novel_transcript_map.keys():
         gene_id: str = novel_transcript_map[transcript_id]["gene_id"]
-        tag_list: str = " ".join(["biotype:" + novel_transcript_map[transcript_id]["biotype"], "NOVEL"])
+        if novel_transcript_map[transcript_id]["biotype"] == "non_coding":
+            tag_list: str = " ".join(["biotype:" + novel_transcript_map[transcript_id]["biotype"],
+                                      "NOVEL"])
+        else:
+            tag_list: str = " ".join(["biotype:" + novel_transcript_map[transcript_id]["biotype"],
+                                      "NOVEL",
+                                      "bitScore:" + novel_transcript_map[transcript_id]["bit_score"],
+                                      "e_value:" + novel_transcript_map[transcript_id]["e-value"]])
         synonym_list: str = " ".join(novel_transcript_map[transcript_id]["synonyms"])
-        fasta_header: str = transcript_id + "|" + gene_id + "|" + tag_list + "|" + synonym_list
-        fasta_entry: str = fasta_header + "\n" + novel_transcript_map[transcript_id]["sequence"] + "\n"
+        fasta_header: str = ">" + transcript_id + "|" + gene_id + "|" + tag_list + "|" + synonym_list
+        fasta_entry: str = fasta_header + "\n" + novel_transcript_map[transcript_id]["peptide"] + "\n"
         with open(output_filepath, "a") as f:
             f.write(fasta_entry)
+
+    total: int = seq_identified_count + no_complete_orf_count + no_diamond_match_count
+    print("All sequence saved to:")
+    print(output_filepath)
+
+    print("Stats:\n\t",
+          total, "transcripts processed.\n\t",
+          str(round(seq_identified_count/total * 100, 2)) + "% were assigned a sequence.\n\t",
+          str(round(no_complete_orf_count/total * 100,
+                    2)) + "% determined as 'non_coding' -> no ORF was identified.\n\t",
+          str(round(no_diamond_match_count/total * 100, 2)) + "% determined as 'non_coding' -> no Diamond hit.")
 
 
 def main():
