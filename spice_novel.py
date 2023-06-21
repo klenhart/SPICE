@@ -1,4 +1,5 @@
 #!/bin/env python
+import shutil
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -27,6 +28,7 @@ from typing import Dict, Any, List
 import json
 import os
 
+from Classes.SequenceHandling.LibraryInfo import LibraryInfo
 from Classes.TSVBoy.TSVBoy import DiamondTSVBoy
 
 
@@ -74,6 +76,9 @@ def prep_mode(argument_dict: Dict[str, Any]):
             no_complete_orf_count += 1
             # print(transcript_id, "not found in TransDecoder peptides. Determining as non_coding.")
             novel_transcript_map[transcript_id]["biotype"] = "non_coding"
+            novel_transcript_map[transcript_id]["tag"] = " ".join(["no_ORF",
+                                                                   "NOVEL",
+                                                                   "biotype:non_coding"])
         else:
             real_strand: str = novel_transcript_map[transcript_id]["strand"]
             keep_list: List[int] = list()
@@ -86,6 +91,9 @@ def prep_mode(argument_dict: Dict[str, Any]):
             if len(peptide_list) == 0:
                 no_complete_orf_count += 1
                 novel_transcript_map[transcript_id]["biotype"] = "non_coding"
+                novel_transcript_map[transcript_id]["tag"] = " ".join(["no_ORF",
+                                                                       "NOVEL",
+                                                                       "biotype:non_coding"])
             else:
                 best_hit_dict: Dict[str, str] = dict()
                 best_hit_score: float = float("-inf")
@@ -114,14 +122,19 @@ def prep_mode(argument_dict: Dict[str, Any]):
                     no_diamond_match_count += 1
                     # print("No coding sequence identified for", transcript_id + ". Determining as non-coding.")
                     novel_transcript_map[transcript_id]["biotype"] = "non_coding"
+                    novel_transcript_map[transcript_id]["tag"] = " ".join(["no_diamond_hit",
+                                                                           "NOVEL",
+                                                                           "biotype:non_coding"])
                 else:
                     seq_identified_count += 1
                     novel_transcript_map[transcript_id]["biotype"] = "protein_coding"
                     novel_transcript_map[transcript_id]["peptide"] = best_hit_dict["sequence"]
                     novel_transcript_map[transcript_id]["start_orf"] = best_hit_dict["start_orf"]
                     novel_transcript_map[transcript_id]["end_orf"] = best_hit_dict["end_orf"]
-                    novel_transcript_map[transcript_id]["e-value"] = best_hit_dict["e-value"]
-                    novel_transcript_map[transcript_id]["bit_score"] = best_hit_dict["bit_score"]
+                    novel_transcript_map[transcript_id]["tag"] = " ".join(["e_value:" + best_hit_dict["e-value"],
+                                                                           "bit_score:" + best_hit_dict["bit_score"],
+                                                                           "NOVEL",
+                                                                           "biotype:protein_coding"])
 
     output_filepath: str = os.path.join(argument_dict["out_path"], argument_dict["name"] + "_complete.fasta")
 
@@ -130,16 +143,9 @@ def prep_mode(argument_dict: Dict[str, Any]):
 
     for transcript_id in novel_transcript_map.keys():
         gene_id: str = novel_transcript_map[transcript_id]["gene_id"]
-        if novel_transcript_map[transcript_id]["biotype"] == "non_coding":
-            tag_list: str = " ".join(["biotype:" + novel_transcript_map[transcript_id]["biotype"],
-                                      "NOVEL"])
-        else:
-            tag_list: str = " ".join(["biotype:" + novel_transcript_map[transcript_id]["biotype"],
-                                      "NOVEL",
-                                      "bitScore:" + novel_transcript_map[transcript_id]["bit_score"],
-                                      "e_value:" + novel_transcript_map[transcript_id]["e-value"]])
+        tag_list: str = novel_transcript_map[transcript_id]["tag"]
         synonym_list: str = " ".join(novel_transcript_map[transcript_id]["synonyms"])
-        fasta_header: str = ">" + transcript_id + "|" + gene_id + "|" + tag_list + "|" + synonym_list
+        fasta_header: str = ">" + gene_id + "|" + transcript_id + "|" + tag_list + "|" + synonym_list
         fasta_entry: str = fasta_header + "\n" + novel_transcript_map[transcript_id]["peptide"] + "\n"
         with open(output_filepath, "a") as f:
             f.write(fasta_entry)
@@ -156,40 +162,56 @@ def prep_mode(argument_dict: Dict[str, Any]):
           str(round(no_diamond_match_count/total * 100, 2)) + "% determined as 'non_coding' -> no Diamond hit.")
 
 
+def novlib_mode(argument_dict: Dict[str, Any]):
+    origin_lib_info: LibraryInfo = LibraryInfo(os.path.join(argument_dict["library"], "info.yaml"))
+
+    novlib_root_path: str = os.path.join(argument_dict["out_path"], "spice_novlib_")
+    novlib_root_path += origin_lib_info["info"]["species"] + "_"
+    novlib_root_path += origin_lib_info["info"]["release"] + "_"
+    novlib_root_path += origin_lib_info["info"]["fas_mode"] + "_"
+    novlib_root_path += argument_dict["name"]
+    shutil.copytree(argument_dict["library"], os.path.join(argument_dict["out_path"], novlib_root_path))
+
+
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--expression", "--threshold", "--mode",
-                                                    "--name", "--json", "--diamond"],
-                                                   [str, str, str, float, str, str, str, str],
+                                                    "--name", "--json", "--diamond", "--library"],
+                                                   [str, str, str, float, str, str, str, str, str],
                                                    ["store", "store", "store", "store", "store", "store", "store",
-                                                    "store"],
-                                                   [1, 1, None, "?", 1, 1, "?", "?"],
+                                                    "store", "store"],
+                                                   [1, 1, None, "?", 1, 1, "?", "?", "?"],
                                                    ["""Path to the input file. Depends on the mode. 
                                                     'merge': .txt-file containing the paths to all annotation-gtfs
                                                      that shall be merged. One path per line.
                                                     'prep': LongOrf.pep output of TransDecoder.
-                                                    'novlib': Generate a spice_novlib from a .fasta an already
-                                                    exisiting complete spice_lib. The .fasta file requires a
-                                                    header structure like this:
-                                                    ><GENE_ID>|<TRANSCRIPT_ID>|<TAG1> ... <TAGn>|<SYN1> ... <SYNn>
+                                                    'novlib': Fasta-file containing novel transcripts. The file
+                                                    requires a header structure like this:
+                                                    ><GENE_ID>|<TRNSCRPT_ID>|<TAG1> ... <TAGn>|<SYN1> ... <SYNn>
                                                     SYN stands for synonyms that shall all be recognised as valid
-                                                    identifiers for the transcript. If no tags are required just add 
-                                                    nothing after the | symbol.
-                                                    Same for SYN. (>gene1|trans1||)""",
+                                                    identifiers for the transcript. If there are not synonyms the third
+                                                     '|'-symbol is still required for parsing the file.
+                                                    At least one specific tag must be added:
+                                                    biotype:<BIOTYPE>. If a transcript shall be considered non-coding
+                                                    give it the biotype 'non_coding'.""",  # INPUT
                                                     """Path to the output directory for <name>.gtf,
-                                                    <name>.json, <name>.fasta, <name>_complete.fasta etc.""",
+                                                    <name>.json, <name>.fasta, <name>_complete.fasta,
+                                                     novlib_<species>_<release>_<fas_mode>_<name> etc.""",  # OUT_PATH
                                                     """Only used in 'merge'-mode. Path to a text file containing 
                                                     the paths to gtf files including transcript abundances. Only 
                                                     transcripts will be kept which exceed the float given in 
-                                                    the --threshold parameter.""",
-                                                    "Expression threshold, which will be used for transcript curation.",
+                                                    the --threshold parameter.""",  # EXPRESSION
+                                                    """Expression threshold, which will be 
+                                                     used for transcript curation.""",  # THRESHOLD
                                                     """Either 1:'merge', 2:'prep' or 3:'novlib' depending on the
-                                                    stage of the workflow.""",
-                                                    "Name for the output file.",
+                                                    stage of the workflow.""",  # MODE
+                                                    "Name for the output file.",  # NAME
                                                     """Path to the <name>.json file that was output during merge
                                                     mode. This argument is only required for
-                                                    'prep' mode.""",
+                                                    'prep' mode.""",  # JSON
                                                     """Path to the .tsv file output by DIAMOND. Only required for 'prep'
-                                                    mode."""
+                                                    mode.""",  # DIAMOND
+                                                    """Path to the Spice library that shall be extended. Only required
+                                                    for 'novlib mode."""  # LIBRARY
                                                     ])
     argument_parser.generate_parser()
     argument_parser.execute()
@@ -207,7 +229,7 @@ def main():
         prep_mode(argument_dict)
 
     elif argument_dict["mode"] == "novlib":
-        pass
+        novlib_mode(argument_dict)
 
 
 if __name__ == "__main__":
