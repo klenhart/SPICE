@@ -72,6 +72,8 @@ class Protein(Transcript):
         self.set_biotype(input_dict["biotype"])
         self.set_tags(input_dict["tags"])
         self.set_transcript_support_level(input_dict["tsl"])
+        if "synonyms" in input_dict.keys():
+            self.synonyms = input_dict["synonyms"]
 
     def to_dict(self) -> Dict[str, Any]:
         output: Dict[str, Any] = dict()
@@ -84,6 +86,7 @@ class Protein(Transcript):
         output["biotype"] = self.get_biotype()
         output["tags"] = self.get_tags()
         output["tsl"] = self.get_transcript_support_level()
+        output["synonyms"] = self.get_synonyms()
         return output
 
     def from_gtf_line(self, gtf_split_line: List[str]) -> None:
@@ -110,7 +113,9 @@ class Protein(Transcript):
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Protein):
-            return self.get_id() == other.get_id()
+            return any([self.get_id() == other.get_id(),
+                        self.get_id() in other.get_synonyms(),
+                        other.get_id() in self.get_synonyms()])
         return False
 
     def __len__(self) -> int:

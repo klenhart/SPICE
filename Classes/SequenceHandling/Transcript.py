@@ -39,13 +39,17 @@ class Transcript:
         self.id_taxon: int = 0
         self.biotype: str = ""
         self.transcript_support_level: int = 6
-        self.tags = list()
+        self.tags: List[str] = list()
+        self.synonyms: List[str] = list()
 
     def has_sequence(self) -> bool:
         if self.feature == "transcript":
             return True
         else:
             return len(self.get_sequence()) > 0
+
+    def set_sequence(self, seq: str) -> None:
+        pass
 
     def set_tags(self, tag_list: List[str]):
         self.tags = tag_list
@@ -83,6 +87,9 @@ class Transcript:
     def set_transcript_support_level(self, tsl: int):
         self.transcript_support_level = tsl
 
+    def add_synonym(self, synonym: str):
+        self.synonyms.append(synonym)
+
     def get_id(self) -> str:
         return self.id_transcript
 
@@ -113,6 +120,9 @@ class Transcript:
     def get_sequence(self):
         return ""
 
+    def get_synonyms(self):
+        return self.synonyms
+
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
         self.set_id(input_dict["_id"])
         self.set_name(input_dict["transcript_name"])
@@ -122,6 +132,8 @@ class Transcript:
         self.set_biotype(input_dict["biotype"])
         self.set_tags((input_dict["tags"]))
         self.set_transcript_support_level(input_dict["tsl"])
+        if "synonyms" in input_dict.keys():
+            self.synonyms = input_dict["synonyms"]
 
     def to_dict(self) -> Dict[str, Any]:
         output: Dict[str, Any] = dict()
@@ -133,6 +145,7 @@ class Transcript:
         output["biotype"] = self.get_biotype()
         output["tags"] = self.get_tags()
         output["tsl"] = self.get_transcript_support_level()
+        output["synonyms"] = self.get_synonyms()
         return output
 
     def from_gtf_line(self, gtf_split_line: List[str]) -> None:
@@ -159,5 +172,7 @@ class Transcript:
 
     def __eq__(self, other):
         if isinstance(other, Transcript):
-            return self.get_id() == other.get_id()
+            return any([self.get_id() == other.get_id(),
+                        self.get_id() in other.get_synonyms(),
+                        other.get_id() in self.get_synonyms()])
         return False

@@ -1,5 +1,5 @@
 #!/bin/env python
-
+import sys
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
@@ -20,9 +20,86 @@
 #
 #######################################################################
 
-from typing import Dict, List, Tuple, Iterator
+from typing import Dict, List, Tuple, Iterator, Any
 import argparse
 import json
+
+from Classes.SequenceHandling.Protein import Protein
+from Classes.SequenceHandling.Transcript import Transcript
+
+
+class SpiceFastaBoy:
+
+    def __init__(self, fasta_path: str, taxon_id: int):
+        self.fasta_path: str = fasta_path
+        self.fasta_dict: Dict[str, List[Transcript]] = dict()
+        self.taxon_id: int = taxon_id
+
+    def __iter__(self) -> Iterator[str]:
+        with open(self.fasta_path, "r") as f:
+            for line in f:
+                yield line
+
+    def get_fasta_dict(self):
+        return self.fasta_dict
+
+    def parse_fasta(self):
+        gene_id: str = ""
+        sequence: str = ""
+        for line in self:
+            if line.startswith(">"):
+                if gene_id != "" and isinstance(self.fasta_dict[gene_id][-1], Protein):
+                    self.fasta_dict[gene_id][-1].set_sequence(sequence)
+                sequence = ""
+                fasta_header_dict: Dict[str, str] = self.make_fasta_header_dict(line)
+                gene_id: str = fasta_header_dict["gene_id"]
+                transcript_id: str = fasta_header_dict["transcript_id"]
+                if gene_id not in self.fasta_dict.keys():
+                    self.fasta_dict[gene_id] = list()
+                if fasta_header_dict["biotype"] in ["non_coding", "nonsense_mediated_decay"]:
+                    transcript = Transcript()
+                elif fasta_header_dict["biotype"] in ["protein_coding"]:
+                    fasta_header_dict["sequence"] = ""
+                    transcript = Protein()
+                else:
+                    print("Biotype " + fasta_header_dict["biotype"] + " of transcript " + transcript_id + "unknown.")
+                    sys.exit(1)
+                transcript.from_dict(fasta_header_dict)
+                self.fasta_dict[gene_id].append(transcript)
+                continue
+            sequence += line.strip()
+
+    def make_fasta_header_dict(self, header: str) -> Dict[str, Any]:
+        header_dict: Dict[str, Any] = dict()
+        gene_id, transcript_id, tags, synonyms = header.split("|")
+
+        header_dict["gene_id"] = gene_id[1:]
+        header_dict["_id"] = transcript_id
+        header_dict["transcript_id"] = transcript_id
+        header_dict["transcript_name"] = transcript_id
+
+        tag_list: List[str] = tags.split(" ")
+        delete_index = -1
+        for i, tag in enumerate(tag_list):
+            if tag.startswith("biotype:"):
+                header_dict["biotype"] = tag[8:]
+                delete_index: int = i
+                break
+        if delete_index == -1:
+            print("Biotype not defined in tags for transcript", transcript_id,
+                  "; must include biotype:<BIOTYPE> in header tags.")
+            sys.exit(1)
+        else:
+            tag_list.pop(delete_index)
+        header_dict["tags"] = tag_list
+
+        header_dict["synonyms"] = synonyms.split(" ")
+
+        header_dict["feature"] = "novel_transcript"
+        header_dict["taxon_id"] = self.taxon_id
+        header_dict["tsl"] = 6
+
+        return header_dict
 
 
 class TransDecoderFastaBoy:

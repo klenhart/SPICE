@@ -1,5 +1,4 @@
 #!/bin/env python
-import os
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -25,6 +24,7 @@ from Classes.GTFBoy.GTFBoy import GTFBoy
 from typing import List, Dict, Any
 import json
 import hashlib
+import os
 
 
 class AnnotationParser:

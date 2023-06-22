@@ -22,9 +22,10 @@
 
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.GTFBoy.AnnotationParser import AnnotationParser
-from Classes.FastaBoy.FastaBoy import TransDecoderFastaBoy
+from Classes.FastaBoy.FastaBoy import TransDecoderFastaBoy, SpiceFastaBoy
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
+from Classes.SequenceHandling.Transcript import Transcript
 from Classes.TSVBoy.TSVBoy import DiamondTSVBoy
 from Classes.PassPath.PassPath import PassPath
 from typing import Dict, Any, List
@@ -148,7 +149,10 @@ def prep_mode(argument_dict: Dict[str, Any]):
         tag_list: str = novel_transcript_map[transcript_id]["tag"]
         synonym_list: str = " ".join(novel_transcript_map[transcript_id]["synonyms"])
         fasta_header: str = ">" + gene_id + "|" + transcript_id + "|" + tag_list + "|" + synonym_list
-        fasta_entry: str = fasta_header + "\n" + novel_transcript_map[transcript_id]["peptide"] + "\n"
+        if novel_transcript_map[transcript_id]["peptide"] == "":
+            fasta_entry: str = fasta_header + "\n"
+        else:
+            fasta_entry: str = fasta_header + "\n" + novel_transcript_map[transcript_id]["peptide"] + "\n"
         with open(output_filepath, "a") as f:
             f.write(fasta_entry)
 
@@ -210,12 +214,20 @@ def novlib_mode(argument_dict: Dict[str, Any]):
 
     gene_assembler.load(pass_path)
 
+    fasta_iterator: SpiceFastaBoy = SpiceFastaBoy(argument_dict["input"], int(novlib_info["info"]["taxon_id"]))
+    fasta_iterator.parse_fasta()
+    novel_transcript_dict: Dict[str, List[Transcript]] = fasta_iterator.get_fasta_dict()
 
+    for gene in gene_assembler.get_genes():
+        if gene.get_id() in novel_transcript_dict.keys():
+            for transcript in novel_transcript_dict[gene.get_id()]:
+                gene.add_transcript(transcript, True)
 
-    # Download current library with included fas scores.
-    # Load GeneAssembler.
-    # Open novel_transcript_complete.fasta
-    # insert all transcripts.
+    gene_assembler.save_seq(pass_path)
+    gene_assembler.save_info(pass_path)
+    gene_assembler.save_fas(pass_path)
+
+    # Update library info after adding everything.
     # remove small proteins.
     # remove incorrect entries
     # do implicit fas scoring (remember to also include non_coding now).

@@ -83,14 +83,14 @@ class Gene:
         """
         self.transcripts[transcript.get_id()] = transcript
 
-        if transcript.get_biotype() in ["protein_coding", "nonsense_mediated_decay"] and initial_add:
+        if transcript.get_biotype() in ["protein_coding", "nonsense_mediated_decay", "non_coding"] and initial_add:
             if transcript.get_id() not in self.fas_dict.keys():
                 self.fas_dict[transcript.get_id()] = dict()
                 for transcript_id in self.fas_dict.keys():
-                    if transcript.get_biotype() == "nonsense_mediated_decay":
+                    if transcript.get_biotype() in ["nonsense_mediated_decay", "non_coding"]:
                         self.fas_dict[transcript.get_id()][transcript_id] = 0.0
                         self.fas_dict[transcript_id][transcript.get_id()] = 0.0
-                    elif self.transcripts[transcript_id].get_biotype() == "nonsense_mediated_decay":
+                    elif self.transcripts[transcript_id].get_biotype() in ["nonsense_mediated_decay", "non_coding"]:
                         self.fas_dict[transcript.get_id()][transcript_id] = 0.0
                         self.fas_dict[transcript_id][transcript.get_id()] = 0.0
                     else:
