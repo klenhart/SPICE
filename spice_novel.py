@@ -23,6 +23,7 @@
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.GTFBoy.AnnotationParser import AnnotationParser
 from Classes.FastaBoy.FastaBoy import TransDecoderFastaBoy
+from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
 from Classes.TSVBoy.TSVBoy import DiamondTSVBoy
 from Classes.PassPath.PassPath import PassPath
@@ -204,13 +205,20 @@ def novlib_mode(argument_dict: Dict[str, Any]):
 
     pass_path: PassPath = PassPath(paths_dict)
 
+    gene_assembler: GeneAssembler = GeneAssembler(novlib_info["info"]["species"],
+                                                  str(novlib_info["info"]["taxon_id"]))
+
+    gene_assembler.load(pass_path)
+
+
+
     # Download current library with included fas scores.
     # Load GeneAssembler.
     # Open novel_transcript_complete.fasta
     # insert all transcripts.
     # remove small proteins.
-    # remove incorret entries
-    # do implicit fas scoring (remember to also include non_coding now.
+    # remove incorrect entries
+    # do implicit fas scoring (remember to also include non_coding now).
     # generate fasta file (including all protein_coding transcripts)
     # generate pairings. Look at the whole parings thing a bit and consider how long the rework would take.
     #   Maybe only split up Titin into 20 jobs.
@@ -233,9 +241,9 @@ def main():
                                                     'prep': LongOrf.pep output of TransDecoder.
                                                     'novlib': Fasta-file containing novel transcripts. The file
                                                     requires a header structure like this:
-                                                    ><GENE_ID>|<TRNSCRPT_ID>|<TAG1> ... <TAGn>|<SYN1> ... <SYNn>
+                                                    ><GENE_ID>|<TRANSCRIPT_ID>|<TAG1> ... <TAGn>|<SYN1> ... <SYNn>
                                                     SYN stands for synonyms that shall all be recognised as valid
-                                                    identifiers for the transcript. If there are not synonyms the third
+                                                    identifiers for the transcript. If there are no synonyms the third
                                                      '|'-symbol is still required for parsing the file.
                                                     At least one specific tag must be added:
                                                     biotype:<BIOTYPE>. If a transcript shall be considered non-coding
