@@ -93,7 +93,10 @@ class SpiceFastaBoy:
             tag_list.pop(delete_index)
         header_dict["tags"] = tag_list
 
-        header_dict["synonyms"] = synonyms.split(" ")
+        header_dict["synonyms"] = [entry.strip() for entry in synonyms.split(" ")]
+        if len(header_dict["synonyms"]) == 1:
+            if header_dict["synonyms"][0] == "":
+                header_dict["synonyms"] = list()
 
         header_dict["feature"] = "novel_transcript"
         header_dict["taxon_id"] = self.taxon_id
