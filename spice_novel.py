@@ -1,5 +1,4 @@
 #!/bin/env python
-import shutil
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -24,12 +23,14 @@ import shutil
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
 from Classes.GTFBoy.AnnotationParser import AnnotationParser
 from Classes.FastaBoy.FastaBoy import TransDecoderFastaBoy
+from Classes.SequenceHandling.LibraryInfo import LibraryInfo
+from Classes.TSVBoy.TSVBoy import DiamondTSVBoy
+from Classes.PassPath.PassPath import PassPath
 from typing import Dict, Any, List
 import json
 import os
-
-from Classes.SequenceHandling.LibraryInfo import LibraryInfo
-from Classes.TSVBoy.TSVBoy import DiamondTSVBoy
+import shutil
+from datetime import date
 
 
 def merge_mode(argument_dict: Dict[str, Any]):
@@ -165,12 +166,58 @@ def prep_mode(argument_dict: Dict[str, Any]):
 def novlib_mode(argument_dict: Dict[str, Any]):
     origin_lib_info: LibraryInfo = LibraryInfo(os.path.join(argument_dict["library"], "info.yaml"))
 
-    novlib_root_path: str = os.path.join(argument_dict["out_path"], "spice_novlib_")
+    novlib_root_path: str = os.path.join(argument_dict["out_path"], "spice_novlib_" + argument_dict["name"] + "_")
     novlib_root_path += origin_lib_info["info"]["species"] + "_"
     novlib_root_path += origin_lib_info["info"]["release"] + "_"
-    novlib_root_path += origin_lib_info["info"]["fas_mode"] + "_"
-    novlib_root_path += argument_dict["name"]
-    shutil.copytree(argument_dict["library"], os.path.join(argument_dict["out_path"], novlib_root_path))
+    novlib_root_path += origin_lib_info["info"]["fas_mode"]
+
+    shutil.copytree(argument_dict["library"], novlib_root_path)
+
+    novlib_info: LibraryInfo = LibraryInfo(os.path.join(novlib_root_path, "info.yaml"))
+    del argument_dict["diamond"]
+    del argument_dict["expression"]
+    del argument_dict["json"]
+    del argument_dict["threshold"]
+    novlib_info["commandline_args"] = argument_dict
+
+    novlib_info["status"]: Dict[str, bool] = {"01_id_collection": False,
+                                              "02_sequence_collection": False,
+                                              "03_small_protein_removing": False,
+                                              "04_incorrect_entry_removing": False,
+                                              "05_implicit_fas_scoring": False,
+                                              "06_fasta_generation": False,
+                                              "07_pairing_generation": False,
+                                              "08_id_tsv_generation": False,
+                                              "09_sequence_annotation": False,
+                                              "10_fas_scoring": False}
+    novlib_info["init_date"] = str(date.today())
+    novlib_info["last_edit"] = str(date.today())
+
+    novlib_info.save()
+
+    with open(os.path.join(novlib_root_path, "paths.json"), "r") as f:
+        paths_dict = json.load(f)
+        paths_dict["root"] = novlib_root_path
+
+    with open(os.path.join(novlib_root_path, "paths.json"), "w") as f:
+        json.dump(paths_dict, f, indent=4)
+
+    pass_path: PassPath = PassPath(paths_dict)
+
+    # Download current library with included fas scores.
+    # Load GeneAssembler.
+    # Open novel_transcript_complete.fasta
+    # insert all transcripts.
+    # remove small proteins.
+    # remove incorret entries
+    # do implicit fas scoring (remember to also include non_coding now.
+    # generate fasta file (including all protein_coding transcripts)
+    # generate pairings. Look at the whole parings thing a bit and consider how long the rework would take.
+    #   Maybe only split up Titin into 20 jobs.
+    # create the id tsv
+
+    # then annotate
+    # then run FAS. Done.
 
 
 def main():
