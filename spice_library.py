@@ -222,10 +222,10 @@ def remove_incorrect_entries(gene_assembler: GeneAssembler, library_info: Librar
         for transcript in transcript_list:
             if transcript.get_biotype() == "protein_coding":
                 if transcript.get_id_taxon() == 9606:
-                    if transcript.get_id()[3] == "T":
+                    if transcript.get_id()[3] == "T" and "NOVEL" not in transcript.get_tags():
                         gene.delete_transcript(transcript.get_id())
                 else:
-                    if transcript.get_id()[6] == "T":
+                    if transcript.get_id()[6] == "T"  and "NOVEL" not in transcript.get_tags():
                         gene.delete_transcript(transcript.get_id())
     gene_assembler.clear_empty_genes()
     gene_assembler.save_seq(pass_path)
@@ -467,9 +467,7 @@ def main():
                                   "05_implicit_fas_scoring": False,
                                   "06_fasta_generation": False,
                                   "07_pairing_generation": False,
-                                  "08_id_tsv_generation": False,
-                                  "09_sequence_annotation": False,
-                                  "10_fas_scoring": False
+                                  "08_id_tsv_generation": False
                                   }
         library_info.save()
     ####################################################################

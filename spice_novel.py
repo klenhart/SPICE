@@ -33,6 +33,11 @@ import json
 import os
 import shutil
 from datetime import date
+import sys
+from pathlib import Path
+
+from spice_library import remove_small_proteins, remove_incorrect_entries, calculate_implicit_fas_scores, \
+    generate_fasta_file, generate_pairings, generate_ids_tsv
 
 
 def merge_mode(argument_dict: Dict[str, Any]):
@@ -141,7 +146,7 @@ def prep_mode(argument_dict: Dict[str, Any]):
 
     output_filepath: str = os.path.join(argument_dict["out_path"], argument_dict["name"] + "_complete.fasta")
 
-    with open(output_filepath, "w") as f:
+    with open(output_filepath, "w") as _:
         pass
 
     for transcript_id in novel_transcript_map.keys():
@@ -171,35 +176,23 @@ def prep_mode(argument_dict: Dict[str, Any]):
 def novlib_mode(argument_dict: Dict[str, Any]):
     origin_lib_info: LibraryInfo = LibraryInfo(os.path.join(argument_dict["library"], "info.yaml"))
 
-    novlib_root_path: str = os.path.join(argument_dict["out_path"], "spice_novlib_" + argument_dict["name"] + "_")
+    novlib_root_path: str = os.path.join(argument_dict["out_path"], "spice_novlib_")
     novlib_root_path += origin_lib_info["info"]["species"] + "_"
     novlib_root_path += origin_lib_info["info"]["release"] + "_"
-    novlib_root_path += origin_lib_info["info"]["fas_mode"]
+    novlib_root_path += origin_lib_info["info"]["fas_mode"] + "_"
+    novlib_root_path += argument_dict["name"]
 
-    shutil.copytree(argument_dict["library"], novlib_root_path)
+    print("Checking output directory.")
+    if Path(novlib_root_path).exists():
+        print(novlib_root_path, "already exists. Terminating 'novlib'-run.")
+        sys.exit()
+    else:
+        print("\tCopying origin library.")
+        shutil.copytree(argument_dict["library"], novlib_root_path)
 
     novlib_info: LibraryInfo = LibraryInfo(os.path.join(novlib_root_path, "info.yaml"))
-    del argument_dict["diamond"]
-    del argument_dict["expression"]
-    del argument_dict["json"]
-    del argument_dict["threshold"]
-    novlib_info["commandline_args"] = argument_dict
 
-    novlib_info["status"]: Dict[str, bool] = {"01_id_collection": False,
-                                              "02_sequence_collection": False,
-                                              "03_small_protein_removing": False,
-                                              "04_incorrect_entry_removing": False,
-                                              "05_implicit_fas_scoring": False,
-                                              "06_fasta_generation": False,
-                                              "07_pairing_generation": False,
-                                              "08_id_tsv_generation": False,
-                                              "09_sequence_annotation": False,
-                                              "10_fas_scoring": False}
-    novlib_info["init_date"] = str(date.today())
-    novlib_info["last_edit"] = str(date.today())
-
-    novlib_info.save()
-
+    print("Updating paths.json.")
     with open(os.path.join(novlib_root_path, "paths.json"), "r") as f:
         paths_dict = json.load(f)
         paths_dict["root"] = novlib_root_path
@@ -209,35 +202,73 @@ def novlib_mode(argument_dict: Dict[str, Any]):
 
     pass_path: PassPath = PassPath(paths_dict)
 
+    print("Removing old annotation.")
+    os.remove(pass_path["fas_annotation"] + "s.json")
+
+    print("Loading old library into memory.")
     gene_assembler: GeneAssembler = GeneAssembler(novlib_info["info"]["species"],
                                                   str(novlib_info["info"]["taxon_id"]))
 
     gene_assembler.load(pass_path)
 
+    print("Loading novel transcripts into memory.")
     fasta_iterator: SpiceFastaBoy = SpiceFastaBoy(argument_dict["input"], int(novlib_info["info"]["taxon_id"]))
     fasta_iterator.parse_fasta()
     novel_transcript_dict: Dict[str, List[Transcript]] = fasta_iterator.get_fasta_dict()
 
+    print("Updating old library with novel transcripts.")
     for gene in gene_assembler.get_genes():
         if gene.get_id() in novel_transcript_dict.keys():
             for transcript in novel_transcript_dict[gene.get_id()]:
                 gene.add_transcript(transcript, True)
 
+    novlib_info["status"]: Dict[str, bool] = {"01_id_collection": True,
+                                              "02_sequence_collection": False,
+                                              "03_small_protein_removing": False,
+                                              "04_incorrect_entry_removing": False,
+                                              "05_implicit_fas_scoring": False,
+                                              "06_fasta_generation": False,
+                                              "07_pairing_generation": False,
+                                              "08_id_tsv_generation": False}
+
+    print("\tRemoving small proteins.")
+    remove_small_proteins(gene_assembler, novlib_info, pass_path)
+
+    print("\tRemoving incorrect entries.")
+    remove_incorrect_entries(gene_assembler, novlib_info, pass_path)
+
+    print("\tCalculating implicit FAS scores.")
+    calculate_implicit_fas_scores(gene_assembler, novlib_info, pass_path)
+
+    print("\tGenerating fasta file.")
+    generate_fasta_file(gene_assembler, novlib_info, pass_path)
+
+    print("\tCreating protein pairings for all genes.")
+    generate_pairings(gene_assembler, novlib_info, pass_path)
+
+    print("\tCreating ids TSV file.")
+    generate_ids_tsv(gene_assembler, novlib_info, pass_path)
+
+    print("Updating info.yaml.")
+    novlib_info["info"]["gene_count"] = gene_assembler.get_gene_count()
+    novlib_info["info"]["transcript_count"] = gene_assembler.get_transcript_count()
+    novlib_info["info"]["protein_count"] = gene_assembler.get_protein_count()
+    novlib_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
+    novlib_info["info"]["fas_scored_sequences_count"] = gene_assembler.get_fas_scored_count()
+    del argument_dict["diamond"]
+    del argument_dict["expression"]
+    del argument_dict["json"]
+    del argument_dict["threshold"]
+    novlib_info["commandline_args"] = argument_dict
+
+    novlib_info["init_date"] = str(date.today())
+    novlib_info["last_edit"] = str(date.today())
+
+    print("Saving.")
     gene_assembler.save_seq(pass_path)
     gene_assembler.save_info(pass_path)
     gene_assembler.save_fas(pass_path)
-
-    # Update library info after adding everything.
-    # remove small proteins.
-    # remove incorrect entries
-    # do implicit fas scoring (remember to also include non_coding now).
-    # generate fasta file (including all protein_coding transcripts)
-    # generate pairings. Look at the whole parings thing a bit and consider how long the rework would take.
-    #   Maybe only split up Titin into 20 jobs.
-    # create the id tsv
-
-    # then annotate
-    # then run FAS. Done.
+    novlib_info.save()
 
 
 def main():
