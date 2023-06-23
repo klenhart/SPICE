@@ -165,6 +165,7 @@ class ResultBuddy:
                               expression_threshold: float = 1.0) -> None:
         transcript_to_protein_dict: Dict[str, str] = self.transcript_to_protein_map()
         transcript_to_gene_dict: Dict[str, str] = self.transcript_to_gene_map()
+        synonym_to_transcript_dict: Dict[str, str] = self.synonym_to_transcript_map()
         expression_gtf: GTFBoy = GTFBoy(expression_path)
         expression_assembler: ExpressionAssembler = ExpressionAssembler(self.library_pass_path,
                                                                         expression_name,
@@ -188,6 +189,7 @@ class ResultBuddy:
                     transcript_in_lib_flag: bool = line_dict["transcript_id"] in transcript_to_protein_dict.keys()
                     # This implicitly checks if the transcript is PROTEIN CODING or NMD bio-typed.
                     if transcript_in_lib_flag and gene_in_lib_flag:
+                        line_dict["transcript"] = synonym_to_transcript_dict[line_dict["transcript_id"]]
                         line_dict["gene_id"] = transcript_to_gene_dict[line_dict["transcript_id"]]
                         line_dict["protein_id"] = transcript_to_protein_dict[line_dict["transcript_id"]]
                         expression_assembler.insert_expression_dict(line_dict)
@@ -217,6 +219,21 @@ class ResultBuddy:
             elif isinstance(transcript, Transcript):
                 transcript_to_biotype_map[transcript.id_transcript] = "nonsense_mediated_decay"
         return transcript_to_biotype_map
+
+    def synonym_to_transcript_map(self) -> Dict[str, str]:
+        synonym_to_transcript_map: Dict[str, str] = dict()
+        gene_assembler: GeneAssembler = GeneAssembler(self.result_info["species"], self.result_info["taxon_id"])
+        gene_assembler.load(self.library_pass_path)
+        for transcript in gene_assembler.get_transcripts():
+            if isinstance(transcript, Protein):
+                synonym_to_transcript_map[transcript.get_id_transcript()] = transcript.get_id_transcript()
+                for synonym in transcript.get_synonyms():
+                    synonym_to_transcript_map[synonym] = transcript.get_id_transcript()
+            elif isinstance(transcript, Transcript):
+                synonym_to_transcript_map[transcript.get_id()] = transcript.get_id()
+                for synonym in transcript.get_synonyms():
+                    synonym_to_transcript_map[synonym] = transcript.get_id()
+        return synonym_to_transcript_map
 
     def transcript_to_protein_map(self) -> Dict[str, str]:
         transcript_to_protein_map: Dict[str, str] = dict()

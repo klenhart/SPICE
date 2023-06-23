@@ -30,6 +30,7 @@ from tqdm import tqdm
 from Classes.PassPath.PassPath import PassPath
 from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
+from Classes.SequenceHandling.Transcript import Transcript
 
 
 class ExpressionAssembler:
@@ -54,6 +55,7 @@ class ExpressionAssembler:
             for gene_id in gene_assembly.keys():
                 self.expression_assembly["data"][gene_id]: Dict[str, Any] = dict()
                 self.expression_assembly["data"][gene_id]["ids"]: List[str] = list()
+                self.expression_assembly["data"][gene_id]["synonyms"]: List[List[str]] = list()
                 self.expression_assembly["data"][gene_id]["biotypes"]: List[str] = list()
                 self.expression_assembly["data"][gene_id]["transcript_support_levels"]: List[int] = list()
                 self.expression_assembly["data"][gene_id]["tags"]: List[List[str]] = list()
@@ -61,6 +63,7 @@ class ExpressionAssembler:
                 self.expression_assembly["data"][gene_id]["expression_rel"]: List[float] = list()
                 for transcript in gene_assembly[gene_id].get_transcripts():
                     self.expression_assembly["data"][gene_id]["ids"].append(transcript.get_id())
+                    self.expression_assembly["data"][gene_id]["synonyms"].append(transcript.get_synonyms())
                     biotype: str = transcript.get_biotype()
                     self.expression_assembly["data"][gene_id]["biotypes"].append(biotype)
                     tsl: int = transcript.get_transcript_support_level()

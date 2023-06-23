@@ -171,8 +171,6 @@ class Transcript:
         return "|".join([self.get_id_gene(), self.get_id(), str(self.get_id_taxon())])
 
     def __eq__(self, other):
-        if isinstance(other, Transcript):
-            return any([self.get_id() == other.get_id(),
-                        self.get_id() in other.get_synonyms(),
-                        other.get_id() in self.get_synonyms()])
-        return False
+        return any([self.get_id() == other.get_id(),
+                    self.get_id() in other.get_synonyms(),
+                    other.get_id() in self.get_synonyms()])

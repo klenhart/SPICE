@@ -112,11 +112,9 @@ class Protein(Transcript):
         return self.make_header() + "\t" + other.make_header()
 
     def __eq__(self, other) -> bool:
-        if isinstance(other, Protein):
-            return any([self.get_id() == other.get_id(),
-                        self.get_id() in other.get_synonyms(),
-                        other.get_id() in self.get_synonyms()])
-        return False
+        return any([self.get_id() == other.get_id(),
+                    self.get_id() in other.get_synonyms(),
+                    other.get_id() in self.get_synonyms()])
 
     def __len__(self) -> int:
         return len(self.sequence)
