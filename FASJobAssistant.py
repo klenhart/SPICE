@@ -244,7 +244,6 @@ def main():
     argument_dict['Lib_dir'] = argument_dict['Lib_dir'][0]
     argument_dict['memory'] = argument_dict['memory'][0]
     argument_dict['dir_fas'] = argument_dict['dir_fas'][0]
-    argument_dict['fas_mode'] = argument_dict['fas_mode'][0]
     argument_dict['outdir'] = argument_dict['outdir'][0]
     argument_dict['Anno_cpus'] = argument_dict['Anno_cpus'][0]
     argument_dict['tools_anno'] = argument_dict['tools_anno'][0]
