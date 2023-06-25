@@ -103,7 +103,7 @@ DO_ANNO_SCRIPT = """#!/bin/bash
 {6} \\
 {9} \\
 -i {8} \\
--o {4}"""
+-o {4}/architectures"""
 
 
 class FASJobAssistant:
