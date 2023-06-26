@@ -22,6 +22,7 @@
 
 import os
 import json
+import sys
 
 from typing import Dict, Any, List, Tuple
 
@@ -182,14 +183,18 @@ class ResultBuddy:
             else:
                 split_line: List[str] = line.split("\t")
                 line_dict: Dict[str, str] = GTFBoy.build_dict(split_line)
+
                 transcript_flag: bool = line_dict["feature"] in ["transcript", "novel_transcript"]
                 if "transcript_id" in line_dict.keys() and transcript_flag:
                     line_dict["transcript_id"] = line_dict["transcript_id"].split(".")[0].split(":")[-1]
-
-                    gene_in_lib_flag: bool = line_dict["transcript_id"] in transcript_to_gene_dict.keys()
                     transcript_in_lib_flag: bool = line_dict["transcript_id"] in synonym_to_transcript_dict.keys()
+                    if transcript_in_lib_flag:
+                        line_dict["transcript_id"] = synonym_to_transcript_dict[line_dict["transcript_id"]]
+                        gene_in_lib_flag: bool = line_dict["transcript_id"] in transcript_to_gene_dict.keys()
+                    else:
+                        gene_in_lib_flag: bool = False
                     # This implicitly checks if the transcript is PROTEIN CODING or NMD bio-typed.
-                    if transcript_in_lib_flag and gene_in_lib_flag:
+                    if gene_in_lib_flag:
                         line_dict["transcript_id"] = synonym_to_transcript_dict[line_dict["transcript_id"]]
                         line_dict["gene_id"] = transcript_to_gene_dict[line_dict["transcript_id"]]
                         line_dict["protein_id"] = transcript_to_protein_dict[line_dict["transcript_id"]]
