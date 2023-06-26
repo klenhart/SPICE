@@ -186,7 +186,7 @@ class Gene:
         self.set_fas_dict(fas_dict)
         for key in info_dict["transcripts"].keys():
             transcript_dict = info_dict["transcripts"][key]
-            if transcript_dict["feature"] == "transcript":
+            if transcript_dict["biotype"] != "protein_coding":
                 transcript: Transcript = Transcript()
                 transcript.from_dict(transcript_dict)
                 self.add_transcript(transcript)
