@@ -223,7 +223,7 @@ def novlib_mode(argument_dict: Dict[str, Any]):
                 gene.add_transcript(transcript, True)
 
     novlib_info["status"]: Dict[str, bool] = {"01_id_collection": True,
-                                              "02_sequence_collection": False,
+                                              "02_sequence_collection": True,
                                               "03_small_protein_removing": False,
                                               "04_incorrect_entry_removing": False,
                                               "05_implicit_fas_scoring": False,
