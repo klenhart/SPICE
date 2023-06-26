@@ -130,6 +130,7 @@ class ExpressionAssembler:
                 id_list: List[str] = self.expression_assembly["data"][gene_id]["ids"]
                 index: int = id_list.index(transcript_id)
                 self.expression_assembly["data"][gene_id]["ids"].pop(index)
+                self.expression_assembly["data"][gene_id]["synonyms"].pop(index)
                 self.expression_assembly["data"][gene_id]["biotypes"].pop(index)
                 self.expression_assembly["data"][gene_id]["transcript_support_levels"].pop(index)
                 self.expression_assembly["data"][gene_id]["tags"].pop(index)

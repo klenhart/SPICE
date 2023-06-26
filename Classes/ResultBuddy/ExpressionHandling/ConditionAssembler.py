@@ -57,6 +57,7 @@ class ConditionAssembler:
                 self.condition_assembly["data"][gene_id]["expression_all"]: List[List[float]] = list()
                 for transcript in gene_assembly[gene_id].get_transcripts():
                     self.condition_assembly["data"][gene_id]["ids"].append(transcript.get_id())
+                    self.condition_assembly["data"][gene_id]["synonyms"].append(transcript.get_synonyms())
                     biotype: str = transcript.get_biotype()
                     self.condition_assembly["data"][gene_id]["biotypes"].append(biotype)
                     tsl: int = transcript.get_transcript_support_level()
@@ -139,6 +140,7 @@ class ConditionAssembler:
                 id_list: List[str] = self.condition_assembly["data"][gene_id]["ids"]
                 index: int = id_list.index(transcript_id)
                 self.condition_assembly["data"][gene_id]["ids"].pop(index)
+                self.condition_assembly["data"][gene_id]["synonyms"].pop(index)
                 self.condition_assembly["data"][gene_id]["biotypes"].pop(index)
                 self.condition_assembly["data"][gene_id]["transcript_support_levels"].pop(index)
                 self.condition_assembly["data"][gene_id]["tags"].pop(index)
