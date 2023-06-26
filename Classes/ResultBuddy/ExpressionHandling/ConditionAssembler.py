@@ -49,6 +49,7 @@ class ConditionAssembler:
             for gene_id in gene_assembly.keys():
                 self.condition_assembly["data"][gene_id]: Dict[str, List[Any]] = dict()
                 self.condition_assembly["data"][gene_id]["ids"]: List[str] = list()
+                self.condition_assembly["data"][gene_id]["synonyms"]: List[List[str]] = list()
                 self.condition_assembly["data"][gene_id]["biotypes"]: List[str] = list()
                 self.condition_assembly["data"][gene_id]["transcript_support_levels"]: List[int] = list()
                 self.condition_assembly["data"][gene_id]["tags"]: List[List[str]] = list()
