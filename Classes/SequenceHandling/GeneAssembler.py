@@ -1,4 +1,5 @@
 #!/bin/env python
+import os
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -28,7 +29,7 @@ from Classes.SequenceHandling.Protein import Protein
 
 from tqdm import tqdm
 import json
-from typing import List, Dict, Any, Set
+from typing import List, Dict, Any, Set, Iterator, Tuple
 
 
 class GeneAssembler:
@@ -70,9 +71,13 @@ class GeneAssembler:
         self.inclusion_filter_dict.update({key: possible_values})
 
     def save_fas(self, pass_path: PassPath) -> None:
-        json_dict: Dict[str, Dict[str, Any]] = GeneAssembler.to_dict(self.gene_assembly, "fas")
-        with open(pass_path["fas_scores"], "w") as f:
-            json.dump(json_dict, f, indent=4)
+        index_dict: Dict[str, str] = dict()
+        for index, index_sub_dict, entry_dict in GeneAssembler.fas_to_dict_iter(self.gene_assembly):
+            index_dict.update(index_sub_dict)
+            with open(os.path.join(pass_path["fas_scores"], index), "w") as f:
+                json.dump(entry_dict, f, indent=4)
+        with open(pass_path["fas_index"], "w") as f:
+            json.dump(index_dict, f, indent=4)
 
     def save_info(self, pass_path: PassPath) -> None:
         json_dict: Dict[str, Dict[str, Any]] = GeneAssembler.to_dict(self.gene_assembly, "info")
@@ -89,8 +94,13 @@ class GeneAssembler:
             info_dict: Dict[str, Dict[str, Any]] = json.load(f)
         with open(pass_path["transcript_seq"], "r") as f:
             seq_dict: Dict[str, Dict[str, Any]] = json.load(f)
-        with open(pass_path["fas_scores"], "r") as f:
-            fas_dict: Dict[str, Dict[str, Any]] = json.load(f)
+        fas_dict: Dict[str, Dict[str, Any]] = dict()
+        with open(pass_path["fas_index"], "r") as f1:
+            fas_index: Dict[str, str] = json.load(f1)
+            for path in set(fas_index.values()):
+                with open(os.path.join(pass_path["fas_scores"], path), "r") as f2:
+                    fas_sub_dict: Dict[str, Dict[str, Any]] = json.load(f2)
+                    fas_dict.update(fas_sub_dict)
         self.gene_assembly = GeneAssembler.from_dict(info_dict, seq_dict, fas_dict)
 
     def integrate_fas_json(self, input_path: str) -> None:
@@ -235,6 +245,26 @@ class GeneAssembler:
     def reset_fas(self) -> None:
         for gene in self.get_genes():
             gene.reset_fas()
+
+    @staticmethod
+    def fas_to_dict_iter(gene_assembly: Dict[str, Gene]) -> Iterator[List[Tuple[str, Dict[str, str], Dict[str, Dict[str, Any]]]]]:
+        json_dict: Dict[str, Dict[str, Any]] = dict()
+        index_dict: Dict[str, str] = dict()
+        count: int = 0
+        reset_count: int = 0
+
+        for key in gene_assembly.keys():
+            json_dict[key] = gene_assembly[key].to_dict("fas")
+            index_dict[key] = "0" * (9 - len(str(count))) + str(count) + ".json"
+            reset_count += 1
+            if reset_count == 100:
+                yield "0" * (9 - len(str(count))) + str(count) + ".json", index_dict, json_dict
+                reset_count = 0
+                json_dict: Dict[str, Dict[str, Any]] = dict()
+                index_dict: Dict[str, str] = dict()
+                count += 1
+        if len(json_dict) > 0:
+            yield "0" * (9 - len(str(count))) + str(count) + ".json", index_dict, json_dict
 
     @staticmethod
     def to_dict(gene_assembly: Dict[str, Gene], mode: str) -> Dict[str, Dict[str, Any]]:

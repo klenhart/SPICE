@@ -21,6 +21,7 @@
 #######################################################################
 
 import json
+import os
 
 from typing import Dict, Any, List
 
@@ -123,8 +124,13 @@ class ConditionAssembler:
             info_dict: Dict[str, Dict[str, Any]] = json.load(f)
         with open(self.library_pass_path["transcript_seq"], "r") as f:
             seq_dict: Dict[str, Dict[str, Any]] = json.load(f)
-        with open(self.library_pass_path["fas_scores"], "r") as f:
-            fas_dict: Dict[str, Dict[str, Any]] = json.load(f)
+        fas_dict: Dict[str, Dict[str, Any]] = dict()
+        with open(self.library_pass_path["fas_index"], "r") as f1:
+            fas_index: Dict[str, str] = json.load(f1)
+            for path in set(fas_index.values()):
+                with open(os.path.join(self.library_pass_path["fas_scores"], path), "r") as f2:
+                    fas_sub_dict: Dict[str, Dict[str, Any]] = json.load(f2)
+                    fas_dict.update(fas_sub_dict)
         gene_assembly: Dict[str, Gene] = GeneAssembler.from_dict(info_dict, seq_dict, fas_dict)
         return gene_assembly
 

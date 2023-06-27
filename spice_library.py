@@ -225,7 +225,7 @@ def remove_incorrect_entries(gene_assembler: GeneAssembler, library_info: Librar
                     if transcript.get_id()[3] == "T" and "NOVEL" not in transcript.get_tags():
                         gene.delete_transcript(transcript.get_id())
                 else:
-                    if transcript.get_id()[6] == "T"  and "NOVEL" not in transcript.get_tags():
+                    if transcript.get_id()[6] == "T" and "NOVEL" not in transcript.get_tags():
                         gene.delete_transcript(transcript.get_id())
     gene_assembler.clear_empty_genes()
     gene_assembler.save_seq(pass_path)
@@ -399,7 +399,8 @@ def main():
                                                           library_name),
                                      "info": "info.yaml",
                                      "fas_data": "fas_data",
-                                     "fas_scores": "fas_data/fas_scores.json",
+                                     "fas_scores": "fas_data/fas_scores",
+                                     "fas_index": "fas_data/fas_index.json",
                                      "fas_temp": "fas_data/tmp",
                                      "fas_annotation": "fas_data/annotation",
                                      "fas_annoTools": "fas_data/annoTools.txt",
@@ -421,7 +422,7 @@ def main():
             json.dump(dict(), f, indent=4)
         with open(pass_path["transcript_seq"], "w") as f:
             json.dump(dict(), f, indent=4)
-        with open(pass_path["fas_scores"], "w") as f:
+        with open(pass_path["fas_index"], "w") as f:
             json.dump(dict(), f, indent=4)
         with open(pass_path["transcript_info"], "w") as f:
             json.dump(dict(), f, indent=4)
