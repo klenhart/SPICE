@@ -83,7 +83,6 @@ def prep_mode(argument_dict: Dict[str, Any]):
     for transcript_id in novel_transcript_map.keys():
         if transcript_id not in transdecoder_dict.keys():
             no_complete_orf_count += 1
-            # print(transcript_id, "not found in TransDecoder peptides. Determining as non_coding.")
             novel_transcript_map[transcript_id]["biotype"] = "non_coding"
             novel_transcript_map[transcript_id]["tag"] = " ".join(["no_ORF",
                                                                    "NOVEL",
@@ -150,6 +149,10 @@ def prep_mode(argument_dict: Dict[str, Any]):
     with open(output_filepath, "w") as _:
         pass
 
+    if argument_dict["cull"]:
+        print("Cull the sequences here.")  # TODO Implement the cull mode.
+        # cull_it()
+
     for transcript_id in novel_transcript_map.keys():
         gene_id: str = novel_transcript_map[transcript_id]["gene_id"]
         tag_list: str = novel_transcript_map[transcript_id]["tag"]
@@ -172,7 +175,6 @@ def prep_mode(argument_dict: Dict[str, Any]):
           str(round(no_complete_orf_count/total * 100,
                     2)) + "% determined as 'non_coding' -> no ORF was identified.\n\t",
           str(round(no_diamond_match_count/total * 100, 2)) + "% determined as 'non_coding' -> no Diamond hit.")
-
 
 def novlib_mode(argument_dict: Dict[str, Any]):
     origin_lib_info: LibraryInfo = LibraryInfo(os.path.join(argument_dict["library"], "info.yaml"))
@@ -282,7 +284,7 @@ def main():
                                                    ["""Path to the input file. Depends on the mode. 
                                                     'merge': .txt-file containing the paths to all annotation-gtfs
                                                      that shall be merged. One path per line.
-                                                    'prep': LongOrf.pep output of TransDecoder.
+                                                    'prep' and 'prepcull': LongOrf.pep output of TransDecoder.
                                                     'novlib': Fasta-file containing novel transcripts. The file
                                                     requires a header structure like this:
                                                     ><GENE_ID>|<TRANSCRIPT_ID>|<TAG1> ... <TAGn>|<SYN1> ... <SYNn>
@@ -301,19 +303,19 @@ def main():
                                                     the --threshold parameter.""",  # EXPRESSION
                                                     """Expression threshold, which will be 
                                                      used for transcript curation.""",  # THRESHOLD
-                                                    """Either 1:'merge', 2:'prep' or 3:'novlib' depending on the
-                                                    stage of the workflow.""",  # MODE
+                                                    """Either 1:'merge', 2:'prep', 3:'prepcull' or 4:'novlib' 
+                                                    depending on the stage of the workflow.""",  # MODE
                                                     "Name for the output file.",  # NAME
                                                     """Path to the <name>.json file that was output during merge
                                                     mode. This argument is only required for
-                                                    'prep' mode.""",  # JSON
+                                                    'prep' or 'prepcull' mode.""",  # JSON
                                                     """Path to the .tsv file output by DIAMOND. Only required for 'prep'
-                                                    mode.""",  # DIAMOND
+                                                    or 'prepcull' mode.""",  # DIAMOND
                                                     """Path to the Spice library that shall be extended. Only required
                                                     for 'novlib mode.""",  # LIBRARY
                                                     """The first three letters of this will be used as a prefix for
                                                     newly generated IDs.
-                                                    Name of the species would be best.""" # SPECIES_PREFIX
+                                                    Name of the species would be best."""  # SPECIES_PREFIX
                                                     ])
     argument_parser.generate_parser()
     argument_parser.execute()
@@ -327,7 +329,7 @@ def main():
     if argument_dict["mode"] == "merge":
         merge_mode(argument_dict)
 
-    elif argument_dict["mode"] == "prep":
+    elif argument_dict["mode"] in ["prep", "prepcull"]:
         prep_mode(argument_dict)
 
     elif argument_dict["mode"] == "novlib":
