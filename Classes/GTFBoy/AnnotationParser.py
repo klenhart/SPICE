@@ -26,8 +26,6 @@ import json
 import hashlib
 import os
 
-from Classes.GTFBoy.MergeFeatures.MergeFeatures import MergeExon
-
 
 class AnnotationParser:
 
@@ -69,7 +67,6 @@ class AnnotationParser:
                     line_dict: Dict[str, str] = GTFBoy.build_dict(line.split("\t"))
                     line_dict["gene_id"] = line_dict["gene_id"].split(".")[0]
                     if line_dict["feature"] == "exon":
-                        # exon: MergeExon = MergeExon(line_dict)
                         line_dict["exon_id"] = line_dict["exon_id"].split(".")[0]
                     if AnnotationParser.check_if_candidate(line_dict):
                         gene_id: str = line_dict["gene_id"]
@@ -98,7 +95,7 @@ class AnnotationParser:
                     current_transcript_dict = gene_dict[transcript_id]
 
                     transcript_coord_id: str = AnnotationParser.make_coord_string(current_transcript_dict)
-                    hash_coord_id: str = md5_hash(transcript_coord_id, 15)
+                    hash_coord_id: str = self.species_prefix + md5_hash(transcript_coord_id, 15)
 
                     synonym_field: List[str] = [current_transcript_dict["transcript"]["transcript_id"]]
                     current_transcript_dict["transcript"]["synonyms"] = synonym_field
