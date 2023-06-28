@@ -53,7 +53,8 @@ def merge_mode(argument_dict: Dict[str, Any]):
     annotation_parser: AnnotationParser = AnnotationParser(anno_list,
                                                            expression_list,
                                                            argument_dict["threshold"],
-                                                           argument_dict["name"])
+                                                           argument_dict["name"],
+                                                           argument_dict["species_prefix"])
     annotation_parser.parse_annotations()
     annotation_parser.save(argument_dict["out_path"])
     annotation_parser.save_json(argument_dict["out_path"])
@@ -273,11 +274,11 @@ def novlib_mode(argument_dict: Dict[str, Any]):
 
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--expression", "--threshold", "--mode",
-                                                    "--name", "--json", "--diamond", "--library"],
-                                                   [str, str, str, float, str, str, str, str, str],
+                                                    "--name", "--json", "--diamond", "--library", "--species_prefix"],
+                                                   [str, str, str, float, str, str, str, str, str, str],
                                                    ["store", "store", "store", "store", "store", "store", "store",
-                                                    "store", "store"],
-                                                   [1, 1, None, "?", 1, 1, "?", "?", "?"],
+                                                    "store", "store", "store"],
+                                                   [1, 1, None, "?", 1, 1, "?", "?", "?", None],
                                                    ["""Path to the input file. Depends on the mode. 
                                                     'merge': .txt-file containing the paths to all annotation-gtfs
                                                      that shall be merged. One path per line.
@@ -309,7 +310,10 @@ def main():
                                                     """Path to the .tsv file output by DIAMOND. Only required for 'prep'
                                                     mode.""",  # DIAMOND
                                                     """Path to the Spice library that shall be extended. Only required
-                                                    for 'novlib mode."""  # LIBRARY
+                                                    for 'novlib mode.""",  # LIBRARY
+                                                    """The first three letters of this will be used as a prefix for
+                                                    newly generated IDs.
+                                                    Name of the species would be best.""" # SPECIES_PREFIX
                                                     ])
     argument_parser.generate_parser()
     argument_parser.execute()

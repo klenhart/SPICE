@@ -26,11 +26,13 @@ import json
 import hashlib
 import os
 
+from Classes.GTFBoy.MergeFeatures.MergeFeatures import MergeExon
+
 
 class AnnotationParser:
 
     def __init__(self, annotation_path_list: List[str], expression_path_list: List[str],
-                 threshold: float, name: str):
+                 threshold: float, name: str, species_name: str):
         self.name: str = name
         self.annotation_path_list: List[str] = annotation_path_list
         self.expression_path_list: List[str] = expression_path_list
@@ -38,6 +40,12 @@ class AnnotationParser:
         if self.threshold is None:
             self.threshold: float = 1.0
         self.transcript_dict: Dict[str, Dict[str, Any]] = dict()
+        if len(species_name) > 3:
+            self.species_prefix: str = species_name[:3].upper()
+        elif len(species_name) == 0:
+            self.species_prefix: str = ""
+        else:
+            self.species_prefix: str = species_name.upper()
 
         self.new_id_map: Dict[str, Any] = dict()  # Maps from new IDs to their genes and sequences.
         self.old_id_map: Dict[str, Any] = dict()  # Maps from old ids to their new IDs.
@@ -61,6 +69,7 @@ class AnnotationParser:
                     line_dict: Dict[str, str] = GTFBoy.build_dict(line.split("\t"))
                     line_dict["gene_id"] = line_dict["gene_id"].split(".")[0]
                     if line_dict["feature"] == "exon":
+                        # exon: MergeExon = MergeExon(line_dict)
                         line_dict["exon_id"] = line_dict["exon_id"].split(".")[0]
                     if AnnotationParser.check_if_candidate(line_dict):
                         gene_id: str = line_dict["gene_id"]
