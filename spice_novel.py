@@ -21,7 +21,7 @@
 #######################################################################
 
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
-from Classes.GTFBoy.AnnotationParser import AnnotationParser
+from Classes.GTFBoy.AnnotationParser import AnnotationParser, md5_hash
 from Classes.FastaBoy.FastaBoy import TransDecoderFastaBoy, SpiceFastaBoy
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 from Classes.SequenceHandling.LibraryInfo import LibraryInfo
@@ -149,15 +149,90 @@ def prep_mode(argument_dict: Dict[str, Any]):
     with open(output_filepath, "w") as _:
         pass
 
-    if argument_dict["cull"]:
-        print("Cull the sequences here.")  # TODO Implement the cull mode.
-        # cull_it()
+    if argument_dict["mode"] == "prepcull":
+        if argument_dict["species_prefix"] is None:
+            argument_dict["species_prefix"] = ""
+        elif len(argument_dict["species_prefix"]) > 3:
+            argument_dict["species_prefix"] = argument_dict["species_prefix"][:3].upper()
+        elif len(argument_dict["species_prefix"]) == 0:
+            argument_dict["species_prefix"]: str = ""
+        else:
+            argument_dict["species_prefix"]: str = argument_dict["species_prefix"].upper()
+        prefix = argument_dict["species_prefix"]
+        cull_map: Dict[str, Dict[str, Any]] = dict()
+        for i, transcript_id in enumerate(list(novel_transcript_map.keys())):
+            if i % 1000 == 0:
+                print("Culling:", str(i) + "/" + str(len(novel_transcript_map)))
+            gene_id: str = novel_transcript_map[transcript_id]["gene_id"]
+            if gene_id not in cull_map.keys():
+                cull_map[gene_id] = dict()
+            if "no_diamond_hit" in novel_transcript_map[transcript_id]["tag"]:
+                if prefix + "noDiamondGroup" not in cull_map[gene_id].keys():
+                    cull_map[gene_id][prefix + "noDiamondGroup"] = novel_transcript_map[transcript_id]
+                    cull_map[gene_id][prefix + "noDiamondGroup"]["transcript_id"] = prefix + "noDiamondGroup"
+                    cull_map[gene_id][prefix + "noDiamondGroup"]["synonyms"].append(transcript_id)
+                    cull_map[gene_id][prefix + "noDiamondGroup"]["start"] = ""
+                    cull_map[gene_id][prefix + "noDiamondGroup"]["end"] = ""
+                else:
+                    cull_map[gene_id][prefix + "noDiamondGroup"]["synonyms"].append(transcript_id)
+                    synonyms: List[str] = novel_transcript_map[transcript_id]["synonyms"]
+                    cull_map[gene_id][prefix + "noDiamondGroup"]["synonyms"] += synonyms
+            elif "no_ORF" in novel_transcript_map[transcript_id]["tag"]:
+                if prefix + "noORFGroup" not in cull_map[gene_id].keys():
+                    cull_map[gene_id][prefix + "noORFGroup"] = novel_transcript_map[transcript_id]
+                    cull_map[gene_id][prefix + "noORFGroup"]["transcript_id"] = prefix + "noORFGroup"
+                    cull_map[gene_id][prefix + "noORFGroup"]["synonyms"].append(transcript_id)
+                    cull_map[gene_id][prefix + "noORFGroup"]["start"] = ""
+                    cull_map[gene_id][prefix + "noORFGroup"]["end"] = ""
+                else:
+                    cull_map[gene_id][prefix + "noORFGroup"]["synonyms"].append(transcript_id)
+                    synonyms: List[str] = novel_transcript_map[transcript_id]["synonyms"]
+                    cull_map[gene_id][prefix + "noORFGroup"]["synonyms"] += synonyms
+            else:
+                sequence: str = novel_transcript_map[transcript_id]["peptide"]
+                seq_hash: str = prefix + "GRP" + md5_hash(sequence, 12)
+                found_flag: bool = False
+                for key in cull_map[gene_id].keys():
+                    if key in [prefix + "noORFGroup", prefix + "noDiamondGroup"]:
+                        continue
+                    else:
+                        if key == seq_hash:
+                            cull_map[gene_id][key]["synonyms"].append(transcript_id)
+                            synonyms: List[str] = novel_transcript_map[transcript_id]["synonyms"]
+                            cull_map[gene_id][key]["synonyms"] += synonyms
+                            found_flag = True
+                            break
+                        elif sequence == cull_map[gene_id][key]["peptide"]:
+                            cull_map[gene_id][seq_hash] = novel_transcript_map[transcript_id]
+                            cull_map[gene_id][seq_hash]["synonyms"] += cull_map[gene_id][key]["synonyms"]
+                            cull_map[gene_id][seq_hash]["synonyms"].append(transcript_id)
+                            cull_map[gene_id][seq_hash]["synonyms"].append(key)
+                            found_flag = True
+                            del cull_map[gene_id][key]
+                            break
+                if not found_flag:
+                    cull_map[gene_id][transcript_id] = novel_transcript_map[transcript_id]
+
+        novel_transcript_map = dict()
+        for gene_id in cull_map.keys():
+            for transcript_id in cull_map[gene_id].keys():
+                if transcript_id.endswith("noORFGroup"):
+                    temp_id: str = md5_hash("".join(cull_map[gene_id][transcript_id]["synonyms"]), 12) + transcript_id
+                    novel_transcript_map[temp_id] = cull_map[gene_id][transcript_id]
+                elif transcript_id.endswith("noDiamondGroup"):
+                    temp_id: str = md5_hash("".join(cull_map[gene_id][transcript_id]["synonyms"]), 12) + transcript_id
+                    novel_transcript_map[temp_id] = cull_map[gene_id][transcript_id]
+                else:
+                    novel_transcript_map[transcript_id] = cull_map[gene_id][transcript_id]
 
     for transcript_id in novel_transcript_map.keys():
+        real_transcript_id = transcript_id
+        if transcript_id.endswith("noDiamondGroup") or transcript_id.endswith("noORFGroup"):
+            real_transcript_id = transcript_id[12:]
         gene_id: str = novel_transcript_map[transcript_id]["gene_id"]
         tag_list: str = novel_transcript_map[transcript_id]["tag"]
         synonym_list: str = " ".join(novel_transcript_map[transcript_id]["synonyms"])
-        fasta_header: str = ">" + gene_id + "|" + transcript_id + "|" + tag_list + "|" + synonym_list
+        fasta_header: str = ">" + gene_id + "|" + real_transcript_id + "|" + tag_list + "|" + synonym_list
         if novel_transcript_map[transcript_id]["peptide"] == "":
             fasta_entry: str = fasta_header + "\n"
         else:
@@ -169,12 +244,34 @@ def prep_mode(argument_dict: Dict[str, Any]):
     print("All sequence saved to:")
     print(output_filepath)
 
-    print("Stats:\n\t",
+    if argument_dict["mode"] == "prepcull":
+        print("Stats before culling:\n\t",
+              total, "transcripts processed.\n\t",
+              str(round(seq_identified_count / total * 100, 2)) + "% were assigned a sequence.\n\t",
+              str(round(no_complete_orf_count / total * 100,
+                        2)) + "% determined as 'non_coding' -> no ORF was identified.\n\t",
+              str(round(no_diamond_match_count / total * 100, 2)) + "% determined as 'non_coding' -> no Diamond hit.")
+
+        total: int = 0
+        seq_identified_count: int = 0
+        no_complete_orf_count: int = 0
+        no_diamond_match_count: int = 0
+        for transcript_id in novel_transcript_map.keys():
+            total += 1
+            if transcript_id.endswith("noDiamondGroup"):
+                no_diamond_match_count += 1
+            elif transcript_id.endswith("noORFGroup"):
+                no_complete_orf_count += 1
+            else:
+                seq_identified_count += 1
+
+    print("Real stats:\n\t",
           total, "transcripts processed.\n\t",
           str(round(seq_identified_count/total * 100, 2)) + "% were assigned a sequence.\n\t",
           str(round(no_complete_orf_count/total * 100,
                     2)) + "% determined as 'non_coding' -> no ORF was identified.\n\t",
           str(round(no_diamond_match_count/total * 100, 2)) + "% determined as 'non_coding' -> no Diamond hit.")
+
 
 def novlib_mode(argument_dict: Dict[str, Any]):
     origin_lib_info: LibraryInfo = LibraryInfo(os.path.join(argument_dict["library"], "info.yaml"))

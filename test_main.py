@@ -6,7 +6,8 @@ from spice_result import expression
 
 
 def main():
-    print("Hello World!")
+    x = "flex no_diamond_hit transcript biotype:banana"
+    print("no_diamond_hit" in x)
 
 
 def open_json(path) -> Dict[str, Any]:
