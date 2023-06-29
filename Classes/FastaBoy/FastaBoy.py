@@ -1,5 +1,5 @@
 #!/bin/env python
-import sys
+
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
@@ -20,6 +20,7 @@ import sys
 #
 #######################################################################
 
+import sys
 from typing import Dict, List, Tuple, Iterator, Any
 import argparse
 import json
