@@ -160,17 +160,5 @@ def main():
         f.write(replicates_file)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
     main()
