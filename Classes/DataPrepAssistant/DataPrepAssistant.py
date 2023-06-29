@@ -88,6 +88,9 @@ def main():
                     elif name == "":
                         continue
                     else:
+                        if name + "_rep1" in replicate_names:
+                            print("Name was already chosen. Retry.")
+                            continue
                         name_flag = True
                         for value in replicate_list:
                             replicate_names.append(name + "_rep" + str(value))
@@ -98,7 +101,7 @@ def main():
                     print("Get current conditions with ##")
                     condition: str = input("Choose condition:")
                     if condition == "##":
-                        print(condition_dict)
+                        print(list(condition_dict.keys()))
                     elif condition == "":
                         continue
                     else:
