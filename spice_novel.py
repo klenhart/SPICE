@@ -359,7 +359,6 @@ def novlib_mode(argument_dict: Dict[str, Any]):
     novlib_info["info"]["collected_sequences_count"] = gene_assembler.get_collected_sequences_count()
     novlib_info["info"]["fas_scored_sequences_count"] = gene_assembler.get_fas_scored_count()
     del argument_dict["diamond"]
-    del argument_dict["expression"]
     del argument_dict["json"]
     del argument_dict["threshold"]
     novlib_info["commandline_args"] = argument_dict
