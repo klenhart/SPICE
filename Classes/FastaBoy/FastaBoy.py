@@ -102,7 +102,6 @@ class SpiceFastaBoy:
         header_dict["feature"] = "novel_transcript"
         header_dict["taxon_id"] = self.taxon_id
         header_dict["tsl"] = 6
-
         return header_dict
 
 

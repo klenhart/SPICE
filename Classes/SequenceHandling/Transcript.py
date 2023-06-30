@@ -42,6 +42,10 @@ class Transcript:
         self.tags: List[str] = list()
         self.synonyms: List[str] = list()
 
+    def __str__(self):
+        output: str = self.get_id() + " " + self.get_biotype()
+        return output
+
     def has_sequence(self) -> bool:
         if self.feature == "transcript":
             return True

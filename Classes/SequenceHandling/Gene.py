@@ -82,7 +82,6 @@ class Gene:
         :type transcript: Transcript
         """
         self.transcripts[transcript.get_id()] = transcript
-
         if transcript.get_biotype() in ["protein_coding", "nonsense_mediated_decay", "non_coding"] and initial_add:
             if transcript.get_id() not in self.fas_dict.keys():
                 self.fas_dict[transcript.get_id()] = dict()

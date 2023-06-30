@@ -35,8 +35,8 @@ from Classes.SequenceHandling.LibraryInfo import LibraryInfo
 def patch_fas_index(library_path: str):
     with open(os.path.join(library_path, "paths.json"), "r") as f:
         path_dict: Dict[str, Any] = json.load(f)
-    path_dict["fas_scores"] = os.path.join(library_path, "fas_data", "fas_scores")
-    path_dict["fas_index"] = os.path.join(library_path, "fas_data", "fas_index.json")
+    path_dict["fas_scores"] = os.path.join("fas_data", "fas_scores")
+    path_dict["fas_index"] = os.path.join("fas_data", "fas_index.json")
     with open(os.path.join(library_path, "paths.json"), "w") as f:
         json.dump(path_dict, f, indent=4)
 
@@ -65,6 +65,29 @@ def patch_fas_index(library_path: str):
     os.remove(os.path.join(library_path, "fas_data", "fas_scores", "fas_scores.json"))
 
 
+def hotfix_fas_index(library_path: str):
+    with open(library_path, "r") as f:
+        paths_dict = json.load(f)
+    pass_path: PassPath = PassPath(paths_dict)
+    gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens",
+                                                  "9606")
+
+    gene_assembler.load(pass_path)
+
+    for gene in gene_assembler.get_genes():
+        delete_list = list()
+        for entry in gene.get_fas_dict().keys():
+            if not entry.startswith("ENS"):
+                delete_list.append(entry)
+        for entry in delete_list:
+            del gene.get_fas_dict()[entry]
+        for entry in gene.get_fas_dict().keys():
+            for del_entry in delete_list:
+                del gene.get_fas_dict()[entry][del_entry]
+
+    gene_assembler.save_fas(pass_path)
+
+
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--library", "--mode"],
                                                    [str, str],
@@ -80,6 +103,9 @@ def main():
 
     if argument_dict["mode"] == "fas_index":
         patch_fas_index(argument_dict["library"])
+    elif argument_dict["mode"] == "hotfix_fas_index":
+        hotfix_fas_index(argument_dict["library"])
+
 
 if __name__ == "__main__":
     main()
