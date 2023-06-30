@@ -66,7 +66,7 @@ def patch_fas_index(library_path: str):
 
 
 def hotfix_fas_index(library_path: str):
-    with open(library_path, "r") as f:
+    with open(os.path.join(library_path, "paths.json"), "r") as f:
         paths_dict = json.load(f)
     pass_path: PassPath = PassPath(paths_dict)
     gene_assembler: GeneAssembler = GeneAssembler("homo_sapiens",
