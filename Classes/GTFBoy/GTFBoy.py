@@ -105,10 +105,9 @@ class GTFBoy:
         gtf_line += line_dict["frame"] + "\t"
         gtf_line += "gene_id \"" + line_dict["gene_id"] + "\"; "
         gtf_line += "transcript_id \"" + line_dict["transcript_id"] + "\"; "
-        gtf_line += "gene_biotype \"" + line_dict["gene_type"] + "\"; "
+        gtf_line += "gene_biotype \"protein_coding\"; "
         gtf_line += "transcript_biotype \"protein_coding\"; "
-        gtf_line += "gene_status \"" + line_dict["gene_status"] + "\"; "
-        gtf_line += "gene_name \"" + line_dict["gene_name"] + "\"; "
+        gtf_line += "gene_status \"NOVEL\"; "
         if line_dict["feature"] == "exon":
             gtf_line += "exon_id \"" + line_dict["exon_id"] + "\"; "
         return gtf_line

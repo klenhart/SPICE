@@ -21,7 +21,7 @@
 #######################################################################
 
 from Classes.GTFBoy.GTFBoy import GTFBoy
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set
 import json
 import hashlib
 import os
@@ -29,14 +29,13 @@ import os
 
 class AnnotationParser:
 
-    def __init__(self, annotation_path_list: List[str], expression_path_list: List[str],
-                 threshold: float, name: str, species_name: str):
+    def __init__(self, annotation_path_list: List[str], protein_coding_gene_set: Set[str],
+                 threshold: float, name: str, species_name: str, check_threshold_flag: bool):
         self.name: str = name
         self.annotation_path_list: List[str] = annotation_path_list
-        self.expression_path_list: List[str] = expression_path_list
+        self.protein_coding_gene_set: Set[str] = protein_coding_gene_set
+        self.check_threshold_flag: bool = check_threshold_flag
         self.threshold = threshold
-        if self.threshold is None:
-            self.threshold: float = 1.0
         self.transcript_dict: Dict[str, Dict[str, Any]] = dict()
         if len(species_name) > 3:
             self.species_prefix: str = species_name[:3].upper()
@@ -52,6 +51,7 @@ class AnnotationParser:
         self.gene_count: int = 0
 
     def parse_annotations(self):
+        transcripts_threshold_dropped: Set[str] = set()
         total: int = len(self.annotation_path_list)
         for i, annotation_path in enumerate(self.annotation_path_list):
             if annotation_path == "":
@@ -66,7 +66,18 @@ class AnnotationParser:
                 if not line.startswith("#"):
                     line_dict: Dict[str, str] = GTFBoy.build_dict(line.split("\t"))
                     line_dict["gene_id"] = line_dict["gene_id"].split(".")[0]
+                    line_dict["transcript_id"] = line_dict["transcript_id"].split(".")[0]
+                    if line_dict["gene_id"] not in self.protein_coding_gene_set:
+                        continue
+                    is_transcript: bool = line_dict["feature"] == "transcript"
+                    if is_transcript and self.check_threshold_flag and float(line_dict["FPKM"]) < self.threshold:
+                        transcripts_threshold_dropped.add(line_dict["transcript_id"])
+                        continue
                     if line_dict["feature"] == "exon":
+                        if line_dict["transcript_id"] in transcripts_threshold_dropped:
+                            continue
+                        if "exon_number" in line_dict.keys() and "exon_id" not in line_dict.keys():
+                            line_dict["exon_id"] = line_dict["exon_number"]
                         line_dict["exon_id"] = line_dict["exon_id"].split(".")[0]
                     if AnnotationParser.check_if_candidate(line_dict):
                         gene_id: str = line_dict["gene_id"]
@@ -100,7 +111,6 @@ class AnnotationParser:
                     synonym_field: List[str] = [current_transcript_dict["transcript"]["transcript_id"]]
                     current_transcript_dict["transcript"]["synonyms"] = synonym_field
                     current_transcript_dict["transcript"]["coord_id"] = transcript_coord_id
-                    current_transcript_dict["transcript"]["FPKM"] = 0.0
 
                     for key in current_transcript_dict.keys():
                         current_transcript_dict[key]["transcript_id"] = hash_coord_id
@@ -112,43 +122,6 @@ class AnnotationParser:
                             self.transcript_dict[gene_id][hash_coord_id]["transcript"]["synonyms"].append(transcript_id)
                     self.old_id_map[gene_id][transcript_id] = hash_coord_id
 
-        if len(self.expression_path_list) > 0:
-            print("Filtering transcripts. Expression (FPKM) must be greater than", str(self.threshold) + ".")
-            print("Assigning maximum FPKMs.")
-            for i, path in enumerate(self.expression_path_list):
-                if path == "":
-                    print("Encountered empty expression path entry. This is the whole list of gtf paths:\n",
-                          self.annotation_path_list,
-                          "\nThe current index of annotation parsing is", i)
-                    continue
-                gtf_iterator: GTFBoy = GTFBoy(path)
-                for line in gtf_iterator:
-                    if line.startswith("#") or line == "":
-                        continue
-                    line_dict: Dict[str, str] = GTFBoy.build_dict(line.split("\t"))
-                    if line_dict["feature"] == "transcript":
-                        gene_id = line_dict["gene_id"].split(".")[0]
-                        if gene_id in self.transcript_dict.keys():
-                            if line_dict["transcript_id"] in self.old_id_map[gene_id].keys():
-                                hash_id = self.old_id_map[gene_id][line_dict["transcript_id"]]
-                                new_fpkm: float = float(line_dict["FPKM"])
-                                if self.transcript_dict[gene_id][hash_id]["transcript"]["FPKM"] < new_fpkm:
-                                    self.transcript_dict[gene_id][hash_id]["transcript"]["FPKM"] = new_fpkm
-            print("Deleting transcripts below FPKM threshold.")
-            gene_delete_list: List[str] = list()
-            for gene_id in self.transcript_dict.keys():
-                delete_list: List[str] = list()
-                for transcript_id in self.transcript_dict[gene_id].keys():
-                    if self.transcript_dict[gene_id][transcript_id]["transcript"]["FPKM"] < self.threshold:
-                        delete_list.append(transcript_id)
-                for transcript_id in delete_list:
-                    self.remove_transcript(gene_id, transcript_id)
-                if len(self.transcript_dict[gene_id].keys()) == 0:
-                    gene_delete_list.append(gene_id)
-            for gene_id in gene_delete_list:
-                del self.transcript_dict[gene_id]
-                del self.old_id_map[gene_id]
-            print("Done.")
         print("Generating transcript id to gene id map.")
         self.__generate_id_map__()
         print("Updating stats of the merged annotation.")
@@ -226,14 +199,10 @@ class AnnotationParser:
             return False
         elif line_dict["seqname"].startswith("chrU"):
             return False
-        elif line_dict["gene_status"] == "NOVEL":
+        elif line_dict["transcript_id"].startswith("ENS"):
             return False
-        elif line_dict["gene_type"] != "protein_coding":
-            return False
-        elif line_dict["transcript_status"] == "NOVEL":
-            return True
         else:
-            return False
+            return True
 
     @staticmethod
     def make_coord_string(transcript_dict: Dict[str, Any]):
@@ -245,7 +214,7 @@ class AnnotationParser:
             if key == "transcript":
                 chromosome = transcript_dict[key]["seqname"]
                 strand = transcript_dict[key]["strand"]
-                name = transcript_dict[key]["gene_name"]
+                name = transcript_dict[key]["gene_id"]
             else:
                 exon = transcript_dict[key]["start"] + "-" + transcript_dict[key]["end"]
                 exon_list.append(exon)

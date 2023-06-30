@@ -44,17 +44,19 @@ def merge_mode(argument_dict: Dict[str, Any]):
     with open(argument_dict["input"], "r") as f:
         anno_list: List[str] = f.read().split("\n")
 
-    if argument_dict["expression"] is None:
-        expression_list: List[str] = list()
-    else:
-        with open(argument_dict["expression"], "r") as f:
-            expression_list: List[str] = f.read().split("\n")
+    with open(os.path.join(argument_dict["library"], "transcript_data", "transcript_info.json"), "r") as f:
+        protein_coding_gene_set = set(json.load(f).keys())
 
+    if argument_dict["threshold"] is None:
+        check_threshold_flag: bool = False
+    else:
+        check_threshold_flag: bool = True
     annotation_parser: AnnotationParser = AnnotationParser(anno_list,
-                                                           expression_list,
+                                                           protein_coding_gene_set,
                                                            argument_dict["threshold"],
                                                            argument_dict["name"],
-                                                           argument_dict["species_prefix"])
+                                                           argument_dict["species_prefix"],
+                                                           check_threshold_flag)
     annotation_parser.parse_annotations()
     annotation_parser.save(argument_dict["out_path"])
     annotation_parser.save_json(argument_dict["out_path"])
@@ -372,15 +374,16 @@ def novlib_mode(argument_dict: Dict[str, Any]):
 
 
 def main():
-    argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--expression", "--threshold", "--mode",
+    argument_parser: ReduxArgParse = ReduxArgParse(["--input", "--out_path", "--threshold", "--mode",
                                                     "--name", "--json", "--diamond", "--library", "--species_prefix"],
-                                                   [str, str, str, float, str, str, str, str, str, str],
-                                                   ["store", "store", "store", "store", "store", "store", "store",
+                                                   [str, str,float, str, str, str, str, str, str],
+                                                   ["store", "store","store", "store", "store", "store",
                                                     "store", "store", "store"],
-                                                   [1, 1, None, "?", 1, 1, "?", "?", "?", None],
+                                                   [1, 1, "?", 1, 1, "?", "?", "?", None],
                                                    ["""Path to the input file. Depends on the mode. 
                                                     'merge': .txt-file containing the paths to all annotation-gtfs
-                                                     that shall be merged. One path per line.
+                                                     that shall be merged. One path per line. If a threshold is demanded
+                                                     this annotations should contain coverage in FPKM.
                                                     'prep' and 'prepcull': LongOrf.pep output of TransDecoder.
                                                     'novlib': Fasta-file containing novel transcripts. The file
                                                     requires a header structure like this:
@@ -394,12 +397,9 @@ def main():
                                                     """Path to the output directory for <name>.gtf,
                                                     <name>.json, <name>.fasta, <name>_complete.fasta,
                                                      novlib_<species>_<release>_<fas_mode>_<name> etc.""",  # OUT_PATH
-                                                    """Only used in 'merge'-mode. Path to a text file containing 
-                                                    the paths to gtf files including transcript abundances. Only 
-                                                    transcripts will be kept which exceed the float given in 
-                                                    the --threshold parameter.""",  # EXPRESSION
                                                     """Expression threshold, which will be 
-                                                     used for transcript curation.""",  # THRESHOLD
+                                                     used for transcript curation. If not set, expression will be
+                                                     ignored.""",  # THRESHOLD
                                                     """Either 1:'merge', 2:'prep', 3:'prepcull' or 4:'novlib' 
                                                     depending on the stage of the workflow.""",  # MODE
                                                     "Name for the output file.",  # NAME
@@ -409,7 +409,7 @@ def main():
                                                     """Path to the .tsv file output by DIAMOND. Only required for 'prep'
                                                     or 'prepcull' mode.""",  # DIAMOND
                                                     """Path to the Spice library that shall be extended. Only required
-                                                    for 'novlib mode.""",  # LIBRARY
+                                                    for 'novlib' and 'merge' mode.""",  # LIBRARY
                                                     """The first three letters of this will be used as a prefix for
                                                     newly generated IDs.
                                                     Name of the species would be best."""  # SPECIES_PREFIX
