@@ -322,7 +322,6 @@ def novlib_mode(argument_dict: Dict[str, Any]):
     for gene in gene_assembler.get_genes():
         if gene.get_id() in novel_transcript_dict.keys():
             for transcript in novel_transcript_dict[gene.get_id()]:
-                print(transcript)
                 gene.add_transcript(transcript, True)
 
     novlib_info["status"]: Dict[str, bool] = {"01_id_collection": True,
