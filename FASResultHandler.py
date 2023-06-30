@@ -38,7 +38,7 @@ def main():
                                                     """What operation shall be done on the results? 
                                                     'unpack', 'concat' or 'delete'""",
                                                     """Annotation directory that also contains
-                                                     the concatenated FAS output."""])
+                                                     the concatenated FAS index JSON file."""])
 
     argument_parser.generate_parser()
     argument_parser.execute()
@@ -74,9 +74,10 @@ def main():
                 with open(os.path.join(argument_dict["anno_dir"], "reverse.domains"), "a") as f_out:
                     f_out.write(domains_input)
     elif argument_dict['mode'] == "integrate":
-        with WriteGuard(os.path.join(argument_dict["anno_dir"], "fas_scores.json"), argument_dict["anno_dir"]):
-            with open(os.path.join(argument_dict["anno_dir"], "fas_scores.json"), "r") as f_in:
-                fas_scores_dict: Dict[str, Dict[str, Dict[str, float]]] = json.load(f_in)
+        with WriteGuard(os.path.join(argument_dict["anno_dir"], "fas_index.json"), argument_dict["anno_dir"]):
+            fas_scores_dir: str = os.path.join(argument_dict["anno_dir"], "fas_scores")
+            with open(os.path.join(argument_dict["anno_dir"], "fas_index.json"), "r") as f_in:
+                fas_index_dict: Dict[str, str] = json.load(f_in)
             with open(os.path.join(argument_dict["anno_dir"], "fas.phyloprofile")) as f_in:
                 fas_score_list: List[str] = f_in.read().split("\n")[1:]
             for line in fas_score_list:
@@ -92,10 +93,12 @@ def main():
                 gene_id: str = split_seed[0]
                 seed_prot_id: str = split_seed[1]
                 query_prot_id: str = split_query[1]
+                with open(os.path.join(fas_scores_dir, fas_index_dict[gene_id]), "r") as f:
+                    fas_scores_dict = json.load(f)
                 fas_scores_dict[gene_id][seed_prot_id][query_prot_id] = fas_2
                 fas_scores_dict[gene_id][query_prot_id][seed_prot_id] = fas_1
-            with open(os.path.join(argument_dict["anno_dir"], "fas_scores.json"), "w") as f_out:
-                json.dump(fas_scores_dict, f_out, indent=4)
+                with open(os.path.join(fas_scores_dir, fas_index_dict[gene_id]), "w") as f:
+                    json.dump(fas_scores_dict, f, indent=4)
 
 
 if __name__ == "__main__":
