@@ -48,9 +48,10 @@ def condition(library_path: str, outdir: str, replicate_name_list: List[str], co
     result.generate_ewfd_file(condition_name, True)
 
 
-def compare(library_path: str, outdir: str, condition_pair: Tuple[str, str], suffix: str = ""):
+def compare(library_path: str, outdir: str, condition_pair: List[str], suffix: str = ""):
     result: ResultBuddy = ResultBuddy(library_path, outdir, False, suffix)
-    result.compare(condition_pair)
+    if condition_pair[0] != condition_pair[1]:
+        result.compare(condition_pair)
 
 
 def main():
@@ -143,7 +144,10 @@ def main():
                       argument_dict["suffix"])
 
     elif argument_dict["mode"][0] == "compare":
-        print("'compare' mode not yet implemented in this version of spice.")
+        compare(argument_dict["library"][0],
+                argument_dict["outdir"],
+                argument_dict["compared"],
+                argument_dict["suffix"])
     else:
         print("Mode not recognized:\n", argument_dict["mode"][0], "\nAborting.")
 

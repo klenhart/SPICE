@@ -22,7 +22,7 @@
 #
 #######################################################################
 
-from typing import Tuple
+from typing import Dict, Any
 
 from Classes.PassPath.PassPath import PassPath
 
@@ -30,10 +30,21 @@ from Classes.PassPath.PassPath import PassPath
 class ComparisonAssembler:
 
     def __init__(self,
-                 condition_pair: Tuple[str, str],
+                 condition_1: str,
+                 condition_2: str,
                  result_pass_path: PassPath,
-                 initial_flag: bool = False):
-        result_pass_path[""]
+                 result_info: Dict[str, Any]):
+        self.condition_1: str = condition_1
+        self.condition_2: str = condition_2
+        self.result_pass_path: PassPath = result_pass_path
+        self.info: Dict[str, Any] = result_info
+
+        self.condition_1_path: str = self.info["expression_import"]["conditions"][condition_1]["ewfd_path"]
+        self.condition_2_path: str = self.info["expression_import"]["conditions"][condition_2]["ewfd_path"]
+
+
+    def rmsd(self, gene_1, gene_2):
+
 
     def __str__(self):
         pass

@@ -153,11 +153,12 @@ class ResultBuddy:
             self.__save_info()
             condition.save(self.result_info["expression_imports"]["conditions"][condition_name]["expression_path"])
 
-    def compare(self, condition_pair: Tuple[str, str]):
-        comparison: ComparisonAssembler = ComparisonAssembler(condition_pair,
+    def compare(self, condition_pair: List[str]):
+        condition_pair.sort()
+        comparison: ComparisonAssembler = ComparisonAssembler(condition_pair[0],
+                                                              condition_pair[1],
                                                               self.result_pass_path,
-                                                              self.result_info,
-                                                              True)
+                                                              self.result_info)
 
     def import_expression_gtf(self,
                               expression_path: str,
