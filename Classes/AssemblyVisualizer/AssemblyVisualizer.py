@@ -1,4 +1,6 @@
 #!/bin/env python
+import json
+import math
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -23,8 +25,11 @@
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 
 from typing import Dict, List, Any
-
+import argparse
+import numpy as np
+import os
 import plotly.express as px
+import matplotlib.pyplot as plt
 
 import pandas
 
@@ -144,8 +149,127 @@ class AssemblyVisualizer:
         return pandas.DataFrame(data_dict)
 
 
+class ResultVisualizer:
+
+    def __init__(self, library_path: str):
+        self.library_path = library_path
+
+    def simulate_transcript(self, gene_id: str, transcript_group_1: List[str], transcript_group_2: List[str]):
+        with open(os.path.join(self.library_path, "fas_data", "fas_index.json"), "r") as f:
+            file_name: str = json.load(f)[gene_id]
+        with open(os.path.join(self.library_path, "fas_data", "fas_scores", file_name), "r") as f:
+            fas_adjacency_matrix: Dict[str, Dict[str, float]] = json.load(f)[gene_id]
+
+        transcript_list = transcript_group_1 + transcript_group_2
+        expression_lists = [[0.0] * len(transcript_list) for _ in range(11)]
+        for i, value in enumerate(np.linspace(0.0, 1, 11)):
+            expression_lists[i][0] = round(value, 1)
+            expression_lists[i][1] = round(1.0 - value, 1)
+
+        ewfd_lists = list()
+        for expression_list in expression_lists:
+            ewfd_lists.append(ResultVisualizer.calculate_ewfd(fas_adjacency_matrix, expression_list, transcript_list))
+        rmsd_list = list()
+        log2fc_list = list()
+        for i, ewfd_vals_1 in enumerate(ewfd_lists):
+            for j, ewfd_vals_2 in enumerate(ewfd_lists):
+                if expression_lists[i][0] == 0 or expression_lists[j][0] == 0:
+                    log2fold_change = float("inf")
+                else:
+                    log2fold_change: float = math.log(expression_lists[i][0] / expression_lists[j][0], 2)
+                rmsd: float = ResultVisualizer.calc_rmsd(ewfd_vals_1, ewfd_vals_2)
+                rmsd_list.append(rmsd)
+                log2fc_list.append(round(abs(log2fold_change), 2))
+                # print("RMSD:", rmsd, "| lg2fc:", log2fold_change)
+        zipped_list = sorted(list(set(zip(rmsd_list, log2fc_list))), key=lambda x: x[0])
+        for entry in zipped_list:
+            print("RMSD:", entry[0], "| lg2fc:", entry[1])
+
+
+    @staticmethod
+    def calc_rmsd(ewfd_1: List[float], ewfd_2: List[float]):
+        squared_delta_list: List[float] = list()
+        for i, _ in enumerate(ewfd_1):
+            squared_delta_list.append((ewfd_1[i] - ewfd_2[i]) ** 2)
+        return math.sqrt(sum(squared_delta_list)) / len(ewfd_1)
+
+    @staticmethod
+    def calculate_ewfd(fas_adjacency_matrix: Dict[str, Dict[str, float]],
+                       rel_expressions: List[float],
+                       transcript_ids: List[str]) -> List[float]:
+        ewfd_list: List[float] = [0.0] * len(transcript_ids)
+        for s, seed_id in enumerate(transcript_ids):
+            for q, query_id in enumerate(transcript_ids):
+                ewfd_list[s] += rel_expressions[q] * fas_adjacency_matrix[seed_id][query_id]
+        ewfd_list = [round(1 - movement_value, 4) for movement_value in ewfd_list]
+        return ewfd_list
+
+    @staticmethod
+    def plot_rmsd_distribution(result_directory: str, inclusion_count: int = 200):
+        rank_entries: List[List[float]] = [[] for _ in range(inclusion_count)]
+        for entry in os.listdir(result_directory):
+            with open(os.path.join(result_directory, entry), "r") as f:
+                for i, line in enumerate(f):
+                    if i > inclusion_count:
+                        break
+                    elif i == 0:
+                        continue
+                    rank_entries[i-1].append(float(line.split(",")[1]))
+
+        # General setup
+        fig, ax = plt.subplots()
+        positions = range(1, inclusion_count+1)
+        bp = ax.boxplot(rank_entries, positions=positions, showfliers=True)
+
+        # General axis labels
+        ax.set_xlabel('Rank')
+        ax.set_ylabel('EWFD RMSD')
+        ax.set_title('EWFD RMSD by rank')
+
+        # Get less x labels
+        ax.set_xlim(0, inclusion_count+1)
+        x_ticks = [1] + list(range(20, inclusion_count-19, 20)) + [inclusion_count]
+        ax.set_xticks(x_ticks)
+        tick_labels = ['{}'.format(tick) for tick in x_ticks]  # Modify tick labels as desired
+        ax.set_xticklabels(tick_labels)
+
+        # Get more y labels.
+        num_y_ticks = 10
+        y_ticks = np.linspace(0.1, 1, num_y_ticks)
+        y_tick_labels = ['{:.1f}'.format(tick) for tick in y_ticks]
+        ax.set_yticks(y_ticks)
+        ax.set_yticklabels(y_tick_labels)
+
+        # Change median color and make them thicker
+        for median in bp['medians']:
+            median.set(color='red', linewidth=2)
+
+        ax.grid(True, linestyle='-')
+
+        plt.show()
+
+
 def main():
-    pass
+    parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    parser.add_argument("-i",
+                        "--input",
+                        type=str,
+                        action="store",
+                        help="Path to directory containing result csv files.")
+    parser.add_argument("-l",
+                        "--library",
+                        type=str,
+                        action="store",
+                        help="Path to library.")
+    argument_dict: Dict[str, str] = vars(parser.parse_args())
+
+    result_visualizer = ResultVisualizer(argument_dict["library"])
+    # print("TEST ONE")
+    # result_visualizer.simulate_transcript("ENSG00000184047", ["ENSP00000411638"], ["ENSP00000320343"])
+    # print()
+    # print("TEST TWO")
+    # result_visualizer.simulate_transcript("ENSG00000184047", ["ENSP00000442360"], ["ENSP00000320343"])
+    result_visualizer.plot_rmsd_distribution(argument_dict["input"], 200)
 
 
 if __name__ == "__main__":
