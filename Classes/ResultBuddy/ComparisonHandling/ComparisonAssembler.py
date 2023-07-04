@@ -1,7 +1,8 @@
 #!/bin/env python
-
-
-
+import hashlib
+import json
+import math
+import os
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
@@ -22,9 +23,79 @@
 #
 #######################################################################
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from Classes.PassPath.PassPath import PassPath
+from Classes.ResultBuddy.EWFDHandling.EWFDAssembler import EWFDAssembler
+
+
+class ComparisonGene:
+
+    def __init__(self, gene_id: str,
+                 data_dict_1: Dict[str, List[Any]],
+                 data_dict_2: Dict[str, List[Any]],
+                 biotype_filter: List[str], tag_filter: List[str],
+                 fas_adjacency_matrix: Dict[str, Dict[str, float]]):
+        self.gene_id = gene_id
+
+        self.rmsd: float = 0.0
+
+        data_dict_1 = ComparisonGene.apply_biotype_filter(data_dict_1, biotype_filter)
+        data_dict_1 = ComparisonGene.apply_tag_filter(data_dict_1, tag_filter)
+        ewfd_1 = ComparisonGene.recalculate_ewfd(data_dict_1, fas_adjacency_matrix)
+
+        data_dict_2 = ComparisonGene.apply_biotype_filter(data_dict_2, biotype_filter)
+        data_dict_2 = ComparisonGene.apply_tag_filter(data_dict_2, tag_filter)
+        ewfd_2 = ComparisonGene.recalculate_ewfd(data_dict_2, fas_adjacency_matrix)
+
+        self.calc_rmsd(ewfd_1, ewfd_2)
+
+    def calc_rmsd(self, ewfd_1: List[float], ewfd_2: List[float]):
+        squared_delta_list: List[float] = list()
+        for i, _ in enumerate(ewfd_1):
+            squared_delta_list.append((ewfd_1[i] - ewfd_2[i])**2)
+        self.rmsd = math.sqrt(sum(squared_delta_list)) / len(ewfd_1)
+
+    def __str__(self):
+        output: str = "\t".join([self.gene_id, str(self.rmsd)])
+        return output
+
+    @staticmethod
+    def recalculate_ewfd(data_dict: Dict[str, List[Any]], fas_adjacency_matrix: Dict[str, Dict[str, float]]):
+        return EWFDAssembler.calculate_ewfd(fas_adjacency_matrix,
+                                            data_dict["expression_rel_avg"],
+                                            data_dict["ids"])
+
+    @staticmethod
+    def apply_biotype_filter(data_dict: Dict[str, List[Any]], biotype_filter: List[str]):
+        delete_set = set()
+        for entry in biotype_filter:
+            for i, biotype in enumerate(data_dict["biotypes"]):
+                if biotype == entry:
+                    delete_set.add(i)
+        delete_list = list(delete_set)
+        delete_list.sort(reverse=True)
+        for index in delete_list:
+            for key in data_dict.keys():
+                data_dict[key].pop(index)
+        return data_dict
+
+    @staticmethod
+    def apply_tag_filter(data_dict: Dict[str, List[Any]], tag_filter: List[str]):
+        delete_set = set()
+        for entry_list in tag_filter:
+            for i, tag in enumerate(data_dict["tags"]):
+                if tag in entry_list:
+                    delete_set.add(i)
+        delete_list = list(delete_set)
+        delete_list.sort(reverse=True)
+        for index in delete_list:
+            for key in data_dict.keys():
+                data_dict[key].pop(index)
+        return data_dict
+
+    def __lt__(self, other):
+        return self.rmsd < other.rmsd
 
 
 class ComparisonAssembler:
@@ -39,12 +110,60 @@ class ComparisonAssembler:
         self.result_pass_path: PassPath = result_pass_path
         self.info: Dict[str, Any] = result_info
 
+        self.comparison_gene_list: List[ComparisonGene] = list()
+
+        with open(os.path.join(result_pass_path["library_path"], "fas_data", "fas_index.json"), "r") as f:
+            self.fas_index: Dict[str, str] = json.load(f)
+
+        self.fas_scores_directory: str = os.path.join(result_pass_path["library_path"], "fas_data", "fas_scores")
+
         self.condition_1_path: str = self.info["expression_import"]["conditions"][condition_1]["ewfd_path"]
         self.condition_2_path: str = self.info["expression_import"]["conditions"][condition_2]["ewfd_path"]
 
+        self.biotype_filter: List[str] = list()
+        self.tag_filter: List[str] = list()
+        self.filter_hash = md5_hash("".join(self.biotype_filter+self.tag_filter), 6)
 
-    def rmsd(self, gene_1, gene_2):
+    def add_biotype_filter(self, filter_out: str):
+        self.biotype_filter.append(filter_out)
+        self.filter_hash = md5_hash("".join(self.biotype_filter + self.tag_filter), 6)
 
+    def add_tag_filter(self, filter_out: str):
+        self.tag_filter.append(filter_out)
+        self.filter_hash = md5_hash("".join(self.biotype_filter + self.tag_filter), 6)
+
+    def compare_genes(self):
+        with open(self.condition_1_path, "r") as f_1:
+            data_cond_1: Dict[str, Dict[str, List[Any]]] =  json.load(f_1)["data"]
+
+        with open(self.condition_2_path, "r") as f_2:
+            data_cond_2: Dict[str, Dict[str, List[Any]]] =  json.load(f_2)["data"]
+
+        for gene_id in data_cond_1.keys():
+            with open(os.path.join(self.fas_scores_directory, self.fas_index[gene_id]), "r") as f:
+                fas_adjacency_matrix: Dict[str, Dict[str, float]] = json.load(f)[gene_id]
+            self.comparison_gene_list.append(ComparisonGene(gene_id,
+                                                            data_cond_1[gene_id],
+                                                            data_cond_2[gene_id],
+                                                            self.biotype_filter,
+                                                            self.tag_filter,
+                                                            fas_adjacency_matrix))
+
+    def sort_genes_by_rmsd(self):
+        self.comparison_gene_list.sort(reverse=True)
 
     def __str__(self):
-        pass
+        return "\n".join([str(gene) for gene in self.comparison_gene_list])
+
+    def save(self, out_dir):
+        with open(os.path.join(out_dir,
+                               self.condition_1 + "@" + self.condition_2 + "@" + self.filter_hash + ".tsv"), "w") as f:
+            f.write(str(self))
+
+
+def md5_hash(data, length: int = 32):
+    hasher = hashlib.md5()
+    hasher.update(data.encode("utf-8"))
+    hash_string = hasher.hexdigest()
+    return hash_string[:length]
+
