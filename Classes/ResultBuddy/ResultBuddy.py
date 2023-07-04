@@ -159,6 +159,7 @@ class ResultBuddy:
                                                               condition_pair[1],
                                                               self.result_pass_path,
                                                               self.result_info)
+        return comparison
 
     def import_expression_gtf(self,
                               expression_path: str,

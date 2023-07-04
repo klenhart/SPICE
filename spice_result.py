@@ -23,6 +23,7 @@
 from typing import Dict, Any, List, Tuple
 
 from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
+from Classes.ResultBuddy.ComparisonHandling.ComparisonAssembler import ComparisonAssembler
 from Classes.ResultBuddy.ResultBuddy import ResultBuddy
 
 
@@ -51,7 +52,8 @@ def condition(library_path: str, outdir: str, replicate_name_list: List[str], co
 def compare(library_path: str, outdir: str, condition_pair: List[str], suffix: str = ""):
     result: ResultBuddy = ResultBuddy(library_path, outdir, False, suffix)
     if condition_pair[0] != condition_pair[1]:
-        result.compare(condition_pair)
+        comparison: ComparisonAssembler = result.compare(condition_pair)
+        comparison.save(outdir)
 
 
 def main():
