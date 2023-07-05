@@ -24,7 +24,7 @@ import math
 
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 import argparse
 import numpy as np
 import os
@@ -154,13 +154,15 @@ class ResultVisualizer:
     def __init__(self, library_path: str):
         self.library_path = library_path
 
-    def simulate_transcript(self, gene_id: str, transcript_group_1: List[str], transcript_group_2: List[str]):
+    def simulate_transcript(self, gene_id: str,
+                            transcript_1: str,
+                            transcript_2: str) -> List[Tuple[float, float]]:
         with open(os.path.join(self.library_path, "fas_data", "fas_index.json"), "r") as f:
             file_name: str = json.load(f)[gene_id]
         with open(os.path.join(self.library_path, "fas_data", "fas_scores", file_name), "r") as f:
             fas_adjacency_matrix: Dict[str, Dict[str, float]] = json.load(f)[gene_id]
 
-        transcript_list = transcript_group_1 + transcript_group_2
+        transcript_list = [transcript_1, transcript_2]
         expression_lists = [[0.0] * len(transcript_list) for _ in range(11)]
         for i, value in enumerate(np.linspace(0.0, 1, 11)):
             expression_lists[i][0] = round(value, 1)
@@ -182,9 +184,9 @@ class ResultVisualizer:
                 log2fc_list.append(round(abs(log2fold_change), 2))
                 # print("RMSD:", rmsd, "| lg2fc:", log2fold_change)
         zipped_list = sorted(list(set(zip(rmsd_list, log2fc_list))), key=lambda x: x[0])
-        for entry in zipped_list:
-            print("RMSD:", entry[0], "| lg2fc:", entry[1])
-
+        #  for entry in zipped_list:
+        #      print("RMSD:", entry[0], "| lg2fc:", entry[1])
+        return zipped_list
 
     @staticmethod
     def calc_rmsd(ewfd_1: List[float], ewfd_2: List[float]):
@@ -204,8 +206,22 @@ class ResultVisualizer:
         ewfd_list = [round(1 - movement_value, 4) for movement_value in ewfd_list]
         return ewfd_list
 
-    @staticmethod
-    def plot_rmsd_distribution(result_directory: str, inclusion_count: int = 200):
+    def plot_rmsd_distribution(self, result_directory: str, inclusion_count: int,
+                               max_rmsd_inclusion: List[str],
+                               slight_shift_inclusion: List[str],
+                               included_transcript_pairs: List[List[str]],
+                               inclusion_synonym: List[str],
+                               inclusion_color: List[str]):
+
+        max_rmsd_inclusion_stats: List[Tuple[float, str, str]]  # max_rmsd, label text, color
+        for i, gene_id in enumerate(max_rmsd_inclusion):
+            zipped_list: List[Tuple[float, float]] = self.simulate_transcript(gene_id,
+                                                                              included_transcript_pairs[i][0],
+                                                                              included_transcript_pairs[i][1])
+
+
+
+        #  Import the RMSD ranks.
         rank_entries: List[List[float]] = [[] for _ in range(inclusion_count)]
         for entry in os.listdir(result_directory):
             with open(os.path.join(result_directory, entry), "r") as f:
