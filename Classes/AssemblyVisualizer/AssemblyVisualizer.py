@@ -206,20 +206,40 @@ class ResultVisualizer:
         ewfd_list = [round(1 - movement_value, 4) for movement_value in ewfd_list]
         return ewfd_list
 
-    def plot_rmsd_distribution(self, result_directory: str, inclusion_count: int,
+    def plot_rmsd_distribution(self, result_directory: str,
+                               inclusion_count: int,
                                max_rmsd_inclusion: List[str],
                                slight_shift_inclusion: List[str],
                                included_transcript_pairs: List[List[str]],
                                inclusion_synonym: List[str],
-                               inclusion_color: List[str]):
+                               inclusion_color: List[List[str]],
+                               outfile: str):
 
-        max_rmsd_inclusion_stats: List[Tuple[float, str, str]]  # max_rmsd, label text, color
+        max_rmsd_inclusion_stats: List[Tuple[float, str, str]] = list()  # max_rmsd, label text, color
         for i, gene_id in enumerate(max_rmsd_inclusion):
             zipped_list: List[Tuple[float, float]] = self.simulate_transcript(gene_id,
                                                                               included_transcript_pairs[i][0],
                                                                               included_transcript_pairs[i][1])
+            label: str = "{0} Max RMSD".format(inclusion_synonym[i])
+            max_rmsd_inclusion_stats.append((max([rmsd for rmsd, _ in zipped_list]),
+                                             label,
+                                             inclusion_color[i][0]))
 
-
+        slight_rmsd_inclusion_stats: List[Tuple[float, str, str]] = list()  # max_rmsd, label text, color
+        for i, gene_id in enumerate(slight_shift_inclusion):
+            zipped_list: List[Tuple[float, float]] = self.simulate_transcript(gene_id,
+                                                                              included_transcript_pairs[i][0],
+                                                                              included_transcript_pairs[i][1])
+            label: str = "{0} slight expr shift RMSD".format(inclusion_synonym[i])
+            slight_rmsd: float = 0.0
+            slight_log2fold_change = float("inf")
+            for rmsd, log2fold_change in zipped_list:
+                if 1 < log2fold_change < slight_log2fold_change:
+                    slight_rmsd = rmsd
+                    slight_log2fold_change = log2fold_change
+            slight_rmsd_inclusion_stats.append((slight_rmsd,
+                                                label,
+                                                inclusion_color[i][1]))
 
         #  Import the RMSD ranks.
         rank_entries: List[List[float]] = [[] for _ in range(inclusion_count)]
@@ -235,7 +255,7 @@ class ResultVisualizer:
         # General setup
         fig, ax = plt.subplots()
         positions = range(1, inclusion_count+1)
-        bp = ax.boxplot(rank_entries, positions=positions, showfliers=True)
+        bp = ax.boxplot(rank_entries, positions=positions, showfliers=True, flierprops=dict(marker='.', markersize=4))
 
         # General axis labels
         ax.set_xlabel('Rank')
@@ -262,7 +282,27 @@ class ResultVisualizer:
 
         ax.grid(True, linestyle='-')
 
-        plt.show()
+        # Change the colors of the boxes
+        for box in bp['boxes']:
+            box.set(color="gray")
+
+        for whisker in bp['whiskers']:
+            whisker.set(color="gray")
+
+        for cap in bp['caps']:
+            cap.set(color="gray")
+
+        # Add the lines indicating the RMSD of the interesting candidates.
+        for rmsd, label, color in max_rmsd_inclusion_stats:
+            ax.axhline(rmsd, color=color, linestyle='--', label=label)
+
+        for rmsd, label, color in slight_rmsd_inclusion_stats:
+            ax.axhline(rmsd, color=color, linestyle='--', label=label)
+
+        # Add a legend
+        ax.legend()
+
+        plt.savefig(outfile, format='svg')
 
 
 def main():
@@ -277,6 +317,11 @@ def main():
                         type=str,
                         action="store",
                         help="Path to library.")
+    parser.add_argument("-o",
+                        "--outfile",
+                        type=str,
+                        action="store",
+                        help="Name of the output file.")
     argument_dict: Dict[str, str] = vars(parser.parse_args())
 
     result_visualizer = ResultVisualizer(argument_dict["library"])
@@ -285,7 +330,13 @@ def main():
     # print()
     # print("TEST TWO")
     # result_visualizer.simulate_transcript("ENSG00000184047", ["ENSP00000442360"], ["ENSP00000320343"])
-    result_visualizer.plot_rmsd_distribution(argument_dict["input"], 200)
+    result_visualizer.plot_rmsd_distribution(argument_dict["input"], 200,
+                                             ["ENSG00000184047"],
+                                             ["ENSG00000184047"],
+                                             [["ENSP00000411638", "ENSP00000320343"]],
+                                             ["DIABLO"],
+                                             [["green", "cyan"]],
+                                             argument_dict["outfile"])
 
 
 if __name__ == "__main__":

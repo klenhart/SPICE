@@ -9,7 +9,22 @@ from spice_result import expression
 
 
 def main():
-    print("Hello World!")
+    path: str = ""
+    for filename in os.listdir(path):
+        new_file: List[str] = list()
+        with open(os.path.join(path, filename), "r") as f:
+            file = f.read()
+        for i, line in enumerate(file.split("\n")):
+            if len(line) == 0:
+                continue
+            elif i == 0:
+                new_file.append(line)
+            elif line.split(",")[7] == "Yes":
+                new_file.append(line)
+
+        file = "\n".join(new_file)
+        with open(os.path.join(path, filename), "w") as f:
+            f.write(file)
 
 
 def open_json(path) -> Dict[str, Any]:
