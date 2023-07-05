@@ -1,8 +1,5 @@
 #!/bin/env python
-import hashlib
-import json
-import math
-import os
+
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
@@ -24,7 +21,10 @@ import os
 #######################################################################
 
 from typing import Dict, Any, List
-
+import hashlib
+import json
+import math
+import os
 from Classes.PassPath.PassPath import PassPath
 from Classes.ResultBuddy.EWFDHandling.EWFDAssembler import EWFDAssembler
 

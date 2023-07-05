@@ -1,6 +1,4 @@
 #!/bin/env python
-import json
-import math
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -24,6 +22,8 @@ import math
 
 from Classes.SequenceHandling.GeneAssembler import GeneAssembler
 
+import json
+import math
 from typing import Dict, List, Any, Tuple
 import argparse
 import numpy as np
