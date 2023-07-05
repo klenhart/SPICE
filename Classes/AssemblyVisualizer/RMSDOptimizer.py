@@ -1,6 +1,4 @@
 #!/bin/env python
-import math
-import random
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -25,6 +23,8 @@ import random
 import numpy as np
 from typing import Dict, List
 from scipy.optimize import minimize
+import math
+import random
 
 
 class RMSDOptimizer:
