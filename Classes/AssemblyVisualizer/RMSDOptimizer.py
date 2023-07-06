@@ -37,7 +37,10 @@ class RMSDOptimizer:
                  info_dict: Dict[str, Any],
                  protein_coding_flag: bool = True,
                  complete_flag: bool = True):
-        distance_dict = RMSDOptimizer.cull_distance_dict(distance_dict, info_dict, protein_coding_flag, complete_flag)
+        self.compliant_indices_set = RMSDOptimizer.check_distance_dict(distance_dict,
+                                                                       info_dict,
+                                                                       protein_coding_flag,
+                                                                       complete_flag)
         self.matrix = RMSDOptimizer.distance_dict_to_matrix(distance_dict)
         self.length: int = len(self.matrix)
         if self.length == 0:
@@ -57,8 +60,18 @@ class RMSDOptimizer:
     def objective_function(self, combined_vector):
         v = combined_vector[:self.length]
         w = combined_vector[self.length:]
+        expressed_indices = list()
+        for i, x in enumerate(v):
+            if (x > 0 or w[i] > 0) and i in self.compliant_indices_set:
+                expressed_indices.append(i)
+        if len(expressed_indices) == 0:
+            return 0.0
         diff = np.dot(self.matrix, v) - np.dot(self.matrix, w)
-        return -np.sqrt(np.sum(diff ** 2) / self.length)
+        expressed_diff_list = list()
+        for i in expressed_indices:
+            expressed_diff_list.append(diff[i])
+        expressed_diff = np.array(expressed_diff_list)
+        return -np.sqrt(np.sum(expressed_diff ** 2) / self.length)
 
     def constraint_function_v(self, combined_vector):
         v = combined_vector[:self.length]
@@ -89,39 +102,47 @@ class RMSDOptimizer:
     def make_random_vector(n: int) -> np.array:
         vector = np.zeros(n)
         remain = 100
+        number_pool = list()
 
         for i in range(n):
             if remain == 0:
-                break
+                number_pool.append(0.0)
             elif i == n-1:
-                vector[i] = round(remain*0.01, 2)
+                number_pool.append(round(remain*0.01, 2))
             else:
                 x = random.randint(1, remain)
-                vector[i] = round(x*0.01, 2)
+                number_pool.append(round(x*0.01, 2))
                 remain = remain - x
+
+        for i, _ in enumerate(vector):
+            number = random.choice(number_pool)
+            number_pool.remove(number)
+            vector[i] = number
         return vector
 
     @staticmethod
-    def cull_distance_dict(distance_dict: Dict[str, Dict[str, float]],
-                           info_dict: Dict[str, Any],
-                           protein_coding_flag,
-                           complete_flag):
+    def check_distance_dict(distance_dict: Dict[str, Dict[str, float]],
+                            info_dict: Dict[str, Any],
+                            protein_coding_flag,
+                            complete_flag):
+        compliant_indices_set = set()
         if protein_coding_flag or complete_flag:
-            delete_set = set()
-            if protein_coding_flag:
-                for key in distance_dict.keys():
-                    if RMSDOptimizer.is_non_coding(key):
-                        delete_set.add(key)
-            if complete_flag:
-                for key in distance_dict.keys():
-                    if RMSDOptimizer.is_incomplete(key, info_dict):
-                        delete_set.add(key)
-            for entry in delete_set:
-                del distance_dict[entry]
-            for key in distance_dict.keys():
-                for entry in delete_set:
-                    del distance_dict[key][entry]
-        return distance_dict
+            if protein_coding_flag and complete_flag:
+                for i, key in enumerate(distance_dict.keys()):
+                    if not (RMSDOptimizer.is_non_coding(key) or RMSDOptimizer.is_incomplete(key, info_dict)):
+                        compliant_indices_set.add(i)
+            elif protein_coding_flag:
+                for i, key in enumerate(distance_dict.keys()):
+                    if not RMSDOptimizer.is_non_coding(key):
+                        compliant_indices_set.add(i)
+            elif complete_flag:
+                for i, key in enumerate(distance_dict.keys()):
+                    if not RMSDOptimizer.is_incomplete(key, info_dict):
+                        compliant_indices_set.add(i)
+        else:
+            for i in range(len(distance_dict.keys())):
+                compliant_indices_set.add(i)
+        return compliant_indices_set
 
     @staticmethod
     def distance_dict_to_matrix(distance_dict: Dict[str, Dict[str, float]]) -> np.array:
@@ -175,6 +196,9 @@ def main():
 
     already_calced: Set[str] = set()
 
+    with open(os.path.join(argument_dict["library"], "transcript_data", "transcript_info.json"), "r") as f:
+        info_dict = json.load(f)
+
     if argument_dict["already"] is not None:
         with open(argument_dict["already"], "r") as f:
             output_file: List[str] = f.read().split("\n")
@@ -200,7 +224,10 @@ def main():
             if gene_id not in already_calced:
                 stages: List[bool] = [False, False, False, False]
                 try:
-                    optimizer = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]), info_dict[gene_id], False, False)
+                    optimizer = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
+                                              info_dict[gene_id],
+                                              False,
+                                              False)
                     stages[0] = True
                     optimizer_no_incomplete = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
                                                             info_dict[gene_id], False, True)
@@ -208,7 +235,10 @@ def main():
                     optimizer_no_non_coding = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
                                                             info_dict[gene_id], True, False)
                     stages[2] = True
-                    optimizer_both = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]), info_dict[gene_id], True, True)
+                    optimizer_both = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
+                                                   info_dict[gene_id],
+                                                   True,
+                                                   True)
                     stages[3] = True
                     output_list.append([gene_id,
                                         str(round(optimizer.calc_rmsd(), 2)),
@@ -220,7 +250,6 @@ def main():
         with open(argument_dict["outfile"], "w") as f:
             f.write("\n".join(["\t".join(entry) for entry in output_list]))
     print("\n".join(["\t".join(entry) for entry in output_list]))
-
     with open(argument_dict["outfile"], "w") as f:
         f.write("\n".join(["\t".join(entry) for entry in output_list]))
 
