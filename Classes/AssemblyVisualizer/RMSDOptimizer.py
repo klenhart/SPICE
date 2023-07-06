@@ -1,7 +1,4 @@
 #!/bin/env python
-import argparse
-import json
-import os
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -24,9 +21,12 @@ import os
 #######################################################################
 
 import numpy as np
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Set
 from scipy.optimize import minimize
-import math
+import argparse
+import copy
+import json
+import os
 import random
 
 
@@ -40,15 +40,19 @@ class RMSDOptimizer:
         distance_dict = RMSDOptimizer.cull_distance_dict(distance_dict, info_dict, protein_coding_flag, complete_flag)
         self.matrix = RMSDOptimizer.distance_dict_to_matrix(distance_dict)
         self.length: int = len(self.matrix)
-        self.bounds = [(0, 1)] * (2 * self.length)
-        self.result = self.__optimize__()
-        count: int = 0
-        while count != 30:
-            new_result = self.__optimize__()
-            if -self.objective_function(new_result.x) > -self.objective_function(self.result.x):
-                self.result = new_result
-            else:
-                count = count+1
+        if self.length == 0:
+            self.result = None
+        else:
+            self.bounds = [(0, 1)] * (2 * self.length)
+            self.result = self.__optimize__()
+            count: int = 0
+            while count != 5:
+                new_result = self.__optimize__()
+                if -self.objective_function(new_result.x) > -self.objective_function(self.result.x):
+                    self.result = new_result
+                    count = 0
+                else:
+                    count = count+1
 
     def objective_function(self, combined_vector):
         v = combined_vector[:self.length]
@@ -84,16 +88,16 @@ class RMSDOptimizer:
     @staticmethod
     def make_random_vector(n: int) -> np.array:
         vector = np.zeros(n)
-        remain = 10
+        remain = 100
 
         for i in range(n):
             if remain == 0:
                 break
             elif i == n-1:
-                vector[i] = round(remain*0.1, 1)
+                vector[i] = round(remain*0.01, 2)
             else:
                 x = random.randint(1, remain)
-                vector[i] = round(x*0.1, 1)
+                vector[i] = round(x*0.01, 2)
                 remain = remain - x
         return vector
 
@@ -144,7 +148,10 @@ class RMSDOptimizer:
         return "incomplete" in info_dict["transcripts"][transcript_id]["tags"]
 
     def calc_rmsd(self):
-        return -self.objective_function(self.result.x)
+        if self.result is None:
+            return 0
+        else:
+            return -self.objective_function(self.result.x)
 
 
 def main():
@@ -159,9 +166,23 @@ def main():
                         type=str,
                         action="store",
                         help="Name of the output file.")
+    parser.add_argument("-a",
+                        "--already",
+                        type=str,
+                        action="store",
+                        help="Path to tsv file containing already calced genes.")
     argument_dict: Dict[str, str] = vars(parser.parse_args())
 
-    output_list: List[List[str]] = [["geneid", "all", "no_incomplete", "no_non_coding", "no_both"]]
+    already_calced: Set[str] = set()
+
+    if argument_dict["already"] is not None:
+        with open(argument_dict["already"], "r") as f:
+            output_file: List[str] = f.read().split("\n")
+            output_list: List[List[str]] = [entry.split("\t") for entry in output_file]
+            for entry in output_list[1:]:
+                already_calced.add(entry[0])
+    else:
+        output_list: List[List[str]] = [["geneid", "all", "no_incomplete", "no_non_coding", "no_both"]]
 
     with open(os.path.join(argument_dict["library"], "transcript_data", "transcript_info.json"), "r") as f:
         info_dict = json.load(f)
@@ -169,11 +190,39 @@ def main():
     with open(os.path.join(argument_dict["library"], "fas_data", "fas_index.json"), "r") as f:
         fas_file_list = list(set(json.load(f).values()))
 
-    for fas_file in fas_file_list:
+    total: int = len(fas_file_list)
+
+    for i, fas_file in enumerate(fas_file_list):
+        print(str(i) + "/" + str(total), fas_file)
         with open(os.path.join(argument_dict["library"], "fas_data", "fas_scores", fas_file), "r") as f:
             distance_dicts: Dict[str, Any] = json.load(f)
+        for gene_id in distance_dicts.keys():
+            if gene_id not in already_calced:
+                stages: List[bool] = [False, False, False, False]
+                try:
+                    optimizer = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]), info_dict[gene_id], False, False)
+                    stages[0] = True
+                    optimizer_no_incomplete = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
+                                                            info_dict[gene_id], False, True)
+                    stages[1] = True
+                    optimizer_no_non_coding = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
+                                                            info_dict[gene_id], True, False)
+                    stages[2] = True
+                    optimizer_both = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]), info_dict[gene_id], True, True)
+                    stages[3] = True
+                    output_list.append([gene_id,
+                                        str(round(optimizer.calc_rmsd(), 2)),
+                                        str(round(optimizer_no_incomplete.calc_rmsd(), 2)),
+                                        str(round(optimizer_no_non_coding.calc_rmsd(), 2)),
+                                        str(round(optimizer_both.calc_rmsd(), 2))])
+                except ValueError:
+                    print(gene_id, stages)
+        with open(argument_dict["outfile"], "w") as f:
+            f.write("\n".join(["\t".join(entry) for entry in output_list]))
+    print("\n".join(["\t".join(entry) for entry in output_list]))
 
-
+    with open(argument_dict["outfile"], "w") as f:
+        f.write("\n".join(["\t".join(entry) for entry in output_list]))
 
 
 if __name__ == "__main__":
