@@ -1,4 +1,7 @@
 #!/bin/env python
+import argparse
+import json
+import os
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -21,7 +24,7 @@
 #######################################################################
 
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Any, Tuple
 from scipy.optimize import minimize
 import math
 import random
@@ -29,9 +32,14 @@ import random
 
 class RMSDOptimizer:
 
-    def __init__(self, matrix: np.array):
-        self.matrix: np.array = matrix
-        self.length: int = len(matrix)
+    def __init__(self,
+                 distance_dict: Dict[str, Dict[str, float]],
+                 info_dict: Dict[str, Any],
+                 protein_coding_flag: bool = True,
+                 complete_flag: bool = True):
+        distance_dict = RMSDOptimizer.cull_distance_dict(distance_dict, info_dict, protein_coding_flag, complete_flag)
+        self.matrix = RMSDOptimizer.distance_dict_to_matrix(distance_dict)
+        self.length: int = len(self.matrix)
         self.bounds = [(0, 1)] * (2 * self.length)
         self.result = self.__optimize__()
         count: int = 0
@@ -90,14 +98,34 @@ class RMSDOptimizer:
         return vector
 
     @staticmethod
+    def cull_distance_dict(distance_dict: Dict[str, Dict[str, float]],
+                           info_dict: Dict[str, Any],
+                           protein_coding_flag,
+                           complete_flag):
+        if protein_coding_flag or complete_flag:
+            delete_set = set()
+            if protein_coding_flag:
+                for key in distance_dict.keys():
+                    if RMSDOptimizer.is_non_coding(key):
+                        delete_set.add(key)
+            if complete_flag:
+                for key in distance_dict.keys():
+                    if RMSDOptimizer.is_incomplete(key, info_dict):
+                        delete_set.add(key)
+            for entry in delete_set:
+                del distance_dict[entry]
+            for key in distance_dict.keys():
+                for entry in delete_set:
+                    del distance_dict[key][entry]
+        return distance_dict
+
+    @staticmethod
     def distance_dict_to_matrix(distance_dict: Dict[str, Dict[str, float]]) -> np.array:
         raw_matrix: List[List[float]] = list()
         for protein_id_outer in distance_dict.keys():
-            if not RMSDOptimizer.is_non_coding(protein_id_outer):
-                raw_matrix.append(list())
-                for protein_id_inner in distance_dict[protein_id_outer].keys():
-                    if not RMSDOptimizer.is_non_coding(protein_id_inner):
-                        raw_matrix[-1].append(1 - distance_dict[protein_id_outer][protein_id_inner])
+            raw_matrix.append(list())
+            for protein_id_inner in distance_dict[protein_id_outer].keys():
+                raw_matrix[-1].append(1 - distance_dict[protein_id_outer][protein_id_inner])
         return np.array(raw_matrix)
 
     @staticmethod
@@ -111,34 +139,41 @@ class RMSDOptimizer:
         else:
             return False
 
+    @staticmethod
+    def is_incomplete(transcript_id: str, info_dict: Dict[str, Any]):
+        return "incomplete" in info_dict["transcripts"][transcript_id]["tags"]
+
     def calc_rmsd(self):
         return -self.objective_function(self.result.x)
 
 
 def main():
+    parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    parser.add_argument("-l",
+                        "--library",
+                        type=str,
+                        action="store",
+                        help="Path to library.")
+    parser.add_argument("-o",
+                        "--outfile",
+                        type=str,
+                        action="store",
+                        help="Name of the output file.")
+    argument_dict: Dict[str, str] = vars(parser.parse_args())
 
-    distance_dict: Dict[str, Dict[str, float]] = {
-        "ENSP00000411638": {
-            "ENSP00000411638": 1.0,
-            "ENSP00000442360": 0.9916,
-            "ENSP00000320343": 0.7362
-        },
-        "ENSP00000442360": {
-            "ENSP00000411638": 0.9916,
-            "ENSP00000442360": 1.0,
-            "ENSP00000320343": 0.7372
-        },
-        "ENSP00000320343": {
-            "ENSP00000411638": 0.9816,
-            "ENSP00000442360": 0.983,
-            "ENSP00000320343": 1.0
-        }
-    }
+    output_list: List[List[str]] = [["geneid", "all", "no_incomplete", "no_non_coding", "no_both"]]
 
-    optimizer = RMSDOptimizer(RMSDOptimizer.distance_dict_to_matrix(distance_dict))
-    print(optimizer.matrix)
-    print(optimizer.result.x)
-    print(optimizer.calc_rmsd())
+    with open(os.path.join(argument_dict["library"], "transcript_data", "transcript_info.json"), "r") as f:
+        info_dict = json.load(f)
+
+    with open(os.path.join(argument_dict["library"], "fas_data", "fas_index.json"), "r") as f:
+        fas_file_list = list(set(json.load(f).values()))
+
+    for fas_file in fas_file_list:
+        with open(os.path.join(argument_dict["library"], "fas_data", "fas_scores", fas_file), "r") as f:
+            distance_dicts: Dict[str, Any] = json.load(f)
+
+
 
 
 if __name__ == "__main__":

@@ -325,11 +325,6 @@ def main():
     argument_dict: Dict[str, str] = vars(parser.parse_args())
 
     result_visualizer = ResultVisualizer(argument_dict["library"])
-    # print("TEST ONE")
-    # result_visualizer.simulate_transcript("ENSG00000184047", ["ENSP00000411638"], ["ENSP00000320343"])
-    # print()
-    # print("TEST TWO")
-    # result_visualizer.simulate_transcript("ENSG00000184047", ["ENSP00000442360"], ["ENSP00000320343"])
     result_visualizer.plot_rmsd_distribution(argument_dict["input"], 200,
                                              ["ENSG00000184047"],
                                              ["ENSG00000184047"],
