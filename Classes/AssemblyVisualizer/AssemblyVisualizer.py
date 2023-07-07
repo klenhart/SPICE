@@ -156,7 +156,7 @@ class ResultVisualizer:
 
     def simulate_transcript(self, gene_id: str,
                             transcript_1: str,
-                            transcript_2: str) -> List[Tuple[float, float]]:
+                            transcript_2: str) -> float:
         with open(os.path.join(self.library_path, "fas_data", "fas_index.json"), "r") as f:
             file_name: str = json.load(f)[gene_id]
         with open(os.path.join(self.library_path, "fas_data", "fas_scores", file_name), "r") as f:
@@ -216,10 +216,10 @@ class ResultVisualizer:
                                max_rmsd_path: str,
                                max_rmsd_category: str,
                                max_rmsd_gene_colors: List[str],
-                               simulated_switch_genes: List[str],
-                               simulated_switch_transcripts: List[List[str]],
-                               simulated_switch_transcript_synonyms: List[List[str]],
-                               simulated_switch_color: List[str],
+                               sim_switch_genes: List[str],
+                               sim_switch_transcripts: List[List[str]],
+                               sim_switch_synonyms: List[List[str]],
+                               sim_switch_color: List[str],
                                gene_synonyms: List[str],
                                max_rmsd_range_flag: bool,
                                max_rmsd_range_color: str,
@@ -229,13 +229,10 @@ class ResultVisualizer:
         max_rmsd_dict: Dict[str, float] = ResultVisualizer.extract_max_rmsd_file(max_rmsd_path,
                                                                                  max_rmsd_category)
 
-        max_rmsd_stats: Tuple[float, str, str] = ResultVisualizer.make_max_rmsd_stats(max_rmsd_genes,
-                                                                                      max_rmsd_gene_colors,
-                                                                                      gene_synonyms)
-
-        sim_switch_stats: Tuple[float, str, str] = ResultVisualizer.make_sim_switch_stats(max_rmsd_genes,
-                                                                                          max_rmsd_gene_colors,
-                                                                                          gene_synonyms)
+        max_rmsd_stats: List[Tuple[float, str, str]] = ResultVisualizer.make_max_rmsd_stats(max_rmsd_genes,
+                                                                                            max_rmsd_gene_colors,
+                                                                                            gene_synonyms,
+                                                                                            max_rmsd_dict)
 
         # Extract max RMSD range here.
         lower_end, upper_end = ResultVisualizer.extract_interquartile_range(max_rmsd_dict)
@@ -245,6 +242,13 @@ class ResultVisualizer:
             self.simulate_transcript(gene_id,
                                      simulated_switch_transcripts[i][0],
                                      simulated_switch_transcripts[i][1])
+
+        sim_switch_stats: List[Tuple[float, str, str]] = ResultVisualizer.make_sim_switch_stats(sim_switch_genes,
+                                                                                                sim_switch_transcripts,
+                                                                                                max_rmsd_gene_colors,
+                                                                                                sim_switch_color,
+                                                                                                gene_synonyms,
+                                                                                                sim_switch_synonyms)
 
         #  Import the RMSD ranks.
         rank_entries: List[List[float]] = [[] for _ in range(rank_count)]
@@ -305,6 +309,19 @@ class ResultVisualizer:
         ax.legend()
 
         plt.savefig(outfile, format='svg')
+
+    @staticmethod
+    def make_max_rmsd_stats(max_rmsd_genes: List[str],
+                            max_rmsd_gene_colors: List[str],
+                            gene_synonyms: List[str],
+                            max_rmsd_dict: Dict[str, float]):
+        pass
+
+    @staticmethod
+    def make_sim_switch_stats(simulated_switch_genes, simulated_switch_transcripts,
+                              max_rmsd_gene_colors, simulated_switch_color, gene_synonyms,
+                              simulated_switch_synonyms):
+        pass
 
     @staticmethod
     def extract_interquartile_range(max_rmsd_dict: Dict[str, float]) -> Tuple[float, float]:
