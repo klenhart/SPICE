@@ -163,6 +163,7 @@ class ResultVisualizer:
             fas_adjacency_dict: Dict[str, Dict[str, float]] = json.load(f)[gene_id]
 
         fas_adjacency_matrix: np.array = ResultVisualizer.distance_dict_to_matrix(fas_adjacency_dict)
+
         all_transcripts: List[str] = list(fas_adjacency_dict.keys())
         expression_vector_1 = np.zeros(len(all_transcripts))
         expression_vector_2 = np.zeros(len(all_transcripts))
@@ -222,7 +223,6 @@ class ResultVisualizer:
                                sim_switch_color: List[str],
                                gene_synonyms: List[str],
                                max_rmsd_range_flag: bool,
-                               max_rmsd_range_color: str,
                                outfile: str):
 
         # Extract the max rmsd inclusion file here.
@@ -263,7 +263,8 @@ class ResultVisualizer:
         # General setup
         fig, ax = plt.subplots()
         positions = range(1, rank_count+1)
-        bp = ax.boxplot(rank_entries, positions=positions, showfliers=True, flierprops=dict(marker='.', markersize=1))
+        bp = ax.boxplot(rank_entries, positions=positions, showfliers=True, flierprops=dict(marker='.', markersize=1),
+                        zorder=2)
 
         # General axis labels
         ax.set_xlabel('Rank')
@@ -286,26 +287,46 @@ class ResultVisualizer:
 
         # Change median color and make them thicker
         for median in bp['medians']:
-            median.set(color='red', linewidth=2)
+            median.set(color='royalblue', linewidth=2, zorder=3)
 
-        ax.grid(True, linestyle='-')
+        ax.grid(True, linestyle='-', zorder=1, color="lightgrey")
 
         # Change the colors of the boxes
         for box in bp['boxes']:
-            box.set(color="gray")
+            box.set(color="darkgray")
 
         for whisker in bp['whiskers']:
-            whisker.set(color="gray")
+            whisker.set(color="darkgray")
 
         for cap in bp['caps']:
-            cap.set(color="gray")
+            cap.set(color="darkgray")
+
+        memory_position: int = 0
 
         # Add the lines indicating the RMSD of the interesting candidates.
         for rmsd, label, color in max_rmsd_stats:
-            ax.axhline(rmsd, color=color, linestyle='--', label=label)
+            ax.axhline(rmsd, color=color, linestyle='--', zorder=8)
+            ax.text(100, rmsd+0.02, label, ha='left', va='center', color=color, fontsize=8, zorder=5)
+            memory_position = rmsd
 
-        # Add a legend
-        ax.legend()
+        for rmsd, label, color in sim_switch_stats:
+            ax.axhline(rmsd, color=color, linestyle='--', zorder=7)
+            ax.text(100, rmsd + 0.02, label, ha='left', va='center', color=color, fontsize=8, zorder=6)
+
+        if max_rmsd_range_flag:
+            ax.axhspan(lower_end,
+                       upper_end,
+                       facecolor="cornflowerblue", alpha=0.5)
+            if abs(lower_end - memory_position) > abs(upper_end - memory_position):
+                ax.text(100,
+                        lower_end-0.04,
+                        "Interquartile Max EWFD RMSD Range",
+                        ha='left', va='center', color="royalblue", fontsize=8)
+            else:
+                ax.text(100,
+                        upper_end + 0.04,
+                        "Interquartile Max EWFD RMSD Range",
+                        ha='left', va='center', color="royalblue", fontsize=8)
 
         plt.savefig(outfile, format='svg')
 
@@ -314,7 +335,12 @@ class ResultVisualizer:
                             max_rmsd_gene_colors: List[str],
                             gene_synonyms: List[str],
                             max_rmsd_dict: Dict[str, float]):
-        pass
+        max_rmsd_stats: List[Tuple[float, str, str]] = list()
+        for i, gene_id in enumerate(max_rmsd_genes):
+            max_rmsd_stats.append((max_rmsd_dict[gene_id],
+                                  "{0}: Max EWFD RMSD".format(gene_synonyms[i]),
+                                   max_rmsd_gene_colors[i]))
+        return max_rmsd_stats
 
     @staticmethod
     def make_sim_switch_stats(sim_switch_rmsds,
@@ -324,10 +350,11 @@ class ResultVisualizer:
         sim_switch_stats: List[Tuple[float, str, str]] = list()
         for i, rmsd in enumerate(sim_switch_rmsds):
             sim_switch_stats.append((rmsd,
-                                     "{0} switch",
+                                     "{0} switch: {1} to {2}".format(gene_synonyms[i],
+                                                                     sim_switch_synonyms[i][0],
+                                                                     sim_switch_synonyms[i][1]),
                                      sim_switch_color[i]))
-
-
+        return sim_switch_stats
 
     @staticmethod
     def extract_interquartile_range(max_rmsd_dict: Dict[str, float]) -> Tuple[float, float]:
@@ -386,15 +413,14 @@ def main():
                                              rank_count=200,
                                              max_rmsd_genes=["ENSG00000184047"],
                                              max_rmsd_path=argument_dict["maximum"],
-                                             max_rmsd_category=argument_dict["category"],
+                                             max_rmsd_category=argument_dict["category_max_rmsd"],
                                              gene_synonyms=["DIABLO"],
-                                             max_rmsd_gene_colors=["green"],
-                                             simulated_switch_genes=["ENSG00000184047"],
-                                             simulated_switch_transcripts=[["ENSP00000411638", "ENSP00000320343"]],
-                                             simulated_switch_transcript_synonyms=[["w/o tmhmm", "w/ tmhmm"]],
-                                             simulated_switch_color=["blue"],
+                                             max_rmsd_gene_colors=["red"],
+                                             sim_switch_genes=["ENSG00000184047"],
+                                             sim_switch_transcripts=[["ENSP00000411638", "ENSP00000320343"]],
+                                             sim_switch_synonyms=[["w/o tmhmm", "w/ tmhmm"]],
+                                             sim_switch_color=["red"],
                                              max_rmsd_range_flag=True,
-                                             max_rmsd_range_color="yellow",
                                              outfile=argument_dict["outfile"])
 
 
