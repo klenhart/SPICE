@@ -237,15 +237,14 @@ class ResultVisualizer:
         # Extract max RMSD range here.
         lower_end, upper_end = ResultVisualizer.extract_interquartile_range(max_rmsd_dict)
 
+        sim_switch_rmsds: List[float] = list()
         # Simulate a transcript
-        for i, gene_id in enumerate(simulated_switch_genes):
-            self.simulate_transcript(gene_id,
-                                     simulated_switch_transcripts[i][0],
-                                     simulated_switch_transcripts[i][1])
+        for i, gene_id in enumerate(sim_switch_genes):
+            sim_switch_rmsds.append(self.simulate_transcript(gene_id,
+                                                             sim_switch_transcripts[i][0],
+                                                             sim_switch_transcripts[i][1]))
 
-        sim_switch_stats: List[Tuple[float, str, str]] = ResultVisualizer.make_sim_switch_stats(sim_switch_genes,
-                                                                                                sim_switch_transcripts,
-                                                                                                max_rmsd_gene_colors,
+        sim_switch_stats: List[Tuple[float, str, str]] = ResultVisualizer.make_sim_switch_stats(sim_switch_rmsds,
                                                                                                 sim_switch_color,
                                                                                                 gene_synonyms,
                                                                                                 sim_switch_synonyms)
@@ -318,10 +317,17 @@ class ResultVisualizer:
         pass
 
     @staticmethod
-    def make_sim_switch_stats(simulated_switch_genes, simulated_switch_transcripts,
-                              max_rmsd_gene_colors, simulated_switch_color, gene_synonyms,
-                              simulated_switch_synonyms):
-        pass
+    def make_sim_switch_stats(sim_switch_rmsds,
+                              sim_switch_color,
+                              gene_synonyms,
+                              sim_switch_synonyms):
+        sim_switch_stats: List[Tuple[float, str, str]] = list()
+        for i, rmsd in enumerate(sim_switch_rmsds):
+            sim_switch_stats.append((rmsd,
+                                     "{0} switch",
+                                     sim_switch_color[i]))
+
+
 
     @staticmethod
     def extract_interquartile_range(max_rmsd_dict: Dict[str, float]) -> Tuple[float, float]:
