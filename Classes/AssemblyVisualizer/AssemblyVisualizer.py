@@ -160,33 +160,36 @@ class ResultVisualizer:
         with open(os.path.join(self.library_path, "fas_data", "fas_index.json"), "r") as f:
             file_name: str = json.load(f)[gene_id]
         with open(os.path.join(self.library_path, "fas_data", "fas_scores", file_name), "r") as f:
-            fas_adjacency_matrix: Dict[str, Dict[str, float]] = json.load(f)[gene_id]
+            fas_adjacency_dict: Dict[str, Dict[str, float]] = json.load(f)[gene_id]
 
-        transcript_list = [transcript_1, transcript_2]
-        expression_lists = [[0.0] * len(transcript_list) for _ in range(11)]
-        for i, value in enumerate(np.linspace(0.0, 1, 11)):
-            expression_lists[i][0] = round(value, 1)
-            expression_lists[i][1] = round(1.0 - value, 1)
+        fas_adjacency_matrix: np.array = ResultVisualizer.distance_dict_to_matrix(fas_adjacency_dict)
+        all_transcripts: List[str] = list(fas_adjacency_dict.keys())
+        expression_vector_1 = np.zeros(len(all_transcripts))
+        expression_vector_2 = np.zeros(len(all_transcripts))
 
-        ewfd_lists = list()
-        for expression_list in expression_lists:
-            ewfd_lists.append(ResultVisualizer.calculate_ewfd(fas_adjacency_matrix, expression_list, transcript_list))
-        rmsd_list = list()
-        log2fc_list = list()
-        for i, ewfd_vals_1 in enumerate(ewfd_lists):
-            for j, ewfd_vals_2 in enumerate(ewfd_lists):
-                if expression_lists[i][0] == 0 or expression_lists[j][0] == 0:
-                    log2fold_change = float("inf")
-                else:
-                    log2fold_change: float = math.log(expression_lists[i][0] / expression_lists[j][0], 2)
-                rmsd: float = ResultVisualizer.calc_rmsd(ewfd_vals_1, ewfd_vals_2)
-                rmsd_list.append(rmsd)
-                log2fc_list.append(round(abs(log2fold_change), 2))
-                # print("RMSD:", rmsd, "| lg2fc:", log2fold_change)
-        zipped_list = sorted(list(set(zip(rmsd_list, log2fc_list))), key=lambda x: x[0])
-        #  for entry in zipped_list:
-        #      print("RMSD:", entry[0], "| lg2fc:", entry[1])
-        return zipped_list
+        transcript_1_index: int = all_transcripts.index(transcript_1)
+        transcript_2_index: int = all_transcripts.index(transcript_2)
+
+        expression_vector_1[transcript_1_index] = 1.0
+        expression_vector_2[transcript_2_index] = 1.0
+
+        expressed_indices = [transcript_1_index, transcript_2_index]
+
+        diff = np.dot(fas_adjacency_matrix, expression_vector_1) - np.dot(fas_adjacency_matrix, expression_vector_2)
+        expressed_diff_list = list()
+        for i in expressed_indices:
+            expressed_diff_list.append(diff[i])
+        expressed_diff = np.array(expressed_diff_list)
+        return np.sqrt(np.sum(expressed_diff ** 2) / 2)
+
+    @staticmethod
+    def distance_dict_to_matrix(distance_dict: Dict[str, Dict[str, float]]) -> np.array:
+        raw_matrix: List[List[float]] = list()
+        for protein_id_outer in distance_dict.keys():
+            raw_matrix.append(list())
+            for protein_id_inner in distance_dict[protein_id_outer].keys():
+                raw_matrix[-1].append(1 - distance_dict[protein_id_outer][protein_id_inner])
+        return np.array(raw_matrix)
 
     @staticmethod
     def calc_rmsd(ewfd_1: List[float], ewfd_2: List[float]):
@@ -206,47 +209,49 @@ class ResultVisualizer:
         ewfd_list = [round(1 - movement_value, 4) for movement_value in ewfd_list]
         return ewfd_list
 
-    def plot_rmsd_distribution(self, result_directory: str,
-                               inclusion_count: int,
-                               max_rmsd_inclusion: List[str],
-                               slight_shift_inclusion: List[str],
-                               included_transcript_pairs: List[List[str]],
-                               inclusion_synonym: List[str],
-                               inclusion_color: List[List[str]],
+    def plot_rmsd_distribution(self,
+                               result_directory: str,
+                               rank_count: int,
+                               max_rmsd_genes: List[str],
+                               max_rmsd_path: str,
+                               max_rmsd_category: str,
+                               max_rmsd_gene_colors: List[str],
+                               simulated_switch_genes: List[str],
+                               simulated_switch_transcripts: List[List[str]],
+                               simulated_switch_transcript_synonyms: List[List[str]],
+                               simulated_switch_color: List[str],
+                               gene_synonyms: List[str],
+                               max_rmsd_range_flag: bool,
+                               max_rmsd_range_color: str,
                                outfile: str):
 
-        max_rmsd_inclusion_stats: List[Tuple[float, str, str]] = list()  # max_rmsd, label text, color
-        for i, gene_id in enumerate(max_rmsd_inclusion):
-            zipped_list: List[Tuple[float, float]] = self.simulate_transcript(gene_id,
-                                                                              included_transcript_pairs[i][0],
-                                                                              included_transcript_pairs[i][1])
-            label: str = "{0} Max RMSD".format(inclusion_synonym[i])
-            max_rmsd_inclusion_stats.append((max([rmsd for rmsd, _ in zipped_list]),
-                                             label,
-                                             inclusion_color[i][0]))
+        # Extract the max rmsd inclusion file here.
+        max_rmsd_dict: Dict[str, float] = ResultVisualizer.extract_max_rmsd_file(max_rmsd_path,
+                                                                                 max_rmsd_category)
 
-        slight_rmsd_inclusion_stats: List[Tuple[float, str, str]] = list()  # max_rmsd, label text, color
-        for i, gene_id in enumerate(slight_shift_inclusion):
-            zipped_list: List[Tuple[float, float]] = self.simulate_transcript(gene_id,
-                                                                              included_transcript_pairs[i][0],
-                                                                              included_transcript_pairs[i][1])
-            label: str = "{0} slight expr shift RMSD".format(inclusion_synonym[i])
-            slight_rmsd: float = 0.0
-            slight_log2fold_change = float("inf")
-            for rmsd, log2fold_change in zipped_list:
-                if 1 < log2fold_change < slight_log2fold_change:
-                    slight_rmsd = rmsd
-                    slight_log2fold_change = log2fold_change
-            slight_rmsd_inclusion_stats.append((slight_rmsd,
-                                                label,
-                                                inclusion_color[i][1]))
+        max_rmsd_stats: Tuple[float, str, str] = ResultVisualizer.make_max_rmsd_stats(max_rmsd_genes,
+                                                                                      max_rmsd_gene_colors,
+                                                                                      gene_synonyms)
+
+        sim_switch_stats: Tuple[float, str, str] = ResultVisualizer.make_sim_switch_stats(max_rmsd_genes,
+                                                                                          max_rmsd_gene_colors,
+                                                                                          gene_synonyms)
+
+        # Extract max RMSD range here.
+        lower_end, upper_end = ResultVisualizer.extract_interquartile_range(max_rmsd_dict)
+
+        # Simulate a transcript
+        for i, gene_id in enumerate(simulated_switch_genes):
+            self.simulate_transcript(gene_id,
+                                     simulated_switch_transcripts[i][0],
+                                     simulated_switch_transcripts[i][1])
 
         #  Import the RMSD ranks.
-        rank_entries: List[List[float]] = [[] for _ in range(inclusion_count)]
+        rank_entries: List[List[float]] = [[] for _ in range(rank_count)]
         for entry in os.listdir(result_directory):
             with open(os.path.join(result_directory, entry), "r") as f:
                 for i, line in enumerate(f):
-                    if i > inclusion_count:
+                    if i > rank_count:
                         break
                     elif i == 0:
                         continue
@@ -254,8 +259,8 @@ class ResultVisualizer:
 
         # General setup
         fig, ax = plt.subplots()
-        positions = range(1, inclusion_count+1)
-        bp = ax.boxplot(rank_entries, positions=positions, showfliers=True, flierprops=dict(marker='.', markersize=4))
+        positions = range(1, rank_count+1)
+        bp = ax.boxplot(rank_entries, positions=positions, showfliers=True, flierprops=dict(marker='.', markersize=1))
 
         # General axis labels
         ax.set_xlabel('Rank')
@@ -263,8 +268,8 @@ class ResultVisualizer:
         ax.set_title('EWFD RMSD by rank')
 
         # Get less x labels
-        ax.set_xlim(0, inclusion_count+1)
-        x_ticks = [1] + list(range(20, inclusion_count-19, 20)) + [inclusion_count]
+        ax.set_xlim(0, rank_count+1)
+        x_ticks = [1] + list(range(20, rank_count-19, 20)) + [rank_count]
         ax.set_xticks(x_ticks)
         tick_labels = ['{}'.format(tick) for tick in x_ticks]  # Modify tick labels as desired
         ax.set_xticklabels(tick_labels)
@@ -293,16 +298,34 @@ class ResultVisualizer:
             cap.set(color="gray")
 
         # Add the lines indicating the RMSD of the interesting candidates.
-        for rmsd, label, color in max_rmsd_inclusion_stats:
-            ax.axhline(rmsd, color=color, linestyle='--', label=label)
-
-        for rmsd, label, color in slight_rmsd_inclusion_stats:
+        for rmsd, label, color in max_rmsd_stats:
             ax.axhline(rmsd, color=color, linestyle='--', label=label)
 
         # Add a legend
         ax.legend()
 
         plt.savefig(outfile, format='svg')
+
+    @staticmethod
+    def extract_interquartile_range(max_rmsd_dict: Dict[str, float]) -> Tuple[float, float]:
+        all_max_rmsds = list(max_rmsd_dict.values())
+        all_max_rmsds.sort(reverse=True)
+        upper_end: float = all_max_rmsds[int(len(all_max_rmsds) * 3/4)]
+        lower_end: float = all_max_rmsds[int(len(all_max_rmsds) * 1/4)]
+        return lower_end, upper_end
+
+    @staticmethod
+    def extract_max_rmsd_file(max_rmsd_path: str, category: str) -> Dict[str, float]:
+        max_rmsd_dict: Dict[str, float] = dict()
+        with open(max_rmsd_path, "r") as f:
+            file = f.read()
+            line_list: List[str] = file.split("\n")
+            categories: List[str] = line_list[0].split("\t")
+            category_index = categories.index(category)
+            for line in line_list[1:]:
+                entries = line.split("\t")
+                max_rmsd_dict[entries[0]] = float(entries[category_index])
+        return max_rmsd_dict
 
 
 def main():
@@ -322,16 +345,34 @@ def main():
                         type=str,
                         action="store",
                         help="Name of the output file.")
+    parser.add_argument("-m",
+                        "--maximum",
+                        type=str,
+                        action="store",
+                        help="Filepath to the tsv containing the maximum RMSD for each gene.")
+    parser.add_argument("-c",
+                        "--category_max_rmsd",
+                        type=str,
+                        action="store",
+                        help="""Which category of the max RMSD file shall be extracted. 
+                        [all], [no_incomplete],	[no_non_coding] or [no_both].""")
     argument_dict: Dict[str, str] = vars(parser.parse_args())
 
     result_visualizer = ResultVisualizer(argument_dict["library"])
-    result_visualizer.plot_rmsd_distribution(argument_dict["input"], 200,
-                                             ["ENSG00000184047"],
-                                             ["ENSG00000184047"],
-                                             [["ENSP00000411638", "ENSP00000320343"]],
-                                             ["DIABLO"],
-                                             [["green", "cyan"]],
-                                             argument_dict["outfile"])
+    result_visualizer.plot_rmsd_distribution(result_directory=argument_dict["input"],
+                                             rank_count=200,
+                                             max_rmsd_genes=["ENSG00000184047"],
+                                             max_rmsd_path=argument_dict["maximum"],
+                                             max_rmsd_category=argument_dict["category"],
+                                             gene_synonyms=["DIABLO"],
+                                             max_rmsd_gene_colors=["green"],
+                                             simulated_switch_genes=["ENSG00000184047"],
+                                             simulated_switch_transcripts=[["ENSP00000411638", "ENSP00000320343"]],
+                                             simulated_switch_transcript_synonyms=[["w/o tmhmm", "w/ tmhmm"]],
+                                             simulated_switch_color=["blue"],
+                                             max_rmsd_range_flag=True,
+                                             max_rmsd_range_color="yellow",
+                                             outfile=argument_dict["outfile"])
 
 
 if __name__ == "__main__":

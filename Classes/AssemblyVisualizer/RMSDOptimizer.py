@@ -71,7 +71,7 @@ class RMSDOptimizer:
         for i in expressed_indices:
             expressed_diff_list.append(diff[i])
         expressed_diff = np.array(expressed_diff_list)
-        return -np.sqrt(np.sum(expressed_diff ** 2) / self.length)
+        return -np.sqrt(np.sum(expressed_diff ** 2) / len(expressed_diff))
 
     def constraint_function_v(self, combined_vector):
         v = combined_vector[:self.length]
