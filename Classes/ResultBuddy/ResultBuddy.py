@@ -22,9 +22,8 @@
 
 import os
 import json
-import sys
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List
 
 from tqdm import tqdm
 
@@ -56,7 +55,7 @@ class ResultBuddy:
             filename: str = "spice_result_" + species + "_" + release + "_" + fas_hex + "_" + suffix
         else:
             filename: str = "spice_result_" + species + "_" + release + "_" + fas_hex
-        self.result_path: str = output_path + "/" + filename
+        self.result_path: str = "/".join(library_path.split("/")[:-1]) + "/" + filename
 
         if initial_flag:
             self.result_info: Dict[str, Any] = dict()

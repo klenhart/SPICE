@@ -169,13 +169,12 @@ class EWFDAssembler:
     def calculate_ewfd(gene_fas_dists: Dict[str, Dict[str, float]],
                        rel_expressions: List[float],
                        transcript_ids: List[str]) -> List[float]:
-
         ewfd_list: List[float] = [0.0] * len(transcript_ids)
         # This calculates the movement.
         for s, seed_id in enumerate(transcript_ids):
             for q, query_id in enumerate(transcript_ids):
-                ewfd_list[s] += rel_expressions[q] * gene_fas_dists[seed_id][query_id]
+                ewfd_list[s] += round(rel_expressions[q] * (1 - gene_fas_dists[seed_id][query_id]), 4)
 
-        ewfd_list = [round(1 - movement_value, 4) for movement_value in ewfd_list]
+        # ewfd_list = [round(1 - movement, 4) for movement in ewfd_list]
 
         return ewfd_list

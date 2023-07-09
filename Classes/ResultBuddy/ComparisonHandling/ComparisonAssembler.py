@@ -48,16 +48,31 @@ class ComparisonGene:
         data_dict_2 = ComparisonGene.apply_tag_filter(data_dict_2, tag_filter)
         ewfd_2 = ComparisonGene.recalculate_ewfd(data_dict_2, fas_adjacency_matrix)
 
-        self.calc_rmsd(ewfd_1, ewfd_2)
+        if ComparisonGene.one_is_non_expressed(data_dict_1, data_dict_2):
+            self.rmsd = 0.0
+        else:
+            self.calc_rmsd(ewfd_1, ewfd_2)
+
+    @staticmethod
+    def one_is_non_expressed(data_dict_1, data_dict_2):
+        if all([x == 0.0 for x in data_dict_1["expression_rel_avg"]]):
+            return True
+        elif all([x == 0.0 for x in data_dict_2["expression_rel_avg"]]):
+            return True
+        else:
+            return False
 
     def calc_rmsd(self, ewfd_1: List[float], ewfd_2: List[float]):
         squared_delta_list: List[float] = list()
         for i, _ in enumerate(ewfd_1):
             squared_delta_list.append((ewfd_1[i] - ewfd_2[i])**2)
-        self.rmsd = math.sqrt(sum(squared_delta_list)) / len(ewfd_1)
+        if len(ewfd_1) == 0:
+            self.rmsd = 0.0
+        else:
+            self.rmsd = math.sqrt(sum(squared_delta_list)) / len(ewfd_1)
 
     def __str__(self):
-        output: str = "\t".join([self.gene_id, str(self.rmsd)])
+        output: str = ",".join([self.gene_id, str(self.rmsd)])
         return output
 
     @staticmethod
@@ -83,9 +98,9 @@ class ComparisonGene:
     @staticmethod
     def apply_tag_filter(data_dict: Dict[str, List[Any]], tag_filter: List[str]):
         delete_set = set()
-        for entry_list in tag_filter:
-            for i, tag in enumerate(data_dict["tags"]):
-                if tag in entry_list:
+        for entry in tag_filter:
+            for i, tags in enumerate(data_dict["tags"]):
+                if entry in tags:
                     delete_set.add(i)
         delete_list = list(delete_set)
         delete_list.sort(reverse=True)
@@ -117,8 +132,8 @@ class ComparisonAssembler:
 
         self.fas_scores_directory: str = os.path.join(result_pass_path["library_path"], "fas_data", "fas_scores")
 
-        self.condition_1_path: str = self.info["expression_import"]["conditions"][condition_1]["ewfd_path"]
-        self.condition_2_path: str = self.info["expression_import"]["conditions"][condition_2]["ewfd_path"]
+        self.condition_1_path: str = self.info["expression_imports"]["conditions"][condition_1]["ewfd_path"]
+        self.condition_2_path: str = self.info["expression_imports"]["conditions"][condition_2]["ewfd_path"]
 
         self.biotype_filter: List[str] = list()
         self.tag_filter: List[str] = list()
@@ -140,6 +155,8 @@ class ComparisonAssembler:
             data_cond_2: Dict[str, Dict[str, List[Any]]] = json.load(f_2)["data"]
 
         for gene_id in data_cond_1.keys():
+            if gene_id != "ENSG00000069275":
+                continue
             with open(os.path.join(self.fas_scores_directory, self.fas_index[gene_id]), "r") as f:
                 fas_adjacency_matrix: Dict[str, Dict[str, float]] = json.load(f)[gene_id]
             self.comparison_gene_list.append(ComparisonGene(gene_id,
@@ -151,6 +168,14 @@ class ComparisonAssembler:
 
     def sort_genes_by_rmsd(self):
         self.comparison_gene_list.sort(reverse=True)
+
+    def delete_gene_below_rmsd(self, value: float):
+        delete_list: List[int] = list()
+        for i, comparison_gene in enumerate(self.comparison_gene_list):
+            if comparison_gene.rmsd < value:
+                delete_list.append(i)
+        for i in sorted(delete_list, reverse=True):
+            self.comparison_gene_list.pop(i)
 
     def __str__(self):
         return "\n".join([str(gene) for gene in self.comparison_gene_list])

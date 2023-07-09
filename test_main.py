@@ -9,9 +9,19 @@ from spice_result import expression
 
 
 def main():
-    x = [1,2,1,1,2]
-    x.remove(1)
-    print(x)
+    output = []
+    condition_list = list(open_json("C:/Users/chris/Desktop/big_test/spice_result_homo_sapiens_94_1ee_tissue_novel/info.json")["expression_imports"]["conditions"].keys())
+    for condition_1 in condition_list:
+        for condition_2 in condition_list:
+            if condition_1 != condition_2:
+                if ";".join(sorted([condition_1, condition_2])) not in output:
+                    output.append(";".join(sorted([condition_1, condition_2])))
+
+    print(" ".join(output))
+
+
+
+
 
 
 def open_json(path) -> Dict[str, Any]:

@@ -51,9 +51,21 @@ def condition(library_path: str, outdir: str, replicate_name_list: List[str], co
 
 def compare(library_path: str, outdir: str, condition_pair: List[str], suffix: str = ""):
     result: ResultBuddy = ResultBuddy(library_path, outdir, False, suffix)
-    if condition_pair[0] != condition_pair[1]:
-        comparison: ComparisonAssembler = result.compare(condition_pair)
-        comparison.save(outdir)
+    count: int = 0
+    total: int = len(condition_pair)
+    for pair in condition_pair:
+        count += 1
+        condition_pair = pair.split(";")
+        print(str(count) + "/" + str(total))
+        if condition_pair[0] != condition_pair[1]:
+            comparison: ComparisonAssembler = result.compare(condition_pair)
+            comparison.add_biotype_filter("nonsense_mediated_decay")
+            comparison.add_biotype_filter("non_coding")
+            comparison.add_tag_filter("incomplete")
+            comparison.compare_genes()
+            comparison.sort_genes_by_rmsd()
+            comparison.delete_gene_below_rmsd(0.01)
+            comparison.save(outdir)
 
 
 def main():
@@ -87,8 +99,8 @@ def main():
                                                     Required for 'expression' and 'condition' modes.""",
                                                     """Names of replicates to be joined into condition.
                                                     Required for 'condition' mode. Must be more than one.""",
-                                                    """Names of conditions that shall be compared.
-                                                     Required for 'compare' mode.""",
+                                                    """Names of conditions that shall be compared seperated by ';'.
+                                                    Can enter several. Required for 'compare' mode.""",
                                                     """Normalization method referencing expression entry in gtf file.
                                                     Usually TPM or FPKM. Required for 'expression' mode.""",
                                                     """Any expression entry below this threshold will be set to 0.0.
@@ -147,7 +159,7 @@ def main():
 
     elif argument_dict["mode"][0] == "compare":
         compare(argument_dict["library"][0],
-                argument_dict["outdir"],
+                argument_dict["outdir"][0],
                 argument_dict["compared"],
                 argument_dict["suffix"])
     else:

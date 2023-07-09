@@ -5,12 +5,12 @@
 #
 # This file is part of Spice.
 #
-#  ResultBuddy is free software: you can redistribute it and/or modify
+#  RMSDOptimizer is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  ResultBuddy is distributed in the hope that it will be useful,
+#  RMSDOptimizer is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -28,6 +28,137 @@ import copy
 import json
 import os
 import random
+
+
+class RMSDOptimizerAlt:
+
+    def __init__(self,
+                 distance_dict: Dict[str, Dict[str, float]],
+                 info_dict: Dict[str, Any],
+                 protein_coding_flag: bool = True,
+                 complete_flag: bool = True):
+        self.matrix = RMSDOptimizerAlt.distance_dict_to_matrix(distance_dict,
+                                                               protein_coding_flag,
+                                                               complete_flag,
+                                                               info_dict)
+        self.length: int = len(self.matrix)
+        if self.length == 0:
+            self.result = None
+        else:
+            self.bounds = [(0, 1)] * (2 * self.length)
+            self.result = self.__optimize__()
+            count: int = 0
+            while count != 5:
+                new_result = self.__optimize__()
+                if -self.objective_function(new_result.x) > -self.objective_function(self.result.x):
+                    self.result = new_result
+                    count = 0
+                else:
+                    count = count+1
+
+    def objective_function(self, combined_vector):
+        v = combined_vector[:self.length]
+        w = combined_vector[self.length:]
+        expressed_indices = list()
+        for i, x in enumerate(v):
+            if x > 0 or w[i] > 0:
+                expressed_indices.append(i)
+        if len(expressed_indices) == 0:
+            return 0.0
+        diff = np.dot(self.matrix, v) - np.dot(self.matrix, w)
+        expressed_diff_list = list()
+        for i in expressed_indices:
+            expressed_diff_list.append(diff[i])
+        expressed_diff = np.array(expressed_diff_list)
+        return -np.sqrt(np.sum(expressed_diff ** 2) / len(expressed_diff))
+
+    def constraint_function_v(self, combined_vector):
+        v = combined_vector[:self.length]
+        return np.sum(v) - 1.0
+
+    def constraint_function_w(self, combined_vector):
+        w = combined_vector[self.length:]
+        return np.sum(w) - 1.0
+
+    def __optimize__(self):
+        v_init = RMSDOptimizerAlt.make_random_vector(self.length)
+        w_init = RMSDOptimizerAlt.make_random_vector(self.length)
+        x0 = np.concatenate((v_init, w_init))
+        problem = {
+            'fun': self.objective_function,
+            'x0': x0,
+            'constraints': [{'type': 'eq', 'fun': self.constraint_function_v},
+                            {'type': 'eq', 'fun': self.constraint_function_w}],
+            'method': 'SLSQP',
+            'bounds': self.bounds
+        }
+        return minimize(**problem)
+
+    def get_results(self):
+        return self.result
+
+    @staticmethod
+    def make_random_vector(n: int) -> np.array:
+        vector = np.zeros(n)
+        remain = 100
+        number_pool = list()
+
+        for i in range(n):
+            if remain == 0:
+                number_pool.append(0.0)
+            elif i == n-1:
+                number_pool.append(round(remain*0.01, 2))
+            else:
+                x = random.randint(1, remain)
+                number_pool.append(round(x*0.01, 2))
+                remain = remain - x
+
+        for i, _ in enumerate(vector):
+            number = random.choice(number_pool)
+            number_pool.remove(number)
+            vector[i] = number
+        return vector
+
+    @staticmethod
+    def distance_dict_to_matrix(distance_dict: Dict[str, Dict[str, float]],
+                                protein_coding_flag: bool,
+                                complete_flag: bool,
+                                info_dict: Dict[str, Any]) -> np.array:
+        raw_matrix: List[List[float]] = list()
+        for protein_id_outer in distance_dict.keys():
+            if complete_flag and "incomplete" in info_dict["transcripts"][protein_id_outer]["tags"]:
+                continue
+            elif protein_coding_flag and info_dict["transcripts"][protein_id_outer]["biotype"] != "protein_coding":
+                continue
+            raw_matrix.append(list())
+            for protein_id_inner in distance_dict[protein_id_outer].keys():
+                if complete_flag and "incomplete" in info_dict["transcripts"][protein_id_inner]["tags"]:
+                    continue
+                elif protein_coding_flag and info_dict["transcripts"][protein_id_inner]["biotype"] != "protein_coding":
+                    continue
+                raw_matrix[-1].append(1 - distance_dict[protein_id_outer][protein_id_inner])
+        return np.array(raw_matrix)
+
+    @staticmethod
+    def is_non_coding(transcript_id: str) -> bool:
+        if "T" in [transcript_id[3], transcript_id[6]]:
+            return True
+        elif transcript_id[3:8] == "noORF":
+            return True
+        elif transcript_id[3:8] == "noDia":
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def is_incomplete(transcript_id: str, info_dict: Dict[str, Any]):
+        return "incomplete" in info_dict["transcripts"][transcript_id]["tags"]
+
+    def calc_rmsd(self):
+        if self.result is None:
+            return 0
+        else:
+            return -self.objective_function(self.result.x)
 
 
 class RMSDOptimizer:
@@ -192,12 +323,15 @@ def main():
                         type=str,
                         action="store",
                         help="Path to tsv file containing already calced genes.")
+    parser.add_argument("-m",
+                        "--mode",
+                        action="store_true",
+                        help="""Alternative version that truly reduces the library by non_coding and incomplete
+                        transcript.""")
+
     argument_dict: Dict[str, str] = vars(parser.parse_args())
 
     already_calced: Set[str] = set()
-
-    with open(os.path.join(argument_dict["library"], "transcript_data", "transcript_info.json"), "r") as f:
-        info_dict = json.load(f)
 
     if argument_dict["already"] is not None:
         with open(argument_dict["already"], "r") as f:
@@ -216,42 +350,81 @@ def main():
 
     total: int = len(fas_file_list)
 
-    for i, fas_file in enumerate(fas_file_list):
-        print(str(i) + "/" + str(total), fas_file)
-        with open(os.path.join(argument_dict["library"], "fas_data", "fas_scores", fas_file), "r") as f:
-            distance_dicts: Dict[str, Any] = json.load(f)
-        for gene_id in distance_dicts.keys():
-            if gene_id not in already_calced:
-                stages: List[bool] = [False, False, False, False]
-                try:
-                    optimizer = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
-                                              info_dict[gene_id],
-                                              False,
-                                              False)
-                    stages[0] = True
-                    optimizer_no_incomplete = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
-                                                            info_dict[gene_id], False, True)
-                    stages[1] = True
-                    optimizer_no_non_coding = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
-                                                            info_dict[gene_id], True, False)
-                    stages[2] = True
-                    optimizer_both = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
-                                                   info_dict[gene_id],
-                                                   True,
-                                                   True)
-                    stages[3] = True
-                    output_list.append([gene_id,
-                                        str(round(optimizer.calc_rmsd(), 2)),
-                                        str(round(optimizer_no_incomplete.calc_rmsd(), 2)),
-                                        str(round(optimizer_no_non_coding.calc_rmsd(), 2)),
-                                        str(round(optimizer_both.calc_rmsd(), 2))])
-                except ValueError:
-                    print(gene_id, stages)
+    if argument_dict["mode"]:
+        print("Running alt mode")
+        for i, fas_file in enumerate(fas_file_list):
+            print(str(i) + "/" + str(total), fas_file)
+            with open(os.path.join(argument_dict["library"], "fas_data", "fas_scores", fas_file), "r") as f:
+                distance_dicts: Dict[str, Any] = json.load(f)
+            for gene_id in distance_dicts.keys():
+                if gene_id not in already_calced:
+                    stages: List[bool] = [False, False, False, False]
+                    try:
+                        optimizer = RMSDOptimizerAlt(copy.deepcopy(distance_dicts[gene_id]),
+                                                     info_dict[gene_id],
+                                                     False,
+                                                     False)
+                        stages[0] = True
+                        optimizer_no_incomplete = RMSDOptimizerAlt(copy.deepcopy(distance_dicts[gene_id]),
+                                                                   info_dict[gene_id], False, True)
+                        stages[1] = True
+                        optimizer_no_non_coding = RMSDOptimizerAlt(copy.deepcopy(distance_dicts[gene_id]),
+                                                                   info_dict[gene_id], True, False)
+                        stages[2] = True
+                        optimizer_both = RMSDOptimizerAlt(copy.deepcopy(distance_dicts[gene_id]),
+                                                          info_dict[gene_id],
+                                                          True,
+                                                          True)
+                        stages[3] = True
+                        output_list.append([gene_id,
+                                            str(round(optimizer.calc_rmsd(), 2)),
+                                            str(round(optimizer_no_incomplete.calc_rmsd(), 2)),
+                                            str(round(optimizer_no_non_coding.calc_rmsd(), 2)),
+                                            str(round(optimizer_both.calc_rmsd(), 2))])
+                    except ValueError:
+                        print(gene_id, stages)
+            with open(argument_dict["outfile"], "w") as f:
+                f.write("\n".join(["\t".join(entry) for entry in output_list]))
+        print("\n".join(["\t".join(entry) for entry in output_list]))
         with open(argument_dict["outfile"], "w") as f:
             f.write("\n".join(["\t".join(entry) for entry in output_list]))
-    print("\n".join(["\t".join(entry) for entry in output_list]))
-    with open(argument_dict["outfile"], "w") as f:
-        f.write("\n".join(["\t".join(entry) for entry in output_list]))
+    else:
+        for i, fas_file in enumerate(fas_file_list):
+            print(str(i) + "/" + str(total), fas_file)
+            with open(os.path.join(argument_dict["library"], "fas_data", "fas_scores", fas_file), "r") as f:
+                distance_dicts: Dict[str, Any] = json.load(f)
+            for gene_id in distance_dicts.keys():
+                if gene_id not in already_calced:
+                    stages: List[bool] = [False, False, False, False]
+                    try:
+                        optimizer = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
+                                                  info_dict[gene_id],
+                                                  False,
+                                                  False)
+                        stages[0] = True
+                        optimizer_no_incomplete = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
+                                                                info_dict[gene_id], False, True)
+                        stages[1] = True
+                        optimizer_no_non_coding = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
+                                                                info_dict[gene_id], True, False)
+                        stages[2] = True
+                        optimizer_both = RMSDOptimizer(copy.deepcopy(distance_dicts[gene_id]),
+                                                       info_dict[gene_id],
+                                                       True,
+                                                       True)
+                        stages[3] = True
+                        output_list.append([gene_id,
+                                            str(round(optimizer.calc_rmsd(), 2)),
+                                            str(round(optimizer_no_incomplete.calc_rmsd(), 2)),
+                                            str(round(optimizer_no_non_coding.calc_rmsd(), 2)),
+                                            str(round(optimizer_both.calc_rmsd(), 2))])
+                    except ValueError:
+                        print(gene_id, stages)
+            with open(argument_dict["outfile"], "w") as f:
+                f.write("\n".join(["\t".join(entry) for entry in output_list]))
+        print("\n".join(["\t".join(entry) for entry in output_list]))
+        with open(argument_dict["outfile"], "w") as f:
+            f.write("\n".join(["\t".join(entry) for entry in output_list]))
 
 
 if __name__ == "__main__":

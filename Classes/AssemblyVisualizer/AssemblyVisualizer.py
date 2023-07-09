@@ -259,10 +259,15 @@ class ResultVisualizer:
         # General axis labels
         ax.set_xlabel('Rank')
         ax.set_ylabel('EWFD RMSD')
-        if filter_tag != "":
-            ax.set_title('EWFD RMSD by rank (filter by {0})'.format(filter_tag))
+        if filter_tag != "" and library_name != "":
+            ax.set_title('EWFD RMSD by rank \n (filter by {0}) ({1} library)'.format(filter_tag, library_name))
+        elif filter_tag != "":
+            ax.set_title('EWFD RMSD by rank \n (filter by {0})'.format(filter_tag))
+        elif library_name != "":
+            ax.set_title('EWFD RMSD by rank \n (no filter) ({1} library)'.format(filter_tag, library_name))
+
         else:
-            ax.set_title('EWFD RMSD by rank (no filter)')
+            ax.set_title('EWFD RMSD by rank \n (no filter)')
 
         # Get less x labels
         ax.set_xlim(0, rank_count+1)
@@ -334,7 +339,6 @@ class ResultVisualizer:
 
         max_rmsd_avgs: List[float] = [sum(entry)/len(entry) if len(entry) > 0 else 0.0 for entry in max_entries]
         return rank_entries, max_rmsd_avgs
-
 
     @staticmethod
     def make_max_rmsd_stats(max_rmsd_genes: List[str],
@@ -426,6 +430,8 @@ def main():
 
     if argument_dict["filter_tag"] is None:
         argument_dict["filter_tag"] = ""
+    if argument_dict["name_library"] is None:
+        argument_dict["name_library"] = ""
 
     result_visualizer = ResultVisualizer(argument_dict["library"])
     result_visualizer.plot_rmsd_distribution(result_directory=argument_dict["input"],
