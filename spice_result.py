@@ -65,7 +65,7 @@ def compare(library_path: str, outdir: str, condition_pair: List[str], suffix: s
             comparison.compare_genes()
             comparison.sort_genes_by_rmsd()
             comparison.delete_gene_below_rmsd(0.01)
-            comparison.save(outdir)
+            comparison.save(result.result_pass_path["comparison"])
 
 
 def main():
