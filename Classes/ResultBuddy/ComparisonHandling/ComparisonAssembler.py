@@ -155,8 +155,6 @@ class ComparisonAssembler:
             data_cond_2: Dict[str, Dict[str, List[Any]]] = json.load(f_2)["data"]
 
         for gene_id in data_cond_1.keys():
-            if gene_id != "ENSG00000069275":
-                continue
             with open(os.path.join(self.fas_scores_directory, self.fas_index[gene_id]), "r") as f:
                 fas_adjacency_matrix: Dict[str, Dict[str, float]] = json.load(f)[gene_id]
             self.comparison_gene_list.append(ComparisonGene(gene_id,

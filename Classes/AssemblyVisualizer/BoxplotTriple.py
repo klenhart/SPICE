@@ -34,6 +34,7 @@ class BoxPlotTriple:
         self.path_list: List[str] = path_list
 
     def plot_max_distribution(self):
+        pass
 
 
 
