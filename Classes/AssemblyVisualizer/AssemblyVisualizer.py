@@ -30,6 +30,7 @@ import numpy as np
 import os
 import plotly.express as px
 import matplotlib.pyplot as plt
+from scipy.interpolate import make_interp_spline
 
 import pandas
 
@@ -222,8 +223,9 @@ class ResultVisualizer:
                                sim_switch_synonyms: List[List[str]],
                                sim_switch_color: List[str],
                                gene_synonyms: List[str],
-                               max_rmsd_range_flag: bool,
-                               outfile: str):
+                               filter_tag: str,
+                               outfile: str,
+                               library_name: str):
 
         # Extract the max rmsd inclusion file here.
         max_rmsd_dict: Dict[str, float] = ResultVisualizer.extract_max_rmsd_file(max_rmsd_path,
@@ -233,9 +235,6 @@ class ResultVisualizer:
                                                                                             max_rmsd_gene_colors,
                                                                                             gene_synonyms,
                                                                                             max_rmsd_dict)
-
-        # Extract max RMSD range here.
-        lower_end, upper_end = ResultVisualizer.extract_interquartile_range(max_rmsd_dict)
 
         sim_switch_rmsds: List[float] = list()
         # Simulate a transcript
@@ -249,16 +248,7 @@ class ResultVisualizer:
                                                                                                 gene_synonyms,
                                                                                                 sim_switch_synonyms)
 
-        #  Import the RMSD ranks.
-        rank_entries: List[List[float]] = [[] for _ in range(rank_count)]
-        for entry in os.listdir(result_directory):
-            with open(os.path.join(result_directory, entry), "r") as f:
-                for i, line in enumerate(f):
-                    if i > rank_count:
-                        break
-                    elif i == 0:
-                        continue
-                    rank_entries[i-1].append(float(line.split(",")[1]))
+        rank_entries, rank_max = ResultVisualizer.import_rmsd_ranks(result_directory, max_rmsd_dict, rank_count)
 
         # General setup
         fig, ax = plt.subplots()
@@ -269,7 +259,10 @@ class ResultVisualizer:
         # General axis labels
         ax.set_xlabel('Rank')
         ax.set_ylabel('EWFD RMSD')
-        ax.set_title('EWFD RMSD by rank')
+        if filter_tag != "":
+            ax.set_title('EWFD RMSD by rank (filter by {0})'.format(filter_tag))
+        else:
+            ax.set_title('EWFD RMSD by rank (no filter)')
 
         # Get less x labels
         ax.set_xlim(0, rank_count+1)
@@ -279,9 +272,10 @@ class ResultVisualizer:
         ax.set_xticklabels(tick_labels)
 
         # Get more y labels.
-        num_y_ticks = 10
-        y_ticks = np.linspace(0.1, 1, num_y_ticks)
+        num_y_ticks = 11
+        y_ticks = np.linspace(0.0, 1, num_y_ticks)
         y_tick_labels = ['{:.1f}'.format(tick) for tick in y_ticks]
+        ax.set_ylim(-0.1, 1.1)
         ax.set_yticks(y_ticks)
         ax.set_yticklabels(y_tick_labels)
 
@@ -301,34 +295,46 @@ class ResultVisualizer:
         for cap in bp['caps']:
             cap.set(color="darkgray")
 
-        memory_position: int = 0
-
         # Add the lines indicating the RMSD of the interesting candidates.
         for rmsd, label, color in max_rmsd_stats:
             ax.axhline(rmsd, color=color, linestyle='--', zorder=8)
-            ax.text(100, rmsd+0.02, label, ha='left', va='center', color=color, fontsize=8, zorder=5)
-            memory_position = rmsd
+            ax.text(rank_count/2, rmsd - 0.03, label, ha='left', va='center', color=color, fontsize=8, zorder=5)
 
         for rmsd, label, color in sim_switch_stats:
             ax.axhline(rmsd, color=color, linestyle='--', zorder=7)
-            ax.text(100, rmsd + 0.02, label, ha='left', va='center', color=color, fontsize=8, zorder=6)
+            ax.text(rank_count/2, rmsd + 0.03, label, ha='left', va='center', color=color, fontsize=8, zorder=6)
 
-        if max_rmsd_range_flag:
-            ax.axhspan(lower_end,
-                       upper_end,
-                       facecolor="cornflowerblue", alpha=0.5)
-            if abs(lower_end - memory_position) > abs(upper_end - memory_position):
-                ax.text(100,
-                        lower_end-0.04,
-                        "Interquartile Max EWFD RMSD Range",
-                        ha='left', va='center', color="royalblue", fontsize=8)
-            else:
-                ax.text(100,
-                        upper_end + 0.04,
-                        "Interquartile Max EWFD RMSD Range",
-                        ha='left', va='center', color="royalblue", fontsize=8)
+        # Smooth the line using interpolation
+        x_new = np.linspace(1, rank_count, 13)
+        spl = make_interp_spline(range(1, rank_count+1), rank_max, k=3)
+        line_smooth = spl(x_new)
+        ax.text(rank_count/2, min(line_smooth) - 0.03,
+                "Regression of mean EWFD RMSD by rank", ha='left', va='center', color="royalblue",
+                fontsize=8, zorder=6)
+
+        ax.plot(np.linspace(1, rank_count, 13), line_smooth, color='royalblue', label='Mean EWFD RMSD Max')
 
         plt.savefig(outfile, format='svg')
+
+    @staticmethod
+    def import_rmsd_ranks(result_directory: str, max_rmsd_dict: Dict[str, float], rank_count: int):
+        max_entries: List[List[float]] = [[] for _ in range(rank_count)]
+        rank_entries: List[List[float]] = [[] for _ in range(rank_count)]
+
+        for entry in os.listdir(result_directory):
+            with open(os.path.join(result_directory, entry), "r") as f:
+                for i, line in enumerate(f):
+                    if i > rank_count:
+                        break
+                    elif i == 0:
+                        continue
+                    if line.split(",")[0] in max_rmsd_dict.keys():
+                        max_entries[i - 1].append(max_rmsd_dict[line.split(",")[0]])
+                    rank_entries[i - 1].append(float(line.split(",")[1]))
+
+        max_rmsd_avgs: List[float] = [sum(entry)/len(entry) if len(entry) > 0 else 0.0 for entry in max_entries]
+        return rank_entries, max_rmsd_avgs
+
 
     @staticmethod
     def make_max_rmsd_stats(max_rmsd_genes: List[str],
@@ -406,7 +412,20 @@ def main():
                         action="store",
                         help="""Which category of the max RMSD file shall be extracted. 
                         [all], [no_incomplete],	[no_non_coding] or [no_both].""")
+    parser.add_argument("-f",
+                        "--filter_tag",
+                        type=str,
+                        action="store",
+                        help="""Filter tag that shall be added to the title""")
+    parser.add_argument("-n",
+                        "--name_library",
+                        type=str,
+                        action="store",
+                        help="""What is the name of the library?""")
     argument_dict: Dict[str, str] = vars(parser.parse_args())
+
+    if argument_dict["filter_tag"] is None:
+        argument_dict["filter_tag"] = ""
 
     result_visualizer = ResultVisualizer(argument_dict["library"])
     result_visualizer.plot_rmsd_distribution(result_directory=argument_dict["input"],
@@ -420,8 +439,9 @@ def main():
                                              sim_switch_transcripts=[["ENSP00000411638", "ENSP00000320343"]],
                                              sim_switch_synonyms=[["w/o tmhmm", "w/ tmhmm"]],
                                              sim_switch_color=["red"],
-                                             max_rmsd_range_flag=True,
-                                             outfile=argument_dict["outfile"])
+                                             outfile=argument_dict["outfile"],
+                                             filter_tag=argument_dict["filter_tag"],
+                                             library_name=argument_dict["name_library"])
 
 
 if __name__ == "__main__":
