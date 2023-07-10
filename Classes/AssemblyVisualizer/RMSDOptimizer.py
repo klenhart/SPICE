@@ -46,15 +46,20 @@ class RMSDOptimizerAlt:
             self.result = None
         else:
             self.bounds = [(0, 1)] * (2 * self.length)
-            self.result = self.__optimize__()
+            while True:
+                new_result = self.__optimize__()
+                if self.test_new_result_for_corruption(new_result):
+                    self.result = new_result
+                    break
             count: int = 0
             while count != 5:
                 new_result = self.__optimize__()
-                if -self.objective_function(new_result.x) > -self.objective_function(self.result.x):
-                    self.result = new_result
-                    count = 0
-                else:
-                    count = count+1
+                if self.test_new_result_for_corruption(new_result):
+                    if -self.objective_function(new_result.x) > -self.objective_function(self.result.x):
+                        self.result = new_result
+                        count = 0
+                    else:
+                        count += 1
 
     def objective_function(self, combined_vector):
         v = combined_vector[:self.length]
@@ -160,6 +165,14 @@ class RMSDOptimizerAlt:
         else:
             return -self.objective_function(self.result.x)
 
+    def test_new_result_for_corruption(self, new_result):
+        if abs(self.objective_function(new_result.x)) <= 1:
+            return True
+        elif 0.98 <= sum(new_result.x[:self.length]) <= 1 and 0.98 <= sum(new_result.x[self.length:]) <= 1:
+            return True
+        else:
+            return False
+
 
 class RMSDOptimizer:
 
@@ -182,11 +195,20 @@ class RMSDOptimizer:
             count: int = 0
             while count != 5:
                 new_result = self.__optimize__()
-                if -self.objective_function(new_result.x) > -self.objective_function(self.result.x):
-                    self.result = new_result
-                    count = 0
-                else:
-                    count = count+1
+                if self.test_new_result_for_corruption(new_result):
+                    if -self.objective_function(new_result.x) > -self.objective_function(self.result.x):
+                        self.result = new_result
+                        count = 0
+                    else:
+                        count += 1
+
+    def test_new_result_for_corruption(self, new_result):
+        if abs(self.objective_function(new_result.x)) <= 1:
+            return True
+        elif 0.98 <= sum(new_result.x[:self.length]) <= 1 and 0.98 <= sum(new_result.x[self.length:]) <= 1:
+            return True
+        else:
+            return False
 
     def objective_function(self, combined_vector):
         v = combined_vector[:self.length]

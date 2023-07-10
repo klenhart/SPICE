@@ -260,11 +260,11 @@ class ResultVisualizer:
         ax.set_xlabel('Rank')
         ax.set_ylabel('EWFD RMSD')
         if filter_tag != "" and library_name != "":
-            ax.set_title('EWFD RMSD by rank \n (filter by {0}) ({1} library)'.format(filter_tag, library_name))
+            ax.set_title('EWFD RMSD by rank \n (filter by {0}) \n ({1} library)'.format(filter_tag, library_name))
         elif filter_tag != "":
             ax.set_title('EWFD RMSD by rank \n (filter by {0})'.format(filter_tag))
         elif library_name != "":
-            ax.set_title('EWFD RMSD by rank \n (no filter) ({1} library)'.format(filter_tag, library_name))
+            ax.set_title('EWFD RMSD by rank \n (no filter) \n ({1} library)'.format(filter_tag, library_name))
 
         else:
             ax.set_title('EWFD RMSD by rank \n (no filter)')
@@ -313,8 +313,8 @@ class ResultVisualizer:
         x_new = np.linspace(1, rank_count, 13)
         spl = make_interp_spline(range(1, rank_count+1), rank_max, k=3)
         line_smooth = spl(x_new)
-        ax.text(rank_count/2, min(line_smooth) - 0.03,
-                "Regression of mean EWFD RMSD by rank", ha='left', va='center', color="royalblue",
+        ax.text(rank_count/2 - 20, min(line_smooth) - 0.03,
+                "Regression of mean EWFD RMSD Max by rank", ha='left', va='center', color="royalblue",
                 fontsize=8, zorder=6)
 
         ax.plot(np.linspace(1, rank_count, 13), line_smooth, color='royalblue', label='Mean EWFD RMSD Max')
