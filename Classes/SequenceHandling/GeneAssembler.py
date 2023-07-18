@@ -1,5 +1,5 @@
 #!/bin/env python
-import os
+
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -26,7 +26,7 @@ from Classes.PassPath.PassPath import PassPath
 from Classes.SequenceHandling.Gene import Gene
 from Classes.SequenceHandling.Transcript import Transcript
 from Classes.SequenceHandling.Protein import Protein
-
+import os
 from tqdm import tqdm
 import json
 from typing import List, Dict, Any, Set, Iterator, Tuple

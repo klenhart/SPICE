@@ -1,7 +1,7 @@
 #!/bin/env python
 
 #######################################################################
-# Copyright (C) 2022 Christian, Blümel, Julian Dosch
+# Copyright (C) 2023 Christian, Blümel, Julian Dosch
 #
 # This file is part of Spice.
 #

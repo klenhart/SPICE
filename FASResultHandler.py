@@ -1,14 +1,4 @@
 #!/bin/env python
-import json
-import os
-from typing import Dict, Any, List
-
-from Classes.PassPath.PassPath import PassPath
-from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
-from Classes.SequenceHandling.GeneAssembler import GeneAssembler
-from Classes.SequenceHandling.LibraryInfo import LibraryInfo
-from Classes.WriteGuard.WriteGuard import WriteGuard
-
 
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
@@ -29,6 +19,17 @@ from Classes.WriteGuard.WriteGuard import WriteGuard
 #  along with Spice.  If not, see <http://www.gnu.org/licenses/>.
 #
 #######################################################################
+
+import json
+import os
+from typing import Dict, Any, List
+
+from Classes.PassPath.PassPath import PassPath
+from Classes.ReduxArgParse.ReduxArgParse import ReduxArgParse
+from Classes.SequenceHandling.GeneAssembler import GeneAssembler
+from Classes.SequenceHandling.LibraryInfo import LibraryInfo
+from Classes.WriteGuard.WriteGuard import WriteGuard
+
 
 def main():
     argument_parser: ReduxArgParse = ReduxArgParse(["--pairings_path", "--gene_id", "--out_dir", "--mode", "--anno_dir"],

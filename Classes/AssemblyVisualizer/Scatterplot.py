@@ -1,5 +1,5 @@
 #!/bin/env python
-import argparse
+
 #######################################################################
 # Copyright (C) 2023 Christian Bluemel
 #
@@ -20,6 +20,7 @@ import argparse
 #
 #######################################################################
 
+import argparse
 import os
 from typing import Dict, List, Set
 
