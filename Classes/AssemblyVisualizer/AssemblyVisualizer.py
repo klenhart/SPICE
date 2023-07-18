@@ -225,7 +225,8 @@ class ResultVisualizer:
                                gene_synonyms: List[str],
                                filter_tag: str,
                                outfile: str,
-                               library_name: str):
+                               library_name: str,
+                               switch_label_flag: bool):
 
         # Extract the max rmsd inclusion file here.
         max_rmsd_dict: Dict[str, float] = ResultVisualizer.extract_max_rmsd_file(max_rmsd_path,
@@ -253,21 +254,21 @@ class ResultVisualizer:
         # General setup
         fig, ax = plt.subplots()
         positions = range(1, rank_count+1)
-        bp = ax.boxplot(rank_entries, positions=positions, showfliers=True, flierprops=dict(marker='.', markersize=1),
+        bp = ax.boxplot(rank_entries, positions=positions, showfliers=False, flierprops=dict(marker='.', markersize=1),
                         zorder=2)
 
         # General axis labels
         ax.set_xlabel('Rank')
-        ax.set_ylabel('EWFD RMSD')
+        ax.set_ylabel(r'$RMSD_{EWFD}$')
         if filter_tag != "" and library_name != "":
-            ax.set_title('EWFD RMSD by rank \n (filter by {0}) \n ({1} library)'.format(filter_tag, library_name))
+            ax.set_title(r'$RMSD_{EWFD}$ by rank ' + '\n (filter by ' + '{0}) \n ({1} library)'.format(filter_tag,
+                                                                                                       library_name))
         elif filter_tag != "":
-            ax.set_title('EWFD RMSD by rank \n (filter by {0})'.format(filter_tag))
+            ax.set_title(r'$RMSD_{EWFD}$ by rank ' + '\n (filter by ' + '{0})'.format(filter_tag))
         elif library_name != "":
-            ax.set_title('EWFD RMSD by rank \n (no filter) \n ({1} library)'.format(filter_tag, library_name))
-
+            ax.set_title(r'$RMSD_{EWFD}$ by rank ' + '\n (no filter) \n (' + '{0} library)'.format(library_name))
         else:
-            ax.set_title('EWFD RMSD by rank \n (no filter)')
+            ax.set_title(r'$RMSD_{EWFD}$ by rank' + '\n (no filter)')
 
         # Get less x labels
         ax.set_xlim(0, rank_count+1)
@@ -303,23 +304,27 @@ class ResultVisualizer:
         # Add the lines indicating the RMSD of the interesting candidates.
         for rmsd, label, color in max_rmsd_stats:
             ax.axhline(rmsd, color=color, linestyle='--', zorder=8)
-            ax.text(rank_count/2, rmsd - 0.03, label, ha='left', va='center', color=color, fontsize=8, zorder=5)
+            if switch_label_flag:
+                ax.text(rank_count / 2, rmsd + 0.03, label, ha='left', va='center', color=color, fontsize=8, zorder=5)
+            else:
+                ax.text(rank_count/2, rmsd - 0.03, label, ha='left', va='center', color=color, fontsize=8, zorder=5)
 
         for rmsd, label, color in sim_switch_stats:
             ax.axhline(rmsd, color=color, linestyle='--', zorder=7)
-            ax.text(rank_count/2, rmsd + 0.03, label, ha='left', va='center', color=color, fontsize=8, zorder=6)
+            ax.text(rank_count/2.5, rmsd + 0.03, label, ha='left', va='center', color=color, fontsize=8, zorder=6)
 
         # Smooth the line using interpolation
         x_new = np.linspace(1, rank_count, 13)
         spl = make_interp_spline(range(1, rank_count+1), rank_max, k=3)
         line_smooth = spl(x_new)
         ax.text(rank_count/2 - 20, min(line_smooth) - 0.03,
-                "Regression of mean EWFD RMSD Max by rank", ha='left', va='center', color="royalblue",
+                r"Regression of mean $RMSD_{EWFD}$ Max by rank", ha='left', va='center', color="royalblue",
                 fontsize=8, zorder=6)
 
-        ax.plot(np.linspace(1, rank_count, 13), line_smooth, color='royalblue', label='Mean EWFD RMSD Max')
+        ax.plot(np.linspace(1, rank_count, 13), line_smooth, color='royalblue', label=r'Mean $RMSD_{EWFD}$ Max')
 
         plt.savefig(outfile, format='svg')
+        print(outfile)
 
     @staticmethod
     def import_rmsd_ranks(result_directory: str, max_rmsd_dict: Dict[str, float], rank_count: int):
@@ -348,8 +353,8 @@ class ResultVisualizer:
         max_rmsd_stats: List[Tuple[float, str, str]] = list()
         for i, gene_id in enumerate(max_rmsd_genes):
             max_rmsd_stats.append((max_rmsd_dict[gene_id],
-                                  "{0}: Max EWFD RMSD".format(gene_synonyms[i]),
-                                   max_rmsd_gene_colors[i]))
+                                  gene_synonyms[i] + r": Max $RMSD_{EWFD}$",
+                                  max_rmsd_gene_colors[i]))
         return max_rmsd_stats
 
     @staticmethod
@@ -360,9 +365,10 @@ class ResultVisualizer:
         sim_switch_stats: List[Tuple[float, str, str]] = list()
         for i, rmsd in enumerate(sim_switch_rmsds):
             sim_switch_stats.append((rmsd,
-                                     "{0} switch: {1} to {2}".format(gene_synonyms[i],
-                                                                     sim_switch_synonyms[i][0],
-                                                                     sim_switch_synonyms[i][1]),
+                                     "{0} switch: {1} to {2} ({3})".format(gene_synonyms[i],
+                                                                           sim_switch_synonyms[i][0],
+                                                                           sim_switch_synonyms[i][1],
+                                                                           str(round(rmsd, 2))),
                                      sim_switch_color[i]))
         return sim_switch_stats
 
@@ -426,7 +432,11 @@ def main():
                         type=str,
                         action="store",
                         help="""What is the name of the library?""")
-    argument_dict: Dict[str, str] = vars(parser.parse_args())
+    parser.add_argument("-s",
+                        "--switch_max",
+                        action="store_true",
+                        help="""Switch the max RMSD label to the top.""")
+    argument_dict: Dict[str, Any] = vars(parser.parse_args())
 
     if argument_dict["filter_tag"] is None:
         argument_dict["filter_tag"] = ""
@@ -442,12 +452,13 @@ def main():
                                              gene_synonyms=["DIABLO"],
                                              max_rmsd_gene_colors=["red"],
                                              sim_switch_genes=["ENSG00000184047"],
-                                             sim_switch_transcripts=[["ENSP00000411638", "ENSP00000320343"]],
-                                             sim_switch_synonyms=[["w/o tmhmm", "w/ tmhmm"]],
+                                             sim_switch_transcripts=[["ENSP00000442360", "ENSP00000320343"]],
+                                             sim_switch_synonyms=[["w/o TM", "w/ TM"]],
                                              sim_switch_color=["red"],
                                              outfile=argument_dict["outfile"],
                                              filter_tag=argument_dict["filter_tag"],
-                                             library_name=argument_dict["name_library"])
+                                             library_name=argument_dict["name_library"],
+                                             switch_label_flag=argument_dict["switch_max"])
 
 
 if __name__ == "__main__":

@@ -27,10 +27,11 @@ with open("README.md", "r") as i:
 
 setup(
     name="spice",
-    version="0.1",
+    version="1.0",
     python_requires='>=3.9.0',
     description="""Splicing-based protein isoform comparion estimator.
-    Genome wide appliance and visualization of the FAS algorithm for Alternative Splicing""",
+    Appliance of the FAS algorithm on entire transcript sets. Weighting and ranking of transcript level expression data
+    using feature architecture similarity""",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Christian Blümel",
@@ -57,12 +58,11 @@ setup(
         'pandas'
     ],
     entry_points={
-        'console_scripts': ["gt.run = grand-trumpet.fas_lib:main",
-                            "gt.run = grand-trumpet.fas_compare:main",
-                            "gt.run = grand-trumpet.fas_bashAssist:main",
-                            "gt.run = grand-trumpet.get_domain_importance:main",
-                            "gt.run = grand-trumpet.fas_handler:main",
-                            "gt.run = grand-trumpet.fas_movement:main"],
+        'console_scripts': ["spice.library = spice.spice_library:main",
+                            "spice.result = spice.spice_result:main",
+                            "spice.novel = spice.spice_novel:main",
+                            "spice.makejobs = spice.FASJobAssistant:main",
+                            "spice.parse_domain_out = spice.parse_domain_out:main"],
     },
     license="GPL-3.0",
     classifiers=[
