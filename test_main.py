@@ -11,7 +11,7 @@ from spice_result import expression
 
 
 def main():
-    print(len("MAALKSWLSRSVTSFFRYRQCLCVPVVANFKKRCFSELIRPWHKTVTIGFGVTLCAVPIAQ"))
+    print(all( x == 2 for x in []))
 
 
 

@@ -20,7 +20,7 @@
 #
 #######################################################################
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Set
 import hashlib
 import json
 import math
@@ -42,16 +42,34 @@ class ComparisonGene:
 
         data_dict_1 = ComparisonGene.apply_biotype_filter(data_dict_1, biotype_filter)
         data_dict_1 = ComparisonGene.apply_tag_filter(data_dict_1, tag_filter)
-        ewfd_1 = ComparisonGene.recalculate_ewfd(data_dict_1, fas_adjacency_matrix)
 
         data_dict_2 = ComparisonGene.apply_biotype_filter(data_dict_2, biotype_filter)
         data_dict_2 = ComparisonGene.apply_tag_filter(data_dict_2, tag_filter)
-        ewfd_2 = ComparisonGene.recalculate_ewfd(data_dict_2, fas_adjacency_matrix)
+
+        data_dict_1, data_dict_2 = ComparisonGene.indices_expressed_in_one(data_dict_1,
+                                                                           data_dict_2)
+
+        ewfd_1: List[float] = ComparisonGene.recalculate_ewfd(data_dict_1, fas_adjacency_matrix)
+        ewfd_2: List[float] = ComparisonGene.recalculate_ewfd(data_dict_2, fas_adjacency_matrix)
 
         if ComparisonGene.one_is_non_expressed(data_dict_1, data_dict_2):
             self.rmsd = 0.0
         else:
             self.calc_rmsd(ewfd_1, ewfd_2)
+
+    @staticmethod
+    def indices_expressed_in_one(data_dict_1, data_dict_2):
+        delete_set: Set[int] = set()
+        for i, entry in enumerate(data_dict_1["expression_rel_avg"]):
+            if data_dict_1["expression_rel_avg"][i] == 0.0 and data_dict_2["expression_rel_avg"][i] == 0.0:
+                delete_set.add(i)
+        delete_list = list(delete_set)
+        delete_list.sort(reverse=True)
+        for index in delete_list:
+            for key in data_dict_1.keys():
+                data_dict_1[key].pop(index)
+                data_dict_2[key].pop(index)
+        return data_dict_1, data_dict_2
 
     @staticmethod
     def one_is_non_expressed(data_dict_1, data_dict_2):
