@@ -179,7 +179,16 @@ spice_result.py \
 
 #### Compare conditions
 
-Not yet implemented. Will follow soon.
+To compare several already generated conditions use this command:
+
+```
+python \
+spice_result.py \
+-m compare \
+-l /path/to/spice_lib_homo_sapiens_107_1ee \
+-o /path/to/parent/directory/of/result \
+-c condition1;condition2 condition1;condition3 condition2;condition3
+```
 
 ## Contact
 
