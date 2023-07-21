@@ -23,6 +23,7 @@
 import argparse
 import os
 from typing import Dict, List, Set
+import numpy as np
 
 from matplotlib import pyplot as plt
 
@@ -35,19 +36,18 @@ class Scatterplot:
 
         self.data_1_median_ranks, self.data_2_median_ranks = self.__fuse_median_ranks__()
 
-        plt.scatter(self.data_1_median_ranks, self.data_2_median_ranks)
+        diagonal_line = np.array([min(self.data_1_median_ranks), max(self.data_1_median_ranks)])
 
-        plt.ylim(-15, 200)
-        plt.xlim(-15, 200)
+        plt.scatter(self.data_1_median_ranks, self.data_2_median_ranks, s=10)
 
-        plt.axhline(y=-5, color='red', linestyle='--')
-        plt.axvline(x=-5, color='red', linestyle='--')
+        plt.plot(diagonal_line, diagonal_line, color='red', linestyle='--')
 
-        plt.text(180, -4.8, 'Ranked in one filter mode only', color='red', ha='right', va='bottom')
+        plt.ylim(-5, 1000)
+        plt.xlim(-5, 1000)
 
         plt.xlabel(label1)
         plt.ylabel(label2)
-        plt.title(r"$RMSD_{EWFD}$ Ranking correlation")
+        plt.title(r"$RMSD_{EWFD}$ Ranking comparison:" + "\n post EWFD vs pre EWFD filtering")
 
         plt.savefig(outpath, format='svg')
 
@@ -58,14 +58,9 @@ class Scatterplot:
         data_1_median_ranks = list()
         data_2_median_ranks = list()
         for gene_id in gene_set_1:
-            if gene_id in self.median_rank_1.keys():
+            if gene_id in self.median_rank_1.keys() and gene_id in self.median_rank_2.keys():
                 data_1_median_ranks.append(self.median_rank_1[gene_id])
-            else:
-                data_1_median_ranks.append(-10)
-            if gene_id in self.median_rank_2.keys():
                 data_2_median_ranks.append(self.median_rank_2[gene_id])
-            else:
-                data_2_median_ranks.append(-10)
         return data_1_median_ranks, data_2_median_ranks
 
     @staticmethod
