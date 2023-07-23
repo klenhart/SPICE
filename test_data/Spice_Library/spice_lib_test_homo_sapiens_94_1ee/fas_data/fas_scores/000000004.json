@@ -1,0 +1,17 @@
+{"ENSG00000183615": {
+    "ENSP00000362684": {
+        "ENSP00000362684": 1.0,
+        "HOMnoORFGroup": 0.0,
+        "HOM4b9cf06933c8e78": 0.9986
+    },
+    "HOMnoORFGroup": {
+        "ENSP00000362684": 0.0,
+        "HOMnoORFGroup": 1.0,
+        "HOM4b9cf06933c8e78": 0.0
+    },
+    "HOM4b9cf06933c8e78": {
+        "ENSP00000362684": 0.1368,
+        "HOMnoORFGroup": 0.0,
+        "HOM4b9cf06933c8e78": 1.0
+    }
+}}

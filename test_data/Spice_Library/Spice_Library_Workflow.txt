@@ -1,0 +1,11 @@
+Initialize library:
+python spice_library.py -s human -r 94 -o test_data/Spice_Library
+
+Prepare FAS SLURM Jobs
+(Start here if you come from the Spice Novel Workflow):
+python FASJobAssistant.py -L test_data/spice_lib_test_homo_sapiens_94_1ee/ -m 2 -p node_names_of_computing_cluster -d path_to_binary_directory_of_FAS -o output_directory \
+-a node_names_of_computing_cluster_used_for_annotion -A number_of_cores_that_shall_be_used_for_annotation -t path_to_annoTools_directory
+
+After running all FAS Jobs run this:
+python parse_domain_out.py -f test_data/Spice_Library/spice_lib_test_homo_sapiens_94_1ee/fas_data/forward.domains -r test_data/Spice_Library/spice_lib_test_homo_sapiens_94_1ee/fas_data/forward.domains \
+-m test_data/Spice_Library/spice_lib_test_homo_sapiens_94_1ee/fas_data/architectures  -o test_data/Spice_Library/spice_lib_test_homo_sapiens_94_1ee/fas_data/

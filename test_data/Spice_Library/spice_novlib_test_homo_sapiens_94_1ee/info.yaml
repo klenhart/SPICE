@@ -1,0 +1,29 @@
+commandline_args:
+  input: test_data/Spice_Novel/novel_transcript_anno/Tissue/novel_transcript_tissue_complete.fasta
+  library: test_data/Spice_Library/spice_lib_test_homo_sapiens_94_1ee
+  mode: novlib
+  name:
+  out_path: test_data/Spice_Library/
+  species_prefix: null
+info:
+  collected_sequences_count: 7
+  fas_mode: 1ee
+  fas_scored_sequences_count: 7
+  gene_count: 3
+  protein_count: 7
+  release: '94'
+  species: test_homo_sapiens
+  taxon_id: 9606
+  transcript_count: 12
+init_date: '2023-07-23'
+last_edit: '2023-07_23'
+spice_version: '0.1'
+status:
+  01_id_collection: true
+  02_sequence_collection: true
+  03_small_protein_removing: true
+  04_incorrect_entry_removing: true
+  05_implicit_fas_scoring: true
+  06_fasta_generation: true
+  07_pairing_generation: true
+  08_id_tsv_generation: true

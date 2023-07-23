@@ -1,0 +1,21 @@
+Stage 1 (merge):
+python spice_novel.py -o test_data/Spice_Novel/ -i coverage_file_list.txt -t 1.0 -n output_name -m merge -s test_homo_sapiens -l test_data/Spice_Library/spice_lib_test_homo_sapiens_94_1ee
+
+Intermediate tool runs:
+1. Extract nucleotide sequences:
+gffread -w test_data/Spice_Novel/extracted_novel_transcripts.fa -g path_to_reference_genome_like_GRCh38.p12.genome.fa path_to_anno_file_generated_by_Stage_1.gtf
+
+2. Predict ORFs:
+TransDecoder.LongOrfs -t test_data/Spice_Novel/extracted_novel_transcripts.fa --complete_orfs_only --output_dir test_data/Spice_Novel/
+
+3. Search alignments with Diamond:
+diamond blastp -q test_data/Spice_Novel/transdecoder_longorfs_output.pep -d path_to_DIAMOND_REFSEQ.dmnd -o test_data/Spice_Novel/diamond_output.tsv
+
+Stage 2 (prep):
+python spice_novel.py -o test_data/Spice_Novel/ -i test_data/Spice_Novel/transdecoder_longorfs_output.pep -j test_data/Spice_Novel/spice_novel_merge_output.json \
+-d test_data/Spice_Novel/diamond_output.tsv -n output_name -m prepcull -s test_homo_sapiens
+
+Stage 3 (novlib):
+python spice_novel.py -i test_data/Spice_Novel/spice_novel_prep_output.fasta -m novlib -l test_data/Spice_Library/spice_lib_test_homo_sapiens_94_1ee -o test_data/Spice_Library
+
+Continue with the Intermediate tool runs of the Spice_Library workflow in test_data/Spice_Library/commandline/Spice_Library_Workflow.txt

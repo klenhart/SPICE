@@ -1,0 +1,37 @@
+{"ENSG00000253293": {
+    "ENSP00000283921": {
+        "ENSP00000283921": 1.0,
+        "ENSP00000479619": 0.6492,
+        "ENSP00000379633": 0.9274,
+        "HOMnoDiamondGroup": 0.0,
+        "HOMnoORFGroup": 0.0
+    },
+    "ENSP00000479619": {
+        "ENSP00000283921": 0.3324,
+        "ENSP00000479619": 1.0,
+        "ENSP00000379633": 0.0,
+        "HOMnoDiamondGroup": 0.0,
+        "HOMnoORFGroup": 0.0
+    },
+    "ENSP00000379633": {
+        "ENSP00000283921": 0.371,
+        "ENSP00000479619": 0.0,
+        "ENSP00000379633": 1.0,
+        "HOMnoDiamondGroup": 0.0,
+        "HOMnoORFGroup": 0.0
+    },
+    "HOMnoDiamondGroup": {
+        "ENSP00000283921": 0.0,
+        "ENSP00000479619": 0.0,
+        "ENSP00000379633": 0.0,
+        "HOMnoDiamondGroup": 1.0,
+        "HOMnoORFGroup": 0.0
+    },
+    "HOMnoORFGroup": {
+        "ENSP00000283921": 0.0,
+        "ENSP00000479619": 0.0,
+        "ENSP00000379633": 0.0,
+        "HOMnoDiamondGroup": 0.0,
+        "HOMnoORFGroup": 1.0
+    }
+}}

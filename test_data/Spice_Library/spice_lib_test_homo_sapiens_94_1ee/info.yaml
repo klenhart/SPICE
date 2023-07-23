@@ -1,0 +1,32 @@
+commandline_args:
+  copylib: null
+  force: false
+  keepgtf: false
+  modefas: null
+  outdir: test_data/Spice_Library
+  release: '94'
+  species: human
+info:
+  collected_sequences_count: 5
+  fas_mode: 1ee
+  fas_scored_sequences_count: 5
+  gene_count: 3
+  protein_count: 5
+  release: '94'
+  species: test_homo_sapiens
+  taxon_id: 9606
+  transcript_count: 5
+init_date: '2023-06-15'
+last_edit: '2023-06-15'
+spice_version: '0.1'
+status:
+  01_id_collection: true
+  02_sequence_collection: true
+  03_small_protein_removing: true
+  04_incorrect_entry_removing: true
+  05_implicit_fas_scoring: true
+  06_fasta_generation: true
+  07_pairing_generation: true
+  08_id_tsv_generation: true
+  09_sequence_annotation: false
+  10_fas_scoring: false

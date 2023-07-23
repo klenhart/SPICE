@@ -1,0 +1,106 @@
+{"ENSG00000126368": {
+    "_id": "ENSG00000126368",
+    "name": "NR1D1",
+    "feature": "gene",
+    "taxon_id": 9606,
+    "chromosome": "17",
+    "species": "homo_sapiens",
+    "biotype": "protein_coding",
+    "transcripts": {
+        "ENSP00000246672": {
+            "_id": "ENSP00000246672",
+            "feature": "protein",
+            "gene_id": "ENSG00000126368",
+            "transcript_name": "NR1D1-201",
+            "transcript_id": "ENST00000246672",
+            "taxon_id": 9606,
+            "biotype": "protein_coding",
+            "tags": [
+                "CCDS",
+                "basic",
+                "complete"
+            ],
+            "tsl": 1
+        }
+    }
+},
+"ENSG00000183615": {
+    "_id": "ENSG00000183615",
+    "name": "FAM167B",
+    "feature": "gene",
+    "taxon_id": 9606,
+    "chromosome": "1",
+    "species": "homo_sapiens",
+    "biotype": "protein_coding",
+    "transcripts": {
+        "ENSP00000362684": {
+            "_id": "ENSP00000362684",
+            "feature": "protein",
+            "gene_id": "ENSG00000183615",
+            "transcript_name": "FAM167B-201",
+            "transcript_id": "ENST00000373582",
+            "taxon_id": 9606,
+            "biotype": "protein_coding",
+            "tags": [
+                "CCDS",
+                "basic",
+                "complete"
+            ],
+            "tsl": 1
+        }
+    }
+},
+"ENSG00000253293": {
+    "_id": "ENSG00000253293",
+    "name": "HOXA10",
+    "feature": "gene",
+    "taxon_id": 9606,
+    "chromosome": "7",
+    "species": "homo_sapiens",
+    "biotype": "protein_coding",
+    "transcripts": {
+        "ENSP00000283921": {
+            "_id": "ENSP00000283921",
+            "feature": "protein",
+            "gene_id": "ENSG00000253293",
+            "transcript_name": "HOXA10-201",
+            "transcript_id": "ENST00000283921",
+            "taxon_id": 9606,
+            "biotype": "protein_coding",
+            "tags": [
+                "CCDS",
+                "basic",
+                "complete"
+            ],
+            "tsl": 1
+        },
+        "ENSP00000479619": {
+            "_id": "ENSP00000479619",
+            "feature": "protein",
+            "gene_id": "ENSG00000253293",
+            "transcript_name": "HOXA10-206",
+            "transcript_id": "ENST00000613671",
+            "taxon_id": 9606,
+            "biotype": "protein_coding",
+            "tags": [
+                "basic",
+                "complete"
+            ],
+            "tsl": 5
+        },
+        "ENSP00000379633": {
+            "_id": "ENSP00000379633",
+            "feature": "protein",
+            "gene_id": "ENSG00000253293",
+            "transcript_name": "HOXA10-202",
+            "transcript_id": "ENST00000396344",
+            "taxon_id": 9606,
+            "biotype": "protein_coding",
+            "tags": [
+                "basic",
+                "complete"
+            ],
+            "tsl": 1
+        }
+    }
+}}

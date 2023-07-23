@@ -1,0 +1,13 @@
+Stage 1 (setup):
+python spice_result.py -m setup -l test_data/Spice_Library/spice_novlib_test_homo_sapiens_94_1ee/ -o test_data/Spice_Result
+
+Stage 2 (expression) (only the replicate name changes across lines):
+python spice_result.py -m expression -l test_data/spice_novlib_test_homo_sapiens_94_1ee/ -o test_data/Spice_Result -n colon_rep1 -g path_to_colon_rep1.gtf -N FPKM -t 1.0
+python spice_result.py -m expression -l test_data/spice_novlib_test_homo_sapiens_94_1ee/ -o test_data/Spice_Result -n colon_rep2 -g path_to_colon_rep2.gtf -N FPKM -t 1.0
+python spice_result.py -m expression -l test_data/spice_novlib_test_homo_sapiens_94_1ee/ -o test_data/Spice_Result -n colon_rep3 -g path_to_colon_rep3.gtf -N FPKM -t 1.0
+
+Stage 3 (condition):
+python spice_result.py -m condition -l test_data/Spice_Library/spice_novlib_test_homo_sapiens_94_1ee -o test_data/Spice_Result -n colon -r colon_rep1 colon_rep2 colon_rep3
+
+Stage 4 (compare):
+python spice_result.py -m compare test_data/Spice_Library/spice_novlib_test_homo_sapiens_94_1ee/ -o test_data/Spice_Result -c colon\;adrenal_gland

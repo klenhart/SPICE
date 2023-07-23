@@ -1,0 +1,281 @@
+{"HOMf165992725915dd": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40093867",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB452TKVT000226193"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM27721a60d51f3b3": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40095120",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB995ZQYT000222151",
+        "ENCLB904ZJVT000220743",
+        "ENCLB699OTNT000232280"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM34dff32747fdc8c": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40100725",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB995ZQYT000222150"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM1cb8aef245920a3": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40095731",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB995ZQYT000222152"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM5ec12b6ce415835": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40097403",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB986KGXT000249720",
+        "ENCLB947QLZT000220339"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM5ce7d0adddfb21e": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40093282",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB940BIET000279312",
+        "ENCLB663CCAT000262175"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM152add831643504": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40096087",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB940BIET000279307",
+        "ENCLB663CCAT000262173",
+        "ENCLB150SGWT000257601",
+        "ENCLB194KIWT000288082",
+        "ENCLB023HELT000270573",
+        "ENCLB641OJZT000258991",
+        "ENCLB133UBCT000231973",
+        "ENCLB699OTNT000232279",
+        "ENCLB204OWGT000265119",
+        "ENCLB855HKWT000293469"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM436b8c73e356638": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40100725",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB940BIET000279309"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOMc474b21ba600206": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40096087",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB828NECT000226396"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOMecb8c2f1655f27f": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40096779",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB400RGNT000262269",
+        "ENCLB620TRYT000236165"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOMb3fc6804ee84978": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40100169",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB194KIWT000288088"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOMa9ab0247a9ed77c": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40097403",
+    "end": "40098495",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB714MZJT000219657"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM81a59ad4406e768": {
+    "gene_id": "ENSG00000126368",
+    "strand": "-",
+    "start": "40092787",
+    "end": "40098175",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr17",
+    "synonyms": [
+        "ENCLB945ZXAT000232684"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM624e9b596f81ecd": {
+    "gene_id": "ENSG00000183615",
+    "strand": "+",
+    "start": "32247682",
+    "end": "32248856",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr1",
+    "synonyms": [
+        "ENCLB849DQRT000208216"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOMa747cd70b210369": {
+    "gene_id": "ENSG00000183615",
+    "strand": "+",
+    "start": "32242382",
+    "end": "32248856",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr1",
+    "synonyms": [
+        "ENCLB699OTNT000208227"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM4b9cf06933c8e78": {
+    "gene_id": "ENSG00000183615",
+    "strand": "+",
+    "start": "32247233",
+    "end": "32248856",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr1",
+    "synonyms": [
+        "ENCLB699OTNT000208228",
+        "ENCLB620TRYT000208580"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOMfb2f91367102948": {
+    "gene_id": "ENSG00000253293",
+    "strand": "-",
+    "start": "27162906",
+    "end": "27174306",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr7",
+    "synonyms": [
+        "ENCLB023HELT000339361"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM753c0d666529810": {
+    "gene_id": "ENSG00000253293",
+    "strand": "-",
+    "start": "27170592",
+    "end": "27172173",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr7",
+    "synonyms": [
+        "ENCLB356CMQT000354759"
+    ],
+    "biotype": "",
+    "peptide": ""
+},
+"HOM8614f9f42777d22": {
+    "gene_id": "ENSG00000253293",
+    "strand": "-",
+    "start": "27177274",
+    "end": "27180013",
+    "start_orf": null,
+    "end_orf": null,
+    "chromosome": "chr7",
+    "synonyms": [
+        "ENCLB620TRYT000267677"
+    ],
+    "biotype": "",
+    "peptide": ""
+}}

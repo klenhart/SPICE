@@ -1,0 +1,60 @@
+{
+    "species": "test_homo_sapiens",
+    "taxon_id": 9606,
+    "release": "94",
+    "library_integrity_flag": true,
+    "expression_imports": {
+        "conditions": {
+            "adrenal_gland": {
+                "replicates": [
+                    "adrenal_gland_rep1",
+                    "adrenal_gland_rep2",
+                    "adrenal_gland_rep3"
+                ],
+                "expression_path": "test_data/spice_result_test_homo_sapiens_94_1ee/expression/conditions/expression_adrenal_gland.json",
+                "ewfd_path": "test_data/spice_result_test_homo_sapiens_94_1ee/ewfd/conditions/ewfd_adrenal_gland.json"
+            },
+            "colon": {
+                "replicates": [
+                    "colon_rep1",
+                    "colon_rep2",
+                    "colon_rep3"
+                ],
+                "expression_path": "test_data/spice_result_test_homo_sapiens_94_1ee/expression/conditions/expression_colon.json",
+                "ewfd_path": "test_data/spice_result_test_homo_sapiens_94_1ee/ewfd/conditions/ewfd_colon.json"
+            }
+        },
+        "replicates": {
+            "colon_rep1": {
+                "origin": "",
+                "expression_path": "test_data/spice_result_test_homo_sapiens_94_1ee/expression/replicates/expression_colon_rep1.json",
+                "ewfd_path": "test_data/spice_result_test_homo_sapiens_94_1ee/ewfd/replicates/ewfd_colon_w76_m40_mucosa_rep1.json"
+            },
+            "colon_rep2": {
+                "origin": "",
+                "expression_path": "test_data/spice_result_test_homo_sapiens_94_1ee/expression/replicates/expression_colon_rep2.json",
+                "ewfd_path": "test_data/spice_result_test_homo_sapiens_94_1ee/ewfd/replicates/ewfd_colon_rep2.json"
+            },
+            "colon_rep3": {
+                "origin": "",
+                "expression_path": "test_data/spice_result_test_homo_sapiens_94_1ee/expression/replicates/expression_colon_rep3.json",
+                "ewfd_path": "test_data/spice_result_test_homo_sapiens_94_1ee/ewfd/replicates/ewfd_colon_rep3.json"
+            },
+            "adrenal_gland_rep1": {
+                "origin": "",
+                "expression_path": "test_data/spice_result_test_homo_sapiens_94_1ee/expression/replicates/expression_adrenal_gland_rep1.json",
+                "ewfd_path": "test_data/spice_result_test_homo_sapiens_94_1ee/ewfd/replicates/ewfd_adrenal_gland_rep1.json"
+            },
+            "adrenal_gland_rep2": {
+                "origin": "",
+                "expression_path": "test_data/spice_result_test_homo_sapiens_94_1ee/expression/replicates/expression_adrenal_gland_rep2.json",
+                "ewfd_path": "test_data/spice_result_test_homo_sapiens_94_1ee/ewfd/replicates/ewfd_adrenal_gland_rep2.json"
+            },
+            "adrenal_gland_rep3": {
+                "origin": "",
+                "expression_path": "test_data/spice_result_test_homo_sapiens_94_1ee/expression/replicates/expression_adrenal_gland_rep3.json",
+                "ewfd_path": "test_data/spice_result_test_homo_sapiens_94_1ee/ewfd/replicates/ewfd_adrenal_gland_rep3.json"
+            }
+        }
+    }
+}

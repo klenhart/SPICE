@@ -1,0 +1,159 @@
+{
+    "name": "adrenal_gland_rep3",
+    "library": "test_data/Spice_Library/spice_novlib_test_homo_sapiens_94_1ee",
+    "normalization": "FPKM",
+    "data": {"ENSG00000126368": {
+        "ids": [
+            "ENSP00000246672",
+            "HOMnoORFGroup",
+            "HOMGRP81c552f7c12b",
+            "HOMnoDiamondGroup"
+        ],
+        "biotypes": [
+            "protein_coding",
+            "non_coding",
+            "protein_coding",
+            "non_coding"
+        ],
+        "transcript_support_levels": [
+            1,
+            6,
+            6,
+            6
+        ],
+        "tags": [
+            [
+                "CCDS",
+                "basic",
+                "complete"
+            ],
+            [
+                "no_ORF",
+                "NOVEL"
+            ],
+            [
+                "e_value:2.2e-28",
+                "bit_score:109.0",
+                "NOVEL"
+            ],
+            [
+                "no_diamond_hit",
+                "NOVEL"
+            ]
+        ],
+        "expression_rel": [
+            0.8426779197355666,
+            0.0,
+            0.15732208026443342,
+            0.0
+        ],
+        "ewfd_rel_expr": [
+            0.1573,
+            1.0,
+            0.8427,
+            1.0
+        ]
+    },
+"ENSG00000183615": {
+        "ids": [
+            "ENSP00000362684",
+            "HOMnoORFGroup",
+            "HOM4b9cf06933c8e78"
+        ],
+        "biotypes": [
+            "protein_coding",
+            "non_coding",
+            "protein_coding"
+        ],
+        "transcript_support_levels": [
+            1,
+            6,
+            6
+        ],
+        "tags": [
+            [
+                "CCDS",
+                "basic",
+                "complete"
+            ],
+            [
+                "no_ORF",
+                "NOVEL"
+            ],
+            [
+                "e_value:9.82e-52",
+                "bit_score:164.0",
+                "NOVEL"
+            ]
+        ],
+        "expression_rel": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "ewfd_rel_expr": [
+            0.0,
+            1.0,
+            0.8632
+        ]
+    },
+"ENSG00000253293": {
+        "ids": [
+            "ENSP00000283921",
+            "ENSP00000479619",
+            "ENSP00000379633",
+            "HOMnoDiamondGroup",
+            "HOMnoORFGroup"
+        ],
+        "biotypes": [
+            "protein_coding",
+            "protein_coding",
+            "protein_coding",
+            "non_coding",
+            "non_coding"
+        ],
+        "transcript_support_levels": [
+            1,
+            5,
+            1,
+            6,
+            6
+        ],
+        "tags": [
+            [
+                "CCDS",
+                "basic",
+                "complete"
+            ],
+            [
+                "basic",
+                "complete"
+            ],
+            [
+                "basic",
+                "complete"
+            ],
+            [
+                "no_diamond_hit",
+                "NOVEL"
+            ],
+            [
+                "no_ORF",
+                "NOVEL"
+            ]
+        ],
+        "expression_rel": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "ewfd_rel_expr": [
+            0.0,
+            0.6676,
+            0.629,
+            1.0,
+            1.0
+        ]
+    }}}

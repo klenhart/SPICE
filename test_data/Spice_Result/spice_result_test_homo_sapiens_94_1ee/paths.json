@@ -1,0 +1,13 @@
+{
+    "library_path": "test_data/Spice_Library/spice_novlib_test_homo_sapiens_94_1ee/",
+    "root": "test_data/Spice_Result/spice_result_test_homo_sapiens_94_1ee",
+    "result_info": "info.json",
+    "expression": "expression",
+    "expression_replicates": "expression/replicates",
+    "expression_conditions": "expression/conditions",
+    "ewfd": "ewfd",
+    "ewfd_replicates": "ewfd/replicates",
+    "ewfd_conditions": "ewfd/conditions",
+    "comparison": "comparison",
+    "self": "paths.json"
+}
