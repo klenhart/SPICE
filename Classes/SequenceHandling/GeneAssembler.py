@@ -59,16 +59,29 @@ class GeneAssembler:
         self.gene_assembly: Dict[str, Gene] = dict()
         self.species: str = species
         self.taxon_id: str = taxon_id
+        # how is inclusion_filter_dict even used?
         self.inclusion_filter_dict: Dict[str, List[str]] = dict()
 
     def __getitem__(self, gene_id) -> Gene:
+        # allows to retrieve a Gene using square bracket syntax
         return self.gene_assembly[gene_id]
 
     def __contains__(self, gene_id) -> bool:
+        # enables use of "in" operator to check if a gene exists
         return gene_id in self.gene_assembly.keys()
-
+    
+    ###########################################################################
+    ##################### CALLED ONLY BY spice_library.py #####################
+    ###########################################################################
     def update_inclusion_filter(self, key: str, possible_values: List[str]) -> None:
+        """
+        Allows for filtering of genes to include in the spice library (in theory)
+        """
         self.inclusion_filter_dict.update({key: possible_values})
+    
+    def reset_fas(self) -> None:
+        for gene in self.get_genes():
+            gene.reset_fas()
 
     def save_fas(self, pass_path: PassPath) -> None:
         index_dict: Dict[str, str] = dict()
@@ -122,71 +135,6 @@ class GeneAssembler:
                                 gene.get_fas_dict()[key_prot_id1][key_prot_id2] = value
         print("Integrated ", count, " FAS scores.")
 
-    def extract_tags(self) -> List[str]:
-        tag_set: Set[str] = set()
-        for transcript in self.get_transcripts():
-            for tag in transcript.get_tags():
-                tag_set.add(tag)
-        return list(tag_set)
-
-    def extract(self, gtf_path: str) -> None:
-        """
-        Method that extracts all genes, proteins, transcripts and exons from a gtf file and sorts them into the
-        GeneAssembler.
-
-        :param gtf_path: The absolute path to a gtf file.
-        """
-
-        # GTF Boy takes the path and can now be used to stream the gtf line by line.
-        gtf_boy: GTFBoy = GTFBoy(gtf_path)
-
-        # Iterate over the GTFBoys GTF file.
-        for line in tqdm(gtf_boy, ncols=100, total=gtf_boy.total_lines, desc="Extract GTF Progress"):
-            # Skip the header.
-            if line.startswith("#!"):
-                continue
-            else:
-                # Split each line.
-                split_line: List[str] = line.split("\t")
-                # Check the feature CDS for protein. (Coding Sequence?)
-                feature: str = split_line[2]
-                if not GTFBoy.has_values(self.inclusion_filter_dict, split_line):
-                    continue
-                elif feature == "gene":
-                    # Make gene
-                    gene: Gene = Gene()
-                    # Use Genes method to construct itself from a split gtf line.
-                    gene.from_gtf_line(split_line)
-                    # Externally set the taxon id and species.
-                    gene.set_id_taxon(self.taxon_id)
-                    gene.set_species(self.species)
-                    # Insert the gene into the SearchTree instance
-                    self.gene_assembly[gene.get_id()] = gene
-                elif feature == "transcript":
-                    # Do not extract transcripts that will have a protein counterpart in the GTF due to their biotype.
-                    if GTFBoy.has_attribute_value("transcript_biotype", "protein_coding", split_line[8]):
-                        continue
-                    else:
-                        # Make transcript
-                        transcript: Transcript = Transcript()
-                        # Use Transcripts method to construct itself from a split gtf line.
-                        transcript.from_gtf_line(split_line)
-                        # Externally set the taxon id.
-                        transcript.set_id_taxon(int(self.taxon_id))
-                    self.gene_assembly[transcript.get_id_gene()].add_transcript(transcript, True)
-                elif feature == "CDS":
-                    # Do not extract transcripts that will have a protein counterpart in the GTF due to their biotype.
-                    if GTFBoy.has_attribute_value("transcript_biotype", "nonsense_mediated_decay", split_line[8]):
-                        continue
-                    else:
-                        # Make protein
-                        protein: Protein = Protein()
-                        # Use Proteins method to construct itself from a split gtf line.
-                        protein.from_gtf_line(split_line)
-                        # Externally set the taxon id.
-                        protein.set_id_taxon(int(self.taxon_id))
-                        self.gene_assembly[protein.get_id_gene()].add_transcript(protein, True)
-
     def get_genes(self, no_sequence_flag: bool = False, no_fas_flag: bool = False) -> List[Gene]:
         output_list: List[Gene] = list()
         if no_sequence_flag:
@@ -205,18 +153,13 @@ class GeneAssembler:
                 output_list.append(gene)
         return output_list
 
-    def get_transcripts(self) -> List[Transcript]:
-        output_list: List[Transcript] = list()
-        for key in self.gene_assembly.keys():
-            gene: Gene = self.gene_assembly[key]
-            output_list += gene.get_transcripts()
-        return output_list
-
     def clear_empty_genes(self) -> None:
         gene_list: List[Gene] = self.get_genes()
         for gene in gene_list:
             if len(gene.get_proteins()) == 0:
                 del self.gene_assembly[gene.get_id()]
+
+    # Functions below will be used to build spice library info
 
     def get_gene_count(self) -> int:
         return len(self.gene_assembly.keys())
@@ -235,16 +178,138 @@ class GeneAssembler:
 
     def get_fas_scored_count(self) -> int:
         return self.get_protein_count() - self.get_protein_count(False, True)
+    
+    ##########################################################################
+    ################################### END ##################################
+    ##########################################################################
 
+    ##########################################################################
+    ################# CALLED BY spice_library and ResultBuddy ################
+    ##########################################################################
+
+    def get_transcripts(self) -> List[Transcript]:
+        output_list: List[Transcript] = list()
+        for key in self.gene_assembly.keys():
+            gene: Gene = self.gene_assembly[key] # meaning: gene is Gene object
+            output_list += gene.get_transcripts() # calls Gene objects get_transcripts function
+        return output_list
+    
+    ##########################################################################
+    ################################### END ##################################
+    ##########################################################################
+
+
+    ##########################################################################
+    ########################## MAIN GeneAssembler ############################
+    ##########################################################################
+    def extract(self, gtf_path: str) -> None:
+        """
+        Purpose: Parse a GTF file line by line, apply inclusion filters, and populate the
+                 GeneAssembler.gene_assembly dictionary with Gene, Transcript, and Protein objects.
+
+        :param gtf_path: The absolute path to a gtf file.
+        """
+
+        # GTF Boy takes the path and can now be used to stream the gtf line by line.
+        gtf_boy: GTFBoy = GTFBoy(gtf_path)
+
+        # Iterate over the GTFBoys GTF file.
+        for line in tqdm(gtf_boy, ncols=100, total=gtf_boy.total_lines, desc="Extract GTF Progress"):
+            # Skip the header.
+            if line.startswith("#!"):
+                continue
+            else:
+                # Split each line into the GTF fields (see GTF_MASK)
+                split_line: List[str] = line.split("\t")
+                # Extract the "feature" field
+                # Check the feature CDS for protein
+                feature: str = split_line[2]
+                # Skip unwanted Genes (Allowed biotypes: protein coding genes, protein coding and NMD transcripts)
+                if not GTFBoy.has_values(self.inclusion_filter_dict, split_line):
+                    continue
+                # Allowed Genes
+                elif feature == "gene": # shouldn't we use here if?
+                    # Make Gene Object
+                    gene: Gene = Gene()
+                    # Use Genes method to construct itself from a split gtf line.
+                    gene.from_gtf_line(split_line)
+                    # Externally set the taxon id and species.
+                    gene.set_id_taxon(self.taxon_id)
+                    gene.set_species(self.species)
+                    # Add this gene to the gene assembly
+                    self.gene_assembly[gene.get_id()] = gene
+                elif feature == "transcript":
+                    # Do not extract transcripts that will have a protein counterpart in the GTF due to their biotype.
+                    # Will be a Protein object
+                    if GTFBoy.has_attribute_value("transcript_biotype", "protein_coding", split_line[8]):
+                        continue
+                    else:
+                        # Make transcript object (likely NMD)
+                        transcript: Transcript = Transcript()
+                        # Use Transcripts method to construct itself from a split gtf line.
+                        transcript.from_gtf_line(split_line)
+                        # Externally set the taxon id.
+                        transcript.set_id_taxon(int(self.taxon_id))
+                    # Add this transcript to the Gene object it belongs to (ENST ID)
+                    self.gene_assembly[transcript.get_id_gene()].add_transcript(transcript, True)
+                elif feature == "CDS":
+                    # Do not extract transcripts that will have a protein counterpart in the GTF due to their biotype.
+                    #### Unnecessary as NMD do not have CDS attr ####
+                    if GTFBoy.has_attribute_value("transcript_biotype", "nonsense_mediated_decay", split_line[8]):
+                        continue
+                    else:
+                        # Make protein objct
+                        protein: Protein = Protein()
+                        # Use Proteins method to construct itself from a split gtf line.
+                        protein.from_gtf_line(split_line)
+                        # Externally set the taxon id.
+                        protein.set_id_taxon(int(self.taxon_id))
+                        self.gene_assembly[protein.get_id_gene()].add_transcript(protein, True)
+
+    ##########################################################################
+    ################################### END ##################################
+    ##########################################################################
+
+    ##########################################################################
+    ########################## CALLED BY EWFDHandler #########################
+    ##########################################################################
     def get_fas_dist_matrix(self) -> Dict[str, Dict[str, Dict[str, float]]]:
         dist_matrix: Dict[str, Dict[str, Dict[str, float]]] = dict()
         for gene in self.get_genes():
             dist_matrix[gene.get_id()] = gene.get_fas_dict()
         return dist_matrix
+    ##########################################################################
+    ################################### END ##################################
+    ##########################################################################
 
-    def reset_fas(self) -> None:
-        for gene in self.get_genes():
-            gene.reset_fas()
+    ##########################################################################
+    ######### CALLED BY ExpressionAssembler and ConditionAssembler ###########
+    ##########################################################################
+
+    @staticmethod
+    def from_dict(info_dict: Dict[str, Dict[str, Any]],
+                  seq_dict: Dict[str, Dict[str, Any]],
+                  fas_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Gene]:
+        output_dict: Dict[str, Gene] = dict()
+        for key in info_dict.keys():
+            new_gene: Gene = Gene()
+            new_gene.from_dict(info_dict[key], seq_dict[key], fas_dict[key])
+            output_dict[new_gene.get_id()] = new_gene
+        return output_dict
+
+    ##########################################################################
+    ################################### END ##################################
+    ##########################################################################
+    
+    ##########################################################################
+    ########################## Unknown Purpose Functions #####################
+    ##########################################################################
+    def extract_tags(self) -> List[str]: # is this ever used?
+        tag_set: Set[str] = set()
+        for transcript in self.get_transcripts():
+            for tag in transcript.get_tags():
+                tag_set.add(tag)
+        return list(tag_set)
 
     @staticmethod
     def fas_to_dict_iter(gene_assembly: Dict[str, Gene]) -> Iterator[List[Tuple[str, Dict[str, str], Dict[str, Dict[str, Any]]]]]:
@@ -273,17 +338,9 @@ class GeneAssembler:
             json_dict[key] = gene_assembly[key].to_dict(mode)
         return json_dict
 
-    @staticmethod
-    def from_dict(info_dict: Dict[str, Dict[str, Any]],
-                  seq_dict: Dict[str, Dict[str, Any]],
-                  fas_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Gene]:
-        output_dict: Dict[str, Gene] = dict()
-        for key in info_dict.keys():
-            new_gene: Gene = Gene()
-            new_gene.from_dict(info_dict[key], seq_dict[key], fas_dict[key])
-            output_dict[new_gene.get_id()] = new_gene
-        return output_dict
-
+    ##########################################################################
+    ################################### END ##################################
+    ##########################################################################
 
 def main() -> None:
     pass
