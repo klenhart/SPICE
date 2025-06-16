@@ -1,7 +1,7 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 #######################################################################
-# Copyright (C) 2023 Christian, Blümel, Julian Dosch
+# Copyright (C) 2023 Christian Blümel, Julian Dosch
 #
 # This file is part of Spice.
 #
@@ -22,47 +22,42 @@
 
 from setuptools import setup, find_packages
 
-with open("README.md", "r") as i:
-    long_description = i.read()
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 setup(
     name="spice",
     version="1.0",
     python_requires='>=3.9.0',
-    description="""Splicing-based protein isoform comparion estimator.
-    Appliance of the FAS algorithm on entire transcript sets. Weighting and ranking of transcript level expression data
-    using feature architecture similarity""",
+    description="Splicing-based protein isoform comparison estimator.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Christian Blümel",
     author_email="christianbluemel@stud.uni-frankfurt.de",
     url="",
     packages=find_packages(),
-    package_data={'': ['*']},
+    include_package_data=True,
     install_requires=[
-        'greedyFAS',
+        # Make sure these are on PyPI
+        'greedyFAS',         # <-- If not on PyPI, consider using a GitHub URL
         'pyranges',
         'requests',
-        'sys',
-        'json',
-        'os',
-        'argparse',
-        'itertools',
         'plotly',
-        'pathlib',
         'tqdm',
         'numpy',
         'matplotlib',
         'scipy',
-        'yaml',
+        'pyyaml',
         'pandas'
     ],
     entry_points={
-        'console_scripts': ["spice.library = spice.spice_library:main",
-                            "spice.result = spice.spice_result:main",
-                            "spice.novel = spice.spice_novel:main",
-                            "spice.makejobs = spice.FASJobAssistant:main",
-                            "spice.parse_domain_out = spice.parse_domain_out:main"],
+        'console_scripts': [
+            "spice.library = spice.spice_library:main",
+            "spice.result = spice.spice_result:main",
+            "spice.novel = spice.spice_novel:main",
+            "spice.makejobs = spice.FASJobAssistant:main",
+            "spice.parse_domain_out = spice.parse_domain_out:main"
+        ],
     },
     license="GPL-3.0",
     classifiers=[
