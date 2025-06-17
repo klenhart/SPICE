@@ -44,7 +44,7 @@ class Gene:
         self.chromosome: str = ""
         self.biotype: str = ""
         self.species: str = ""
-        self.transcripts: Dict[str, Transcript] = dict()
+        self.transcripts: Dict[str, Transcript] = dict()  # maps transcript ids to Transcript objects
         self.sequences_complete_flag = False
         self.fas_complete_flag = False
         self.fas_dict: Dict[str, Dict[str, float]] = dict()
@@ -79,19 +79,27 @@ class Gene:
     def add_transcript(self, transcript: Transcript, initial_add: bool = False) -> None:
         """
         :param initial_add: True if this transcript is being newly added to the gene or if it comes from an old load.
-        :type transcript: Transcript
+        :type transcript: Transcript instance
         """
         self.transcripts[transcript.get_id()] = transcript
+        # Why selecting also non_coding? Different rationale compared to GeneAssembler extract. None should be non_coding
+        # Look for other calls of this function
         if transcript.get_biotype() in ["protein_coding", "nonsense_mediated_decay", "non_coding"] and initial_add:
+            # If transcript not included in FAS similarity scoring
             if transcript.get_id() not in self.fas_dict.keys():
+                # Add transcript to scoring matrix
                 self.fas_dict[transcript.get_id()] = dict()
+                # Loop over transcripts that are present in scoring matrix
                 for transcript_id in self.fas_dict.keys():
+                    # Transcript to add is NMD or non_coding set similarity score to 0 with all other
                     if transcript.get_biotype() in ["nonsense_mediated_decay", "non_coding"]:
                         self.fas_dict[transcript.get_id()][transcript_id] = 0.0
                         self.fas_dict[transcript_id][transcript.get_id()] = 0.0
+                    # Transcript to add is protein_coding but the other is not, set to 0
                     elif self.transcripts[transcript_id].get_biotype() in ["nonsense_mediated_decay", "non_coding"]:
                         self.fas_dict[transcript.get_id()][transcript_id] = 0.0
                         self.fas_dict[transcript_id][transcript.get_id()] = 0.0
+                    # Transcript to add is protein_coding and the others are too, set to -1 to indicate needed FAS calc
                     else:
                         self.fas_dict[transcript.get_id()][transcript_id] = -1.0
                         self.fas_dict[transcript_id][transcript.get_id()] = -1.0
@@ -169,6 +177,8 @@ class Gene:
                                             for protein in self.get_proteins() if isinstance(protein, Protein)])
 
     def check_fas_status(self) -> None:
+        """ Checks if there is a score which still needs to be calculated.
+        """
         self.fas_complete_flag = all([-1 not in list(row_dict.values()) for row_dict in self.get_fas_dict().values()])
 
     def from_dict(self,
@@ -194,7 +204,6 @@ class Gene:
                 protein: Protein = Protein()
                 protein.from_dict(transcript_dict)
                 self.add_transcript(protein)
-
     def to_dict(self, mode: str) -> Dict[str, Any]:
         output: Dict[str, Any]
         output: Dict[str, Any] = dict()
@@ -218,6 +227,11 @@ class Gene:
         return output
 
     def from_gtf_line(self, gtf_split_line: List[str]):
+        """
+        Extracts gene information (chr, feature, attributes) from 
+        GTF line and saves as instance attributes. Called by GeneAssembler.
+        """
+        # parse GTF columns
         for i in range(len(self.GTF_MASK)):
             field_name: str = self.GTF_MASK[i]
             entry: str = gtf_split_line[i]
@@ -235,9 +249,11 @@ class Gene:
                     self.set_name(".")
                 self.set_biotype(attribute_dict["gene_biotype"])
 
+
     def add_entry(self, entry_type: str, entry: Any):
         if entry_type == "transcript":
             self.add_transcript(entry)
+
 
     def get_transcript_count(self, no_sequence_flag: bool = False) -> int:
         return len(self.get_transcripts(no_sequence_flag))
@@ -305,7 +321,7 @@ class Gene:
         return output
 
 
-def main():
+def main(): # for testing
     gene = Gene()
     gene.set_id("standin_gene_id")
     gene.set_species("human")
