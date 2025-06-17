@@ -59,7 +59,6 @@ class GeneAssembler:
         self.gene_assembly: Dict[str, Gene] = dict()
         self.species: str = species
         self.taxon_id: str = taxon_id
-        # how is inclusion_filter_dict even used?
         self.inclusion_filter_dict: Dict[str, List[str]] = dict()
 
     def __getitem__(self, gene_id) -> Gene:
@@ -75,7 +74,7 @@ class GeneAssembler:
     ###########################################################################
     def update_inclusion_filter(self, key: str, possible_values: List[str]) -> None:
         """
-        Allows for filtering of genes to include in the spice library (in theory)
+        Allows for filtering of genes to include in the spice library.
         """
         self.inclusion_filter_dict.update({key: possible_values})
     
@@ -154,6 +153,9 @@ class GeneAssembler:
         return output_list
 
     def clear_empty_genes(self) -> None:
+        """ Removes genes from gene assembly datastructure that do
+        not contain at least one Protein instance.
+        """
         gene_list: List[Gene] = self.get_genes()
         for gene in gene_list:
             if len(gene.get_proteins()) == 0:
@@ -162,9 +164,15 @@ class GeneAssembler:
     # Functions below will be used to build spice library info
 
     def get_gene_count(self) -> int:
+        """ Returns how many genes are included in the final datastructure
+        after library prep.
+        """
         return len(self.gene_assembly.keys())
 
     def get_transcript_count(self, no_sequence_flag: bool = False) -> int:
+        """ Returns how many transcripts are included in the final datastructure
+        after library prep.
+        """
         return sum([gene.get_transcript_count(no_sequence_flag) for gene in self.get_genes()])
 
     def get_protein_count(self,
@@ -222,14 +230,13 @@ class GeneAssembler:
                 # Split each line into the GTF fields (see GTF_MASK)
                 split_line: List[str] = line.split("\t")
                 # Extract the "feature" field
-                # Check the feature CDS for protein
                 feature: str = split_line[2]
                 # Skip unwanted Genes (Allowed biotypes: protein coding genes, protein coding and NMD transcripts)
                 if not GTFBoy.has_values(self.inclusion_filter_dict, split_line):
                     continue
                 # Allowed Genes
-                elif feature == "gene": # shouldn't we use here if?
-                    # Make Gene Object
+                elif feature == "gene":
+                    # Initialize Gene Object
                     gene: Gene = Gene()
                     # Use Genes method to construct itself from a split gtf line.
                     gene.from_gtf_line(split_line)
@@ -253,11 +260,6 @@ class GeneAssembler:
                     # Add this transcript to the Gene object it belongs to (ENST ID)
                     self.gene_assembly[transcript.get_id_gene()].add_transcript(transcript, True)
                 elif feature == "CDS":
-                    # Do not extract transcripts that will have a protein counterpart in the GTF due to their biotype.
-                    #### Unnecessary as NMD do not have CDS attr ####
-                    if GTFBoy.has_attribute_value("transcript_biotype", "nonsense_mediated_decay", split_line[8]):
-                        continue
-                    else:
                         # Make protein objct
                         protein: Protein = Protein()
                         # Use Proteins method to construct itself from a split gtf line.
