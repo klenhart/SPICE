@@ -69,12 +69,10 @@ class GeneAssembler:
         # enables use of "in" operator to check if a gene exists
         return gene_id in self.gene_assembly.keys()
     
-    ###########################################################################
-    ##################### CALLED ONLY BY spice_library.py #####################
-    ###########################################################################
+
     def update_inclusion_filter(self, key: str, possible_values: List[str]) -> None:
         """
-        Allows for filtering of genes to include in the spice library.
+        Allows for filtering of genes to include in the spice library. Called in spice_library
         """
         self.inclusion_filter_dict.update({key: possible_values})
     
@@ -102,6 +100,23 @@ class GeneAssembler:
             json.dump(json_dict, f, indent=4)
 
     def load(self, pass_path: PassPath) -> None:
+        """
+        Loads gene, transcript, protein, and FAS data into an existing GeneAssembler instance from disk.
+
+        Parameters:
+            pass_path (PassPath): Object containing paths to all serialized library files:
+                                    - 'transcript_info': metadata about genes and transcripts
+                                    - 'transcript_seq': amino acid sequences of proteins
+                                    - 'fas_index' and 'fas_scores': mapping and actual FAS similarity data
+
+        Behavior:
+            - Reads the transcript metadata, protein sequences, and FAS scores.
+            - Uses the static `GeneAssembler.from_dict(...)` method to reconstruct Gene objects.
+            - Populates `self.gene_assembly` with the fully reconstructed gene set.
+
+        Use Case:
+            Used during library reuse without re-parsing GTF/FASTA input.
+        """
         with open(pass_path["transcript_info"], "r") as f:
             info_dict: Dict[str, Dict[str, Any]] = json.load(f)
         with open(pass_path["transcript_seq"], "r") as f:
@@ -153,7 +168,8 @@ class GeneAssembler:
         return output_list
 
     def clear_empty_genes(self) -> None:
-        """ Removes genes from gene assembly datastructure that do
+        """
+        Removes genes from gene assembly datastructure that do
         not contain at least one Protein instance.
         """
         gene_list: List[Gene] = self.get_genes()
@@ -161,16 +177,17 @@ class GeneAssembler:
             if len(gene.get_proteins()) == 0:
                 del self.gene_assembly[gene.get_id()]
 
-    # Functions below will be used to build spice library info
 
     def get_gene_count(self) -> int:
-        """ Returns how many genes are included in the final datastructure
+        """
+        Returns how many genes are included in the final datastructure
         after library prep.
         """
         return len(self.gene_assembly.keys())
 
     def get_transcript_count(self, no_sequence_flag: bool = False) -> int:
-        """ Returns how many transcripts are included in the final datastructure
+        """
+        Returns how many transcripts are included in the final datastructure
         after library prep.
         """
         return sum([gene.get_transcript_count(no_sequence_flag) for gene in self.get_genes()])
@@ -186,34 +203,30 @@ class GeneAssembler:
 
     def get_fas_scored_count(self) -> int:
         return self.get_protein_count() - self.get_protein_count(False, True)
-    
-    ##########################################################################
-    ################################### END ##################################
-    ##########################################################################
-
-    ##########################################################################
-    ################# CALLED BY spice_library and ResultBuddy ################
-    ##########################################################################
 
     def get_transcripts(self) -> List[Transcript]:
+        """
+        Returns a list of objects corresponding to transcripts and
+        proteins of all genes in the gene assembly.
+
+        Behavior:
+            - Requires the GeneAssembly datastructure to be fully poupulated
+              with Gene, Transcript and Protein objects
+            - Loops over each gene in the gene assembly.
+        """
         output_list: List[Transcript] = list()
         for key in self.gene_assembly.keys():
             gene: Gene = self.gene_assembly[key] # meaning: gene is Gene object
             output_list += gene.get_transcripts() # calls Gene objects get_transcripts function
         return output_list
-    
-    ##########################################################################
-    ################################### END ##################################
-    ##########################################################################
 
 
-    ##########################################################################
-    ########################## MAIN GeneAssembler ############################
-    ##########################################################################
     def extract(self, gtf_path: str) -> None:
         """
-        Purpose: Parse a GTF file line by line, apply inclusion filters, and populate the
-                 GeneAssembler.gene_assembly dictionary with Gene, Transcript, and Protein objects.
+        MAIN GeneAssembler
+        Parse a GTF file line by line, apply inclusion filters, and populate the
+        GeneAssembler.gene_assembly dictionary with Gene, Transcript, and Protein objects.
+        
 
         :param gtf_path: The absolute path to a gtf file.
         """
@@ -268,30 +281,49 @@ class GeneAssembler:
                         protein.set_id_taxon(int(self.taxon_id))
                         self.gene_assembly[protein.get_id_gene()].add_transcript(protein, True)
 
-    ##########################################################################
-    ################################### END ##################################
-    ##########################################################################
 
-    ##########################################################################
-    ########################## CALLED BY EWFDHandler #########################
-    ##########################################################################
     def get_fas_dist_matrix(self) -> Dict[str, Dict[str, Dict[str, float]]]:
+        """
+        Aggregates all gene.fas_dicts into a top-gene-level structure and returns
+        it as a nested dict with genes as keys.
+
+        Behavior:
+            - Initiates nestes dictionary
+            - Loops over all genes in the gene assembly
+            - Keys are genes and values are dictionaries (fas_dict) representing
+              pairwise FAS scores of transcripts/proteins of that gene
+            - Returns Dict of fas_dicts
+
+        Note:
+            Usually called by EWFDAssembler initialization.
+        """
         dist_matrix: Dict[str, Dict[str, Dict[str, float]]] = dict()
         for gene in self.get_genes():
             dist_matrix[gene.get_id()] = gene.get_fas_dict()
         return dist_matrix
-    ##########################################################################
-    ################################### END ##################################
-    ##########################################################################
 
-    ##########################################################################
-    ######### CALLED BY ExpressionAssembler and ConditionAssembler ###########
-    ##########################################################################
 
     @staticmethod
     def from_dict(info_dict: Dict[str, Dict[str, Any]],
                   seq_dict: Dict[str, Dict[str, Any]],
                   fas_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Gene]:
+        """
+        Reconstructs a dictionary of Gene objects from previously serialized library data.
+
+        Args:
+            info_dict (Dict[str, Dict[str, Any]]): Transcript and gene metadata loaded from 'transcript_info.json'.
+            seq_dict (Dict[str, Dict[str, Any]]): Protein sequences loaded from 'sequences.json'.
+            fas_dict (Dict[str, Dict[str, Any]]): FAS similarity matrices loaded via 'fas_index.json'.
+
+        Returns:
+            Dict[str, Gene]: Dictionary mapping gene IDs to Gene instances, fully restored with
+                            their transcripts, proteins, sequences, and FAS scores.
+
+        Purpose:
+            This static method is used to reload a library's gene structure from previously saved files
+            rather than re-parsing the original GTF and FASTA files. It ensures consistency across the
+            ExpressionAssembler, ConditionAssembler, and other modules relying on GeneAssembler state.
+        """
         output_dict: Dict[str, Gene] = dict()
         for key in info_dict.keys():
             new_gene: Gene = Gene()
@@ -299,13 +331,7 @@ class GeneAssembler:
             output_dict[new_gene.get_id()] = new_gene
         return output_dict
 
-    ##########################################################################
-    ################################### END ##################################
-    ##########################################################################
-    
-    ##########################################################################
-    ########################## Unknown Purpose Functions #####################
-    ##########################################################################
+
     def extract_tags(self) -> List[str]: # is this ever used?
         tag_set: Set[str] = set()
         for transcript in self.get_transcripts():
@@ -314,6 +340,9 @@ class GeneAssembler:
         return list(tag_set)
 
     @staticmethod
+    """
+    Saving info in spice library directory.
+    """
     def fas_to_dict_iter(gene_assembly: Dict[str, Gene]) -> Iterator[List[Tuple[str, Dict[str, str], Dict[str, Dict[str, Any]]]]]:
         json_dict: Dict[str, Dict[str, Any]] = dict()
         index_dict: Dict[str, str] = dict()
@@ -334,15 +363,15 @@ class GeneAssembler:
             yield "0" * (9 - len(str(count))) + str(count) + ".json", index_dict, json_dict
 
     @staticmethod
+    """
+    Also used for saving.
+    """
     def to_dict(gene_assembly: Dict[str, Gene], mode: str) -> Dict[str, Dict[str, Any]]:
         json_dict: Dict[str, Dict[str, Any]] = dict()
         for key in gene_assembly.keys():
             json_dict[key] = gene_assembly[key].to_dict(mode)
         return json_dict
 
-    ##########################################################################
-    ################################### END ##################################
-    ##########################################################################
 
 def main() -> None:
     pass

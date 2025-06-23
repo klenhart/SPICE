@@ -128,6 +128,19 @@ class Transcript:
         return self.synonyms
 
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
+        """
+        Populates the attributes of a Transcript object from a dictionary (usually from JSON deserialization).
+
+        Args:
+            input_dict (Dict[str, Any]): Dictionary with keys such as '_id', 'transcript_name', 'biotype',
+                                        'tags', 'tsl', etc., corresponding to transcript attributes.
+
+        Sets:
+            - Basic identifiers (ID, gene ID, taxon ID)
+            - Metadata like transcript name, biotype, tags
+            - Transcript support level (TSL)
+            - Optional: list of synonyms if available
+        """
         self.set_id(input_dict["_id"])
         self.set_name(input_dict["transcript_name"])
         self.set_id_taxon(input_dict["taxon_id"])

@@ -62,6 +62,20 @@ class Protein(Transcript):
         return self.sequence
 
     def from_dict(self, input_dict: Dict[str, Any]) -> None:
+        """
+        Populates the attributes of a Protein object from a dictionary (usually from JSON deserialization).
+
+        Args:
+            input_dict (Dict[str, Any]): Dictionary containing attributes for the protein, such as:
+                                        - '_id', 'sequence', 'transcript_id', 'transcript_name',
+                                        - 'gene_id', 'taxon_id', 'biotype', 'tags', 'tsl', and optionally 'synonyms'.
+
+        Sets:
+            - Core protein metadata and sequence
+            - Links to parent gene and transcript
+            - Biotype, tags, and support level
+            - Optional synonyms list
+        """
         self.set_id(input_dict["_id"])
         self.set_sequence(input_dict["sequence"])
         self.set_feature(input_dict["feature"])

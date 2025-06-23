@@ -185,6 +185,23 @@ class Gene:
                   info_dict: Dict[str, Any],
                   seq_dict: Dict[str, Any],
                   fas_dict: Dict[str, Any]) -> None:
+        """
+        Loads a Gene instance from serialized data and reconstructs all associated transcripts and proteins.
+
+        Args:
+            info_dict (Dict[str, Any]): Metadata dictionary describing the gene and its transcripts.
+            seq_dict (Dict[str, Any]): Dictionary mapping protein transcript IDs to amino acid sequences.
+            fas_dict (Dict[str, Any]): Pairwise FAS scores for all transcripts within the gene.
+
+        Behavior:
+            - Reconstructs the core gene metadata (ID, name, species, chromosome, etc.).
+            - Reconstructs NMD transcripts as Transcript objects.
+            - Reconstructs protein-coding transcripts as Protein objects (with sequences).
+            - Populates the internal FAS similarity matrix.
+
+        Note:
+            Assumes that all required keys are present and that sequences are available for protein-coding entries.
+        """
         self.set_id(info_dict["_id"])
         self.set_name(info_dict["name"])
         self.set_feature(info_dict["feature"])
@@ -204,6 +221,8 @@ class Gene:
                 protein: Protein = Protein()
                 protein.from_dict(transcript_dict)
                 self.add_transcript(protein)
+    
+    
     def to_dict(self, mode: str) -> Dict[str, Any]:
         output: Dict[str, Any]
         output: Dict[str, Any] = dict()
