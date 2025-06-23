@@ -41,7 +41,7 @@ class ExpressionAssembler:
                  origin_path: str = "",
                  normalization: str = "",
                  initial_flag: bool = False,
-                 expression_threshold: float = 1.0):
+                 expression_threshold: float = 0.0):
         # Typically during mode "expression"
         if initial_flag:
             self.library_pass_path: PassPath = library_pass_path
