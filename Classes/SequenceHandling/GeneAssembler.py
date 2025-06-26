@@ -340,10 +340,10 @@ class GeneAssembler:
         return list(tag_set)
 
     @staticmethod
-    """
-    Saving info in spice library directory.
-    """
     def fas_to_dict_iter(gene_assembly: Dict[str, Gene]) -> Iterator[List[Tuple[str, Dict[str, str], Dict[str, Dict[str, Any]]]]]:
+        """
+        Saving info in spice library directory.
+        """
         json_dict: Dict[str, Dict[str, Any]] = dict()
         index_dict: Dict[str, str] = dict()
         count: int = 0
@@ -363,10 +363,10 @@ class GeneAssembler:
             yield "0" * (9 - len(str(count))) + str(count) + ".json", index_dict, json_dict
 
     @staticmethod
-    """
-    Also used for saving.
-    """
     def to_dict(gene_assembly: Dict[str, Gene], mode: str) -> Dict[str, Dict[str, Any]]:
+        """
+        Also used for saving.
+        """
         json_dict: Dict[str, Dict[str, Any]] = dict()
         for key in gene_assembly.keys():
             json_dict[key] = gene_assembly[key].to_dict(mode)
