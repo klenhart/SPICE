@@ -39,14 +39,14 @@ def expression(library_path: str,
                normalization_threshold: float = 1.0,
                suffix: str = ""):
     result: ResultBuddy = ResultBuddy(library_path, outdir, False, suffix)
-    result.import_expression_gtf(gtf_path, expression_name, normalization, normalization_threshold)
-    result.generate_ewfd_file(expression_name)
+    result.import_expression_gtf(gtf_path, expression_name, normalization, normalization_threshold)  # func calls ExpressionAssembler
+    result.generate_ewfd_file(expression_name) # func calls EWFDAssembler
 
 
 def condition(library_path: str, outdir: str, replicate_name_list: List[str], condition_name: str, suffix: str = ""):
     result: ResultBuddy = ResultBuddy(library_path, outdir, False, suffix)
-    result.build_condition(condition_name, replicate_name_list)
-    result.generate_ewfd_file(condition_name, True)
+    result.build_condition(condition_name, replicate_name_list) # func calls ConditionAssembler
+    result.generate_ewfd_file(condition_name, True) # func calls EWFDAssembler
 
 
 def compare(library_path: str, outdir: str, condition_pair: List[str], suffix: str = ""):
@@ -59,12 +59,16 @@ def compare(library_path: str, outdir: str, condition_pair: List[str], suffix: s
         print(str(count) + "/" + str(total))
         if condition_pair[0] != condition_pair[1]:
             comparison: ComparisonAssembler = result.compare(condition_pair)
-            comparison.add_biotype_filter("nonsense_mediated_decay")
-            comparison.add_biotype_filter("non_coding")
-            comparison.add_tag_filter("incomplete")
+            # Should be a user option.
+            # comparison.add_biotype_filter("nonsense_mediated_decay")
+            # Non_coding transcripts are in general not included in the spice library. No need for that filter
+            # comparison.add_biotype_filter("non_coding")
+            # If a protein is incomplete it doesn't have a sequence -> not in library, not in results
+            # Should be a user option
+            # comparison.add_tag_filter("incomplete")
             comparison.compare_genes()
-            comparison.sort_genes_by_rmsd()
-            comparison.delete_gene_below_rmsd(0.01)
+            comparison.sort_genes_by_score()
+            comparison.delete_zero_rmsd_genes()
             comparison.save(result.result_pass_path["comparison"])
 
 
@@ -104,7 +108,8 @@ def main():
                                                     """Normalization method referencing expression entry in gtf file.
                                                     Usually TPM or FPKM. Required for 'expression' mode.""",
                                                     """Any expression entry below this threshold will be set to 0.0.
-                                                    Optional for 'expression' mode. 1.0 by default.""",
+                                                    Optional for 'expression' mode. 0.0 by default. DEPRECATED: Please
+                                                    use default.""",
                                                     """Suffix of the result directory that will either be manipulated
                                                     or created."""
                                                     ])
