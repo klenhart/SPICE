@@ -131,19 +131,14 @@ class ConditionAssembler:
         expression of each transcript for that replicate and calculating the average relative
         expression over all replicates.
 
-        Behavior:
-            The average relative expression value across replicates is calculatd by summing the 
-            relative expression values in each replicate and dividing by the number of replicates.
-
+        New behavior:
+            - For each gene:
+                1. Collect per-replicate expression for each transcript.
+                2. Compute the mean expression per transcript.
+                3. Normalize to get final relative expression.
         Note:
             - Applied on each recreated replicate ExpressionAssembler object of a condition.
               This will be called in ResultBuddy's build_condition()
-            - Currently, the average relative expression is computed by averaging already rounded
-              relative expression values across replicates. This may introduce small
-              inaccuracies due to early rounding and loss of original scale.
-            - A more precise alternative would be to first average the original (normalized) expression values
-              across replicates and then compute the relative expression values from those averaged totals.
-              This would preserve full numeric precision until the final normalization step.
         """
         # Load expression_assembly dict of a replicate belonging to this condition
         expr_assembly: Dict[str, Any] = expression_assembler.expression_assembly
@@ -170,9 +165,7 @@ class ConditionAssembler:
                 # Gene is present in expression_assembly of that replicate as well as transcript
                 elif transcript_id in expr_assembly["data"][gene_id]["ids"]:
                     index: int = expr_assembly["data"][gene_id]["ids"].index(transcript_id)
-                    # Get relative expression value for that transcript/protein
                     rel_expr_value = expr_assembly["data"][gene_id]["expression_rel"][index]
-                    # Get original (normalized) expression value for that transcript/protein
                     expr_value = expr_assembly["data"][gene_id]["expression"][index]
                 # Gene is present in expression_assembly but transcript is not 
                 # This is a deprecated option as ExpressionAssembler's cleanse_assembly() is not used in ResultBuddy
@@ -181,18 +174,25 @@ class ConditionAssembler:
                 else:
                     expr_value = 0.0
                     rel_expr_value = 0.0
-
-                # Append the relative expression of that transcript in this replicate to expression_rel_all
+                # Add relative expression and expression values of replicate to datastructure
                 self.condition_assembly["data"][gene_id]["expression_rel_all"][i].append(rel_expr_value)
-                # Append the original expression value of that transcript in this replicate to expression_rel_all
                 self.condition_assembly["data"][gene_id]["expression_all"][i].append(expr_value)
-                # Calculate the average relative expression value over three replicates
-                rel_expr_all: List[float] = self.condition_assembly["data"][gene_id]["expression_rel_all"][i]
-                rel_expr_sum: float = sum(rel_expr_all)
-                repl_count: int = self.condition_assembly["replicate_count"]
-                rel_expr_avg: float = rel_expr_sum / repl_count
-                # Append to expression_rel_avg (simple list of length = number of transcripts)
-                self.condition_assembly["data"][gene_id]["expression_rel_avg"][i] = rel_expr_avg
+
+            # === NEW: Calculate averaged relative expression vector from averaged absolute expressions ===
+            expr_all = self.condition_assembly["data"][gene_id]["expression_all"]
+            replicate_count = self.condition_assembly["replicate_count"]
+
+            # Average expression values across replicates per transcript
+            expr_means = [sum(vals) / replicate_count for vals in expr_all]
+
+            # Normalize to get average relative expression
+            expr_total = sum(expr_means)
+            if expr_total > 0.0:
+                expr_rel_avg = [v / expr_total for v in expr_means]
+            else:
+                expr_rel_avg = [0.0 for _ in expr_means]
+
+            self.condition_assembly["data"][gene_id]["expression_rel_avg"] = expr_rel_avg
 
     def __load_gene_assembly(self) -> Dict[str, Gene]:
         """
