@@ -7,18 +7,22 @@ Typically gene expression levels are used as a proxy to determine protein compos
 Spice is able to assemble all protein sequences of a species as represented in the ensembl genome browser and quantify the functional similarity between each isoform of each protein coding gene using the Feature Architecture Similarity (FAS) algorithm. FAS makes use of databases that contain protein domains like PFAM or TMHMM.
 
 ## Table of Contents
-* [Requirements](#requirements)
-* [Usage](#usage)
-  * [Initialize the Spice library](#initialize-the-spice-library)
-  * [Annotation](#annotation)
-  * [Generate job arrays](#generate-job-arrays)
-  * [Parse domain output](#parse-domain-output)
-  * [Apply library to expression data](#apply-library-to-expression-data)
-    * [Create result directory](#create-result-directory)
-    * [Import expression data](#import-expression-data)
-    * [Merge samples into condition](#merge-samples-into-condition)
-    * [Compare conditions](#compare-conditions)
-* [Contact](#contact)
+- [Spice](#spice)
+  - [Splicing-based Protein Isoform Comparison Estimator](#splicing-based-protein-isoform-comparison-estimator)
+    - [Applying the FAS algorithm to entire transcript sets and putting differential transcript expression data into a context of function.](#applying-the-fas-algorithm-to-entire-transcript-sets-and-putting-differential-transcript-expression-data-into-a-context-of-function)
+  - [Table of Contents](#table-of-contents)
+  - [Requirements](#requirements)
+  - [Usage](#usage)
+    - [Initialize the Spice library](#initialize-the-spice-library)
+    - [Annotation](#annotation)
+    - [Generate job arrays](#generate-job-arrays)
+    - [Parse domain output](#parse-domain-output)
+    - [Apply library to expression data](#apply-library-to-expression-data)
+      - [Create result directory](#create-result-directory)
+      - [Import expression data](#import-expression-data)
+      - [Merge samples into condition](#merge-samples-into-condition)
+      - [Compare conditions](#compare-conditions)
+  - [Contact](#contact)
 
 ## Requirements
 
@@ -158,11 +162,12 @@ spice_result.py \
 -n sample1 \
 -g /path/to/expression.gtf \
 -N FPKM \
--t 1.0
+-t 0.0
 ```
 
 The samples will automatically be assumed as single-replicate conditions.
 
+**IMPORTANT**: The -t argument is deprecated, please use -t 0.0.
 #### Merge samples into condition
 
 To merge several already imported samples into a condition use this command:
