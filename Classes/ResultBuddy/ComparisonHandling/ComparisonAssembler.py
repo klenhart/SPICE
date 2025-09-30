@@ -21,15 +21,12 @@
 #######################################################################
 
 from typing import Dict, Any, List, Set
-import itertools
 import hashlib
 import json
 import math
 import os
 import copy
 import numpy as np
-from numpy.linalg import norm
-from numpy import dot
 from scipy.spatial.distance import jensenshannon
 from Classes.PassPath.PassPath import PassPath
 from Classes.ResultBuddy.EWFDHandling.EWFDAssembler import EWFDAssembler
