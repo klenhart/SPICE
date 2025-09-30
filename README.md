@@ -46,8 +46,7 @@ There's now a pipeline available for generating the library. Please visit https:
 To initialize a result directory from the Spice library execute this script:
 
 ```bash
-python \
-spice_result.py \
+python -m spice_result \
 -m setup \
 -l /path/to/spice_lib_homo_sapiens_107/ \
 -o /path/to/result/parent/directory/
