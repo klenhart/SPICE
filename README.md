@@ -1,18 +1,9 @@
-# Spice
-## Splicing-based Protein Isoform Comparison Estimator
-### Applying the [FAS](https://github.com/BIONF/FAS) algorithm to entire transcript sets and putting differential transcript expression data into a context of function.
-
-Typically gene expression levels are used as a proxy to determine protein composition and thereby functional diversity of cells or tissue samples. This disregards the fact that alternative Splicing (AS) of pre-mRNA can disrupt, delete or insert entire protein domains and thereby change the corresponding proteins functional effect. This means that using only gene expression levels as a proxy for functional diversity is not sufficient. To gain further insight about the functional diversity it is necessary to characterize the function of a protein isoform by relating it to it's domain content. Only a small set of proteins undergo experimental characterization, which is why the remaining proteins must be assessed using bioinformatics tools.
-
-Spice is able to assemble all protein sequences of a species as represented in the ensembl genome browser and quantify the functional similarity between each isoform of each protein coding gene using the Feature Architecture Similarity (FAS) algorithm. FAS makes use of databases that contain protein domains like PFAM or TMHMM.
-
-## Table of Contents
-- [Spice](#spice)
-  - [Splicing-based Protein Isoform Comparison Estimator](#splicing-based-protein-isoform-comparison-estimator)
-    - [Applying the FAS algorithm to entire transcript sets and putting differential transcript expression data into a context of function.](#applying-the-fas-algorithm-to-entire-transcript-sets-and-putting-differential-transcript-expression-data-into-a-context-of-function)
-  - [Table of Contents](#table-of-contents)
+This is an updated version of the SPICE suite, originally implemented by Christian Blümel (https://github.com/chrisbluemel/SPICE/tree/main). 
+# Table of Contents
+- [Table of Contents](#table-of-contents)
   - [Installation](#installation)
     - [Initialize the Spice library](#initialize-the-spice-library)
+    - [Running the results pipeline](#running-the-results-pipeline)
       - [Create result directory](#create-result-directory)
       - [Import expression data](#import-expression-data)
       - [Merge samples into condition](#merge-samples-into-condition)
@@ -50,6 +41,7 @@ Without this step, you would need to either:
 
 There's now a pipeline available for generating the library. Please visit https://github.com/felixhaidle/spice-nf.
 
+### Running the results pipeline
 
 #### Create result directory
 
