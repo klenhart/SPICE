@@ -1,14 +1,12 @@
 This is an updated version of the SPICE suite, originally implemented by Christian Blümel (https://github.com/chrisbluemel/SPICE/tree/main). 
-# Table of Contents
-- [Table of Contents](#table-of-contents)
-  - [Installation](#installation)
-    - [Initialize the Spice library](#initialize-the-spice-library)
-    - [Running the results pipeline](#running-the-results-pipeline)
-      - [Create result directory](#create-result-directory)
-      - [Import expression data](#import-expression-data)
-      - [Merge samples into condition](#merge-samples-into-condition)
-      - [Compare conditions](#compare-conditions)
-  - [Contact](#contact)
+- [Installation](#installation)
+- [Initialize the Spice library](#initialize-the-spice-library)
+- [Running the Results Pipeline](#running-the-results-pipeline)
+  - [Create result directory](#create-result-directory)
+  - [Import expression data](#import-expression-data)
+  - [Merge samples into condition](#merge-samples-into-condition)
+  - [Compare conditions](#compare-conditions)
+- [Contact](#contact)
 
 ## Installation
 
@@ -37,13 +35,13 @@ Without this step, you would need to either:
 - set `PYTHONPATH=/path/to/SPICE` manually when running commands.
 
 
-### Initialize the Spice library
+## Initialize the Spice library
 
 There's now a pipeline available for generating the library. Please visit https://github.com/felixhaidle/spice-nf.
 
-### Running the results pipeline
+## Running the Results Pipeline
 
-#### Create result directory
+### Create result directory
 
 To initialize a result directory from the Spice library execute this script:
 
@@ -55,7 +53,7 @@ spice_result.py \
 -o /path/to/result/parent/directory/
 ```
 
-#### Import expression data
+### Import expression data
 To import expression gtf files use this command:
 
 ```bash
@@ -71,8 +69,8 @@ python -m spice_result \
 
 The samples will automatically be assumed as single-replicate conditions.
 
-**IMPORTANT**: The --threshold argument is deprecated, please use --threshold 0.0.
-#### Merge samples into condition
+**IMPORTANT**: The `--threshold` argument is deprecated, please use `--threshold 0.0`.
+### Merge samples into condition
 
 To merge several already imported samples into a condition use this command:
 
@@ -85,12 +83,12 @@ python -m spice_result \
 --replicates sample1 sample2 sample3
 ```
 
-#### Compare conditions
+### Compare conditions
 
 To compare several already generated conditions use this command:
 
 ```bash
-python -m spice_result.py \
+python -m spice_result \
 --mode compare \
 --library /path/to/spice_lib_homo_sapiens_107_1ee \
 --outdir /path/to/parent/directory/of/result \
@@ -99,5 +97,5 @@ python -m spice_result.py \
 
 ## Contact
 
-Christian Blümel christian.bluemel@stud.uni-frankfurt.de
-Katharina Lenhart k.lenhart@outlook.com
+- Christian Blümel christian.bluemel@stud.uni-frankfurt.de
+- Katharina Lenhart k.lenhart@outlook.com
