@@ -11,7 +11,7 @@ Spice is able to assemble all protein sequences of a species as represented in t
   - [Splicing-based Protein Isoform Comparison Estimator](#splicing-based-protein-isoform-comparison-estimator)
     - [Applying the FAS algorithm to entire transcript sets and putting differential transcript expression data into a context of function.](#applying-the-fas-algorithm-to-entire-transcript-sets-and-putting-differential-transcript-expression-data-into-a-context-of-function)
   - [Table of Contents](#table-of-contents)
-  - [Usage](#usage)
+  - [Installation](#installation)
     - [Initialize the Spice library](#initialize-the-spice-library)
       - [Create result directory](#create-result-directory)
       - [Import expression data](#import-expression-data)
@@ -19,11 +19,11 @@ Spice is able to assemble all protein sequences of a species as represented in t
       - [Compare conditions](#compare-conditions)
   - [Contact](#contact)
 
-## Usage
+## Installation
 
 In order to simply get all Spice scripts in this GitHub repository use this set of commands in the terminal:
 
-```
+```bash
 # Go to the folder where SPICE should be downloaded
 cd your/src/folder
 git clone https://github.com/klenhart/SPICE
@@ -33,17 +33,18 @@ cd SPICE
 conda create -n spice_env
 conda activate spice_env
 pip install -e .
+
 ```
-If you want to be able to run SPICE modules from any working directory (as long as the spice_env environment is active), you can add a path configuration file (.pth) inside your conda environment:
-´´´
+If you want to be able to run SPICE modules from any working directory (as long as the `spice_env` environment is active), you can add a path configuration file (.pth) inside your conda environment:
+```bash
 echo "/path/to/SPICE" > /home/user/miniconda3/envs/spice_env/lib/python3.13/site-packages/spice.pth
-´´´
-This tells Python to always include your local SPICE folder in its import path whenever spice_env is active.
+```
+
+This tells Python to always include your local SPICE folder in its import path whenever `spice_env` is active.
 Without this step, you would need to either:
 - run scripts from inside the SPICE folder, or
-- set PYTHONPATH=/path/to/SPICE manually when running commands.
+- set `PYTHONPATH=/path/to/SPICE` manually when running commands.
 
-**IMPORTANT**: Running these scripts without access to a processing cluster will be more or less impossible. You can try to calculate 200k FAS comparisons on your personal computer, but it may take a very long time. Also be aware that the helper scripts to generate job arrays are only capable of generating SLURM job arrays.
 
 ### Initialize the Spice library
 
@@ -54,7 +55,7 @@ There's now a pipeline available for generating the library. Please visit https:
 
 To initialize a result directory from the Spice library execute this script:
 
-```
+```bash
 python \
 spice_result.py \
 -m setup \
@@ -65,7 +66,7 @@ spice_result.py \
 #### Import expression data
 To import expression gtf files use this command:
 
-```
+```bash
 python -m spice_result \
 --mode expression \
 --library /path/to/spice_lib_homo_sapiens_107_1ee \
@@ -83,7 +84,7 @@ The samples will automatically be assumed as single-replicate conditions.
 
 To merge several already imported samples into a condition use this command:
 
-```
+```bash
 python -m spice_result \
 --mode condition \
 --library /path/to/spice_lib_homo_sapiens_107_1ee \
@@ -96,7 +97,7 @@ python -m spice_result \
 
 To compare several already generated conditions use this command:
 
-```
+```bash
 python -m spice_result.py \
 --mode compare \
 --library /path/to/spice_lib_homo_sapiens_107_1ee \
