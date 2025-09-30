@@ -50,12 +50,14 @@ class ReduxArgParse:
                                          action=self.parse_actions[i],
                                          help=self.parse_help[i])
             else:
+                default_value = None if self.parse_nargs[i] in ["?", "*"] else argparse.SUPPRESS
                 self.parser.add_argument(shortcut_tag,
-                                         self.parse_tags[i],
-                                         type=self.parse_types[i],
-                                         action=self.parse_actions[i],
-                                         nargs=self.parse_nargs[i],
-                                         help=self.parse_help[i])
+                                        self.parse_tags[i],
+                                        type=self.parse_types[i],
+                                        action=self.parse_actions[i],
+                                        nargs=self.parse_nargs[i],
+                                        default=default_value,
+                                        help=self.parse_help[i])
 
     def execute(self):
         args: Any = self.parser.parse_args()

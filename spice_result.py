@@ -137,7 +137,7 @@ def main():
             Aborting.""")
         else:
             if argument_dict["threshold"] is None:
-                argument_dict["threshold"] = 1.0
+                argument_dict["threshold"] = 0.0
             expression(argument_dict["library"][0],
                        argument_dict["outdir"][0],
                        argument_dict["gtf"],
