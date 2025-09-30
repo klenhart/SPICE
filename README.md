@@ -11,132 +11,44 @@ Spice is able to assemble all protein sequences of a species as represented in t
   - [Splicing-based Protein Isoform Comparison Estimator](#splicing-based-protein-isoform-comparison-estimator)
     - [Applying the FAS algorithm to entire transcript sets and putting differential transcript expression data into a context of function.](#applying-the-fas-algorithm-to-entire-transcript-sets-and-putting-differential-transcript-expression-data-into-a-context-of-function)
   - [Table of Contents](#table-of-contents)
-  - [Requirements](#requirements)
   - [Usage](#usage)
     - [Initialize the Spice library](#initialize-the-spice-library)
-    - [Annotation](#annotation)
-    - [Generate job arrays](#generate-job-arrays)
-    - [Parse domain output](#parse-domain-output)
-    - [Apply library to expression data](#apply-library-to-expression-data)
       - [Create result directory](#create-result-directory)
       - [Import expression data](#import-expression-data)
       - [Merge samples into condition](#merge-samples-into-condition)
       - [Compare conditions](#compare-conditions)
   - [Contact](#contact)
 
-## Requirements
-
-Spice has been implemented for python 3.7. To run the scripts the following python modules are required:
-
-```
-greedyFAS
-pyranges
-requests
-json
-argparse
-itertools
-plotly
-pathlib
-tqdm
-numpy
-matplotlib
-scipy
-yaml
-pandas
-gzip
-shutil
-```
-
-Since Spice makes use of the FAS algorithm, it should be installed beforehand. Check out the [FAS](https://github.com/BIONF/FAS) repository for further instruction on setting it up.
-
 ## Usage
 
 In order to simply get all Spice scripts in this GitHub repository use this set of commands in the terminal:
 
 ```
-mkdir SPICE
+# Go to the folder where SPICE should be downloaded
+cd your/src/folder
+git clone https://github.com/klenhart/SPICE
+# Go to SPICE folder
 cd SPICE
-git clone https://github.com/chrisbluemel/SPICE
+# Create Conda Environment
+conda create -n spice_env
+conda activate spice_env
+pip install -e .
 ```
+If you want to be able to run SPICE modules from any working directory (as long as the spice_env environment is active), you can add a path configuration file (.pth) inside your conda environment:
+´´´
+echo "/path/to/SPICE" > /home/user/miniconda3/envs/spice_env/lib/python3.13/site-packages/spice.pth
+´´´
+This tells Python to always include your local SPICE folder in its import path whenever spice_env is active.
+Without this step, you would need to either:
+- run scripts from inside the SPICE folder, or
+- set PYTHONPATH=/path/to/SPICE manually when running commands.
 
 **IMPORTANT**: Running these scripts without access to a processing cluster will be more or less impossible. You can try to calculate 200k FAS comparisons on your personal computer, but it may take a very long time. Also be aware that the helper scripts to generate job arrays are only capable of generating SLURM job arrays.
 
 ### Initialize the Spice library
 
-To initialize the library, use this command:
+There's now a pipeline available for generating the library. Please visit https://github.com/felixhaidle/spice-nf.
 
-```
-python spice_library.py \
---species human \
---release 107 \
---outdir parent/directory/of/the/library
-```
-
-There is further arguments that can be passed to spice_library.py. Descriptions can be accessed by using the --help argument.
-
-### Annotation
-
-After having initialized the library, we need to annotate them. This example was written when the most recent ensembl release was 107. You could have any higher release number. (Greetings from the past!) Run this command: 
-
-```
-fas.doAnno \
--i /path/to/spice_lib_homo_sapiens_107_1ee/transcript_data/transcript_set.fasta \
--o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/ \
--t /path/to/annoTools/ \
--n annotations \
---cpus 16 \
-&& \
-python \
-get_domain_importance.py \
--i /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/annotations.json \
--o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/ \
-&& \
-python \
-restructure_anno.py \
--i /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/annotations.json \
--o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/
-```
-
-You can use as many or as few CPUs as you have access to, but remember that annotation takes a lot of time and it will take longer, if you have less workers.
-
-**IMPORTANT** The output name under the argument -n must be annotations.
-
-### Generate job arrays
-
-Now that all sequences are collected and annotated we can do the FAS Scoring. It is recommended to run fas.run once per gene and not all genes at once. Create a SLURM job array that references the gene_ids.txt, which was created in the directory /parent/directory/of/the/library/FAS_library/homo_sapiens/release-107/. This script will generate all necessary SLURM job-arrays.
-
-```
-python \
-FASJobAssistant.py \
---Lib_dir /path/to/spice_lib_homo_sapiens_107_1ee/ \
---memory 2 \
---partitions partition1 partition2 etc \
---dir_fas /path/to/FAS/bin/ \
---fas_mode run \
---outdir /path/to/directory/that/shall/contain/job/arrays/
-```
-
-Run all of these job-arrays.
-
-### Parse domain output
-
-Once all FAS runs have finished which can take a few days (mostly due to a few very large proteins like TITIN) only one last script needs to be run:
-
-```
-python \
-parse_domain_out.py \
--f /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/forward.domains \
--r /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/reverse.domains \
--m /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/annotations_map.json \
--o /path/to/spice_lib_homo_sapiens_107_1ee/fas_data/
-```
-
-
-### Apply library to expression data
-
-The library is now finished. Now we want to make use of it. Grand-Trumpet uses the FAS scores for all protein coding   and nonsense-mediated-decay isoforms of a gene and combines them with the expression levels of each isoform to generate a Expression Weighted Functional Disturbance (EWFD) value for each isoform. The EWFD assumes how much of the functional diversity of the gene does not represented transcripts functional effect. 
-
-To calculate the EWFD scores for any number of samples you need to create two text files. One that contains the names of the samples (one name per row) and one that contains the corresponding paths to the expression GTF files.
 
 #### Create result directory
 
@@ -154,32 +66,30 @@ spice_result.py \
 To import expression gtf files use this command:
 
 ```
-python \
-spice_result.py \
--m expression \
--l /path/to/spice_lib_homo_sapiens_107_1ee \
--o /path/to/parent/directory/of/result \
--n sample1 \
--g /path/to/expression.gtf \
--N FPKM \
--t 0.0
+python -m spice_result \
+--mode expression \
+--library /path/to/spice_lib_homo_sapiens_107_1ee \
+--outdir /path/to/parent/directory/of/result \
+--name sample1 \
+--gtf /path/to/expression.gtf \
+--Normalization FPKM \
+--threshold 0.0
 ```
 
 The samples will automatically be assumed as single-replicate conditions.
 
-**IMPORTANT**: The -t argument is deprecated, please use -t 0.0.
+**IMPORTANT**: The --threshold argument is deprecated, please use --threshold 0.0.
 #### Merge samples into condition
 
 To merge several already imported samples into a condition use this command:
 
 ```
-python \
-spice_result.py \
--m condition \
--l /path/to/spice_lib_homo_sapiens_107_1ee \
--o /path/to/parent/directory/of/result \
--n conditionName \
--r sample1 sample2 sample3
+python -m spice_result \
+--mode condition \
+--library /path/to/spice_lib_homo_sapiens_107_1ee \
+--outdir /path/to/parent/directory/of/result \
+--name conditionName \
+--replicates sample1 sample2 sample3
 ```
 
 #### Compare conditions
@@ -187,14 +97,14 @@ spice_result.py \
 To compare several already generated conditions use this command:
 
 ```
-python \
-spice_result.py \
--m compare \
--l /path/to/spice_lib_homo_sapiens_107_1ee \
--o /path/to/parent/directory/of/result \
--c condition1;condition2 condition1;condition3 condition2;condition3
+python -m spice_result.py \
+--mode compare \
+--library /path/to/spice_lib_homo_sapiens_107_1ee \
+--outdir /path/to/parent/directory/of/result \
+--compared condition1;condition2 condition1;condition3 condition2;condition3
 ```
 
 ## Contact
 
 Christian Blümel christian.bluemel@stud.uni-frankfurt.de
+Katharina Lenhart k.lenhart@outlook.com
