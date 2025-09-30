@@ -21,11 +21,15 @@
 #######################################################################
 
 from typing import Dict, Any, List, Set
+import itertools
 import hashlib
 import json
 import math
 import os
+import copy
 import numpy as np
+from numpy.linalg import norm
+from numpy import dot
 from scipy.spatial.distance import jensenshannon
 from Classes.PassPath.PassPath import PassPath
 from Classes.ResultBuddy.EWFDHandling.EWFDAssembler import EWFDAssembler
@@ -33,65 +37,113 @@ from Classes.ResultBuddy.EWFDHandling.EWFDAssembler import EWFDAssembler
 
 class ComparisonGene:
 
+    import copy
+from typing import Any, Dict, List
+import numpy as np
+
+class ComparisonGene:
     def __init__(self, gene_id: str,
                  data_dict_1: Dict[str, List[Any]],
                  data_dict_2: Dict[str, List[Any]],
                  biotype_filter: List[str], tag_filter: List[str],
                  fas_adjacency_matrix: Dict[str, Dict[str, float]]):
         self.gene_id = gene_id
-        # Euclidean distance as absolute change measure
-        self.edist: float = 0.0
-        # rmsd and rmsd_max used for calculation of maximum change possible for that gene (rmsd_rel)
+
+        # --- metrics / outputs ---
         self.rmsd: float = 0.0
         self.rmsd_max: float = 0.0
         self.rmsd_rel: float = 0.0
-        # MPD as measure for isoform diversity for included transcripts given expression data (mpd_expr)
-        # It is the diversity actually used
+        # self.cosine_diss: float = 0.0
+
         self.mpd_included: float = 0.0
         self.sd_included: float = 0.0
-        # MPD as measure for isoform diversity for all transcripts of that gene that are in the
-        # library (mpd_lib)
-        self.mpd_all: float = 0.0
-        self.sd_all: float = 0.0
-        # JSD as emeasure for strength of change
-        self.expressed_div_ratio: float = 0.0
+        # self.mpd_all: float = 0.0
+        # self.sd_all: float = 0.0
+
+        # self.expressed_div_ratio: float = 0.0
         self.jsd: float = 0.0
-        self.score: float = 0.0
+        # self.score: float = 0.0
         self.num_considered_transcripts: int = 0
-        if not ComparisonGene.check_gene_not_expressed(data_dict_1, data_dict_2):
 
-            # Remove transcripts with zero expression in both conditions
-            data_cond1, data_cond2 = ComparisonGene.indices_expressed_in_one(data_dict_1,
-                                                                            data_dict_2)
-            # Remove dissimiarity transcripts which show zero expressioin in both conditions
-            # from the FAS adjacency matrix -> excludes these entries for rmsd_max calculation
-            fas_data_updated = ComparisonGene.update_fas_adjacency_matrix(data_cond1, fas_adjacency_matrix)
+        # If no expression in both conditions, keep defaults and return.
+        if ComparisonGene.check_gene_not_expressed(data_dict_1, data_dict_2):
+            return
 
-            # Extract ewfd vectors calculated using the average relative expression
-            # calculated across replicates
-            ewfd_1 : List[float] = data_cond1["ewfd_avg_rel_expr"]
-            ewfd_2 : List[float] = data_cond2["ewfd_avg_rel_expr"]
+        # ---------------------------------------------------------------------
+        # 1) Filter to transcripts expressed in at least one condition
+        #    (this function should also apply any biotype/tag filters upstream)
+        #    It must return dicts that already contain ONLY the kept transcripts.
+        # ---------------------------------------------------------------------
+        data_cond1, data_cond2 = ComparisonGene.indices_expressed_in_one(
+            data_dict_1, data_dict_2
+        )  # filtered dicts
 
-            avg_rel_expr_v1 : List[float] = data_cond1["expression_rel_avg"]
-            avg_rel_expr_v2 : List[float] = data_cond2["expression_rel_avg"]
+        # Aligned IDs and expression vectors AFTER filtering
+        ids_used: List[str] = list(data_cond1["ids"])
+        expr1_used: List[float] = list(data_cond1["expression_rel_avg"])
+        expr2_used: List[float] = list(data_cond2["expression_rel_avg"])
 
-            inverted_fas_dict = ComparisonGene.invert_fas_adjacency_matrix(fas_adjacency_matrix)
-            updated_inverted_fas = ComparisonGene.invert_fas_adjacency_matrix(fas_data_updated)
-            self.num_considered_transcripts: int = len(ewfd_1)
+        # Safety: both filtered lists must match and be same length
+        assert ids_used == list(data_cond2["ids"]), "Filtered IDs must match across conditions."
+        assert len(ids_used) == len(expr1_used) == len(expr2_used), "Lengths must align after filtering."
 
-            self.calc_rmsd(ewfd_1, ewfd_2)
-            self.calc_max_rmsd(updated_inverted_fas, avg_rel_expr_v1, avg_rel_expr_v2)
-            self.rmsd_rel = self.rmsd / self.rmsd_max if self.rmsd_max > 0 else 0.0
-            self.calc_euclidean(self.num_considered_transcripts)
-            self.calc_jsd(avg_rel_expr_v1, avg_rel_expr_v2)
-            self.mpd_included, self.sd_included = ComparisonGene.estimate_diversity(updated_inverted_fas)
-            self.mpd_all, self.sd_all = ComparisonGene.estimate_diversity(inverted_fas_dict)
-            self.expressed_div_ratio = self.mpd_included/self.mpd_all if self.mpd_all > 0 else 0.0
-            self.score = self.rmsd_rel * self.mpd_included
+        self.num_considered_transcripts = len(ids_used)
+
+        # ---------------------------------------------------------------------
+        # 2) Build FAS graph for USED transcripts only (for rmsd_max & mpd_included)
+        #    Keep also the full inverted graph for mpd_all.
+        # ---------------------------------------------------------------------
+        fas_used = ComparisonGene.update_fas_adjacency_matrix(
+            ids_used, copy.deepcopy(fas_adjacency_matrix)
+        )
+        fas_used_inv = ComparisonGene.invert_fas_adjacency_matrix(fas_used)
+
+        # fas_full_inv = ComparisonGene.invert_fas_adjacency_matrix(fas_adjacency_matrix)
+
+        # Sanity: graph node set matches ids_used
+        assert set(fas_used_inv.keys()) == set(ids_used), "FAS(used) must match filtered IDs."
+
+        # ---------------------------------------------------------------------
+        # 3) Recompute EWFD vectors for the SAME filtered set (order must match ids_used)
+        # ---------------------------------------------------------------------
+        # data_cond1 / data_cond2 are already filtered; recalculate_ewfd should respect that order
+        ewfd_1: List[float] = ComparisonGene.recalculate_ewfd(data_cond1, fas_adjacency_matrix)
+        ewfd_2: List[float] = ComparisonGene.recalculate_ewfd(data_cond2, fas_adjacency_matrix)
+
+        assert len(ewfd_1) == len(ewfd_2) == len(ids_used), "EWFD and IDs must have same length."
+
+        # ---------------------------------------------------------------------
+        # 4) Raw RMSD, RMSD_max (on USED set only), RMSD_rel
+        # ---------------------------------------------------------------------
+        self.rmsd = ComparisonGene.calc_rmsd(ewfd_1, ewfd_2)
+
+        # IMPORTANT: pass ONLY filtered expressions/IDs + filtered FAS
+        self.calc_max_rmsd(fas_used_inv, expr1_used, expr2_used, ids_used)
+        self.rmsd_rel = self.rmsd / self.rmsd_max if self.rmsd_max > 0 else 0.0
+
+        # Cosine dissimilarity (on EWFD for the filtered set)
+        # self.cosine_diss = ComparisonGene.calc_inverted_cosine_similarity(ewfd_1, ewfd_2)
+
+        # ---------------------------------------------------------------------
+        # JSD on filtered & renormalized relative expression vectors
+        # (safe if sums changed slightly after trimming)
+        # ---------------------------------------------------------------------
+        p = np.asarray(expr1_used, dtype=float)
+        q = np.asarray(expr2_used, dtype=float)
+        p = p / p.sum() if p.sum() > 0 else p
+        q = q / q.sum() if q.sum() > 0 else q
+        self.jsd = ComparisonGene.calc_jsd(p.tolist(), q.tolist())
+
+        # ---------------------------------------------------------------------
+        # 6) Diversity (MPD) metrics
+        #    - included: only used transcripts
+        #    - all:      all transcripts in the library for this gene
+        # ---------------------------------------------------------------------
+        self.mpd_included, self.sd_included = ComparisonGene.estimate_diversity(fas_used_inv)
+        # self.mpd_all, self.sd_all = ComparisonGene.estimate_diversity(fas_full_inv)
 
     @staticmethod
-    def update_fas_adjacency_matrix(data_dict_1, fas_adjacency_matrix):
-        ids_to_keep = set(data_dict_1["ids"])
+    def update_fas_adjacency_matrix(ids_to_keep, fas_adjacency_matrix):
         for outer_transcript in list(fas_adjacency_matrix.keys()):
             if outer_transcript not in ids_to_keep:
                 for inner_transcript in list(fas_adjacency_matrix.keys()):
@@ -142,52 +194,52 @@ class ComparisonGene:
         }
 
     @staticmethod
-    def dict_to_matrix(inverted_fas_dict: Dict[str, Dict[str, float]]) -> np.ndarray:
-        """Convert nested dict of inverted FAS adjacency matrix to numpy matrix."""
-        keys_outer = list(inverted_fas_dict.keys()) # row names 
-        keys_inner = list(next(iter(inverted_fas_dict.values())).keys()) # column names
-        matrix = np.array([[inverted_fas_dict[row][col] for col in keys_inner] for row in keys_outer])
-        return matrix
-    
+    def dict_to_matrix(inverted_fas_dict: Dict[str, Dict[str, float]], transcript_order: List[str]) -> np.ndarray:
+        return np.array([
+            [inverted_fas_dict[row][col] for col in transcript_order]
+            for row in transcript_order
+        ])
 
-    def calc_rmsd(self, ewfd_1: List[float], ewfd_2: List[float]):
+    @staticmethod
+    def calc_rmsd(ewfd_1: List[float], ewfd_2: List[float]):
         squared_delta_list = [(x - y)**2 for x, y in zip(ewfd_1, ewfd_2)]
         if len(ewfd_1) == 0:
-            self.rmsd = 0.0
+            rmsd = 0.0
         else:
-            self.rmsd = math.sqrt(sum(squared_delta_list) / len(ewfd_1))
+            rmsd = math.sqrt(sum(squared_delta_list) / len(ewfd_1))
+        return rmsd
 
-    def calc_euclidean(self, num_transcripts):
-        self.edist = self.rmsd * math.sqrt(num_transcripts)
-
-    
     def calc_max_rmsd(self,
-                      inverted_fas: Dict[str, Dict[str, float]],
-                      avg_rel_expr_v1: List[float], 
-                      avg_rel_expr_v2: List[float]):
+                inverted_fas: Dict[str, Dict[str, float]],
+                avg_rel_expr_v1: List[float], 
+                avg_rel_expr_v2: List[float],
+                transcript_order: List[str]):
         """
-        Note:
-            RMSD_max is the maximum possible RMSD that could result from v,
-            if v were perfectly aligned with the most "sensitive" or
-            "amplifying" direction defined by the dissimilarity structure in M.
-        """
+        Calculates the theoretical maximum RMSD based on the change vector v and
+        the largest eigenvalue of the dissimilarity-induced metric M.
 
-        # Transform average relative expression vectors into numpy arrays
+        Parameters:
+            inverted_fas (Dict[str, Dict[str, float]]): Nested dict (dissimilarity matrix)
+                                                        where values are 1 - FAS scores.
+            avg_rel_expr_v1 (List[float]): Relative expression vector for condition 1.
+            avg_rel_expr_v2 (List[float]): Relative expression vector for condition 2.
+            transcript_order (List[str]): Ordered list of transcript IDs, ensures alignment
+                                        between expression vectors and dissimilarity matrix.
+        """
         a = np.array(avg_rel_expr_v1)
         b = np.array(avg_rel_expr_v2)
-        # Calculate v as the change vector (a-b) in relative
-        # expression between both conditions
-        v = a - b
+        v = a - b  # Change vector
 
-        diss_matrix = ComparisonGene.dict_to_matrix(inverted_fas)
-        # M is dissimilarity-induced metric, representing how pairwise
-        # expression differences are weighted according to FA dissimilarity
-        M = diss_matrix.T @ diss_matrix 
-        # Compute the maximum eigenvalue of M
+        # Ensure matrix is aligned to transcript order
+        diss_matrix = ComparisonGene.dict_to_matrix(inverted_fas, transcript_order)
+
+        # Compute M = Dᵗ D
+        M = diss_matrix.T @ diss_matrix
+
+        # Eigenvalue decomposition (symmetric matrix)
         lambda_max = np.max(np.linalg.eigvalsh(M))
 
         n = len(v)
-        # Calculate squared norm of vector v (||v||**2) -> strength of change
         norm_v_squared = np.linalg.norm(v)**2
         self.rmsd_max = np.sqrt((1 / n) * lambda_max * norm_v_squared) if n > 0 else 0.0
 
@@ -214,36 +266,23 @@ class ComparisonGene:
 
         return mean, sd
 
-    def calc_jsd(self, avg_rel_expr_v1: List[float], avg_rel_expr_v2: List[float]):
-        """
-        Calculates Jensen-Shannon distance between two relative expression vectors.
-        Stores the result in self.jsd.
+    @staticmethod
+    def calc_jsd(vec1: List[float], vec2: List[float]) -> float:
+        a = ComparisonAssembler.normalize(vec1)
+        b = ComparisonAssembler.normalize(vec2)
+        if a is None or b is None:
+            return 1.0  # Max distance
+        return jensenshannon(a, b, base=2.0)
 
-        Both input vectors should be non-negative and sum to 1 (i.e., relative expression).
-        If they don't, the function will normalize them automatically.
-        """
-        a = np.array(avg_rel_expr_v1, dtype=np.float64)
-        b = np.array(avg_rel_expr_v2, dtype=np.float64)
+    # def __str__(self):
+    #     output: str = ",".join([self.gene_id, str(self.rmsd)])
+    #     return output
 
-        # Normalize to ensure valid probability distributions -> due to floating point errors
-        # might not be exactly 1
-        if a.sum() != 0:
-            a /= a.sum()
-        if b.sum() != 0:
-            b /= b.sum()
-
-        # Compute JSD using scipy (returns distance, not divergence)
-        self.jsd = jensenshannon(a, b, base=2)
-
-    def __str__(self):
-        output: str = ",".join([self.gene_id, str(self.rmsd)])
-        return output
-
-    # @staticmethod
-    # def recalculate_ewfd(data_dict: Dict[str, List[Any]], fas_adjacency_matrix: Dict[str, Dict[str, float]]):
-    #     return EWFDAssembler.calculate_ewfd(fas_adjacency_matrix,
-    #                                         data_dict["expression_rel_avg"],
-    #                                         data_dict["ids"])
+    @staticmethod
+    def recalculate_ewfd(data_dict: Dict[str, List[Any]], fas_adjacency_matrix: Dict[str, Dict[str, float]]):
+        return EWFDAssembler.calculate_ewfd(fas_adjacency_matrix,
+                                            data_dict["expression_rel_avg"],
+                                            data_dict["ids"])
 
     # @staticmethod
     # def apply_biotype_filter(data_dict: Dict[str, List[Any]], biotype_filter: List[str]):
@@ -367,6 +406,12 @@ class ComparisonAssembler:
         """
         self.tag_filter.append(filter_out)
         self.filter_hash = md5_hash("".join(self.biotype_filter + self.tag_filter), 6)
+    
+    @staticmethod
+    def normalize(vec):
+        vec = np.array(vec, dtype=np.float64)
+        return vec / vec.sum() if vec.sum() > 0 else None
+
 
     def compare_genes(self):
         # Reads ewfd/conditions data for condition 1
@@ -375,6 +420,8 @@ class ComparisonAssembler:
         # Reads ewfd/conditions data for condition 2
         with open(self.condition_2_path, "r") as f_2:
             data_cond_2: Dict[str, Dict[str, List[Any]]] = json.load(f_2)["data"]
+        self.replicate_consistency_1 = self.compute_replicate_consistency(data_cond_1)
+        self.replicate_consistency_2 = self.compute_replicate_consistency(data_cond_2)
         # Loops over each gene id and loads FAS score data. Creates ComparisonGene object
         for gene_id in data_cond_1.keys():
             with open(os.path.join(self.fas_scores_directory, self.fas_index[gene_id]), "r") as f:
@@ -384,8 +431,10 @@ class ComparisonAssembler:
                                                             data_cond_2[gene_id],
                                                             self.biotype_filter,
                                                             self.tag_filter,
-                                                            fas_adjacency_matrix))
-
+                                                            fas_adjacency_matrix,
+                                                            replicate_consistency_1=self.replicate_consistency_1,
+                                                            replicate_consistency_2=self.replicate_consistency_2))
+    
     def sort_genes_by_score(self):
         self.comparison_gene_list.sort(key=lambda g: g.score, reverse=True)
 
@@ -400,18 +449,16 @@ class ComparisonAssembler:
 
     def __str__(self):
         headers = [
-            "gene_id", "edist", "rmsd", "rmsd_rel",
-            "mpd_included", "sd_included", "mpd_all", "sd_all",
-            "expressed_div_ratio", "jsd", "score", "num_considered_transcripts"
+            "gene_id", "rmsd", "rmsd_rel",
+            "mpd", "jsd", "AT-bin"
         ]
         rows = ["\t".join(headers)]
         for g in self.comparison_gene_list:
             row = [
-                g.gene_id, f"{g.edist:.5f}", f"{g.rmsd:.5f}",
-                f"{g.rmsd_rel:.5f}", f"{g.mpd_included:.5f}", f"{g.sd_included:.5f}",
-                f"{g.mpd_all:.5f}", f"{g.sd_all:.5f}", f"{g.expressed_div_ratio:.5f}",
-                f"{g.jsd:.5f}", f"{g.score:.5f}", str(g.num_considered_transcripts)
-            ]
+                g.gene_id, f"{g.rmsd:.5f}",
+                f"{g.rmsd_rel:.5f}", f"{g.mpd_included:.5f}",
+                f"{g.jsd:.5f}", str(g.num_considered_transcripts)
+                ]
             rows.append("\t".join(row))
         return "\n".join(rows)
 
