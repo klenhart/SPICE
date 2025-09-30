@@ -179,6 +179,7 @@ class ExpressionAssembler:
         expression: float = float(insert_dict[self.expression_assembly["normalization"]])
         expression_threshold: float = self.expression_assembly["expression_threshold"]
         id_list: List[str] = self.expression_assembly["data"][gene_id]["ids"]
+        # If not a protein coding transcript
         if len(protein_id) == 0:
             index: int = id_list.index(transcript_id)
             if expression >= expression_threshold:

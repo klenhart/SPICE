@@ -1,0 +1,6 @@
+[console_scripts]
+spice.library = spice.spice_library:main
+spice.makejobs = spice.FASJobAssistant:main
+spice.novel = spice.spice_novel:main
+spice.parse_domain_out = spice.parse_domain_out:main
+spice.result = spice.spice_result:main

@@ -252,7 +252,8 @@ class EWFDAssembler:
         # Performs effectively a Matrix-Vector multiplication with complement FAS scores (dissimilarity score)
         for s, seed_id in enumerate(transcript_ids):
             for q, query_id in enumerate(transcript_ids):
-                ewfd_list[s] += round(rel_expressions[q] * (1 - gene_fas_dists[seed_id][query_id]), 4)
+                # remove rounding
+                ewfd_list[s] += rel_expressions[q] * (1 - gene_fas_dists[seed_id][query_id])
 
         # ewfd_list = [round(1 - movement, 4) for movement in ewfd_list]
 
