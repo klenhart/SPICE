@@ -426,9 +426,7 @@ class ComparisonAssembler:
                                                             data_cond_2[gene_id],
                                                             self.biotype_filter,
                                                             self.tag_filter,
-                                                            fas_adjacency_matrix,
-                                                            replicate_consistency_1=self.replicate_consistency_1,
-                                                            replicate_consistency_2=self.replicate_consistency_2))
+                                                            fas_adjacency_matrix))
     
     def sort_genes_by_score(self):
         self.comparison_gene_list.sort(key=lambda g: g.score, reverse=True)
