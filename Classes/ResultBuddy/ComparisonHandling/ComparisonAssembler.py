@@ -417,8 +417,6 @@ class ComparisonAssembler:
         # Reads ewfd/conditions data for condition 2
         with open(self.condition_2_path, "r") as f_2:
             data_cond_2: Dict[str, Dict[str, List[Any]]] = json.load(f_2)["data"]
-        self.replicate_consistency_1 = self.compute_replicate_consistency(data_cond_1)
-        self.replicate_consistency_2 = self.compute_replicate_consistency(data_cond_2)
         # Loops over each gene id and loads FAS score data. Creates ComparisonGene object
         for gene_id in data_cond_1.keys():
             with open(os.path.join(self.fas_scores_directory, self.fas_index[gene_id]), "r") as f:
