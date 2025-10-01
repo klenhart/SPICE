@@ -429,7 +429,7 @@ class ComparisonAssembler:
                                                             fas_adjacency_matrix))
     
     def sort_genes_by_score(self):
-        self.comparison_gene_list.sort(key=lambda g: g.score, reverse=True)
+        self.comparison_gene_list.sort(key=lambda g: g.rmsd, reverse=True)
 
 
     def delete_zero_rmsd_genes(self):
